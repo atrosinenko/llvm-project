@@ -343,6 +343,9 @@ MCPlusBuilder *createMCPlusBuilder(const Triple::ArchType Arch,
                                    const MCInstrInfo *Info,
                                    const MCRegisterInfo *RegInfo,
                                    const MCSubtargetInfo *STI) {
+  opts::populateFunctionNames(opts::AssumeNoReturnFunctionsFile,
+                              opts::AssumeNoReturnFunctions);
+
 #ifdef X86_AVAILABLE
   if (Arch == Triple::x86_64)
     return createX86MCPlusBuilder(Analysis, Info, RegInfo, STI);
