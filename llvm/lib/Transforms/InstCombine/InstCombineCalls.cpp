@@ -3158,6 +3158,33 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         Intrinsic::getOrInsertDeclaration(II->getModule(), NewIntrin);
     return CallInst::Create(NewFn, {BasePtr}, OBs);
   }
+  case Intrinsic::ptrauth_sign: {
+    // Replace auth+sign with a single resign intrinsic.
+    // When auth and sign operations are performed separately, later compiler
+    // passes may spill intermediate result to memory as a raw, unprotected
+    // pointer, which makes it possible for an attacker to replace it under
+    // PAuth threat model. On the other hand, resign intrinsic is not expanded
+    // until AsmPrinter, when it is emitted as a contiguous, non-attackable
+    // sequence of instructions.
+    Value *Ptr = II->getArgOperand(0);
+
+    const auto *CI = dyn_cast<CallBase>(Ptr);
+    if (!CI || CI->getIntrinsicID() != Intrinsic::ptrauth_auth)
+      break;
+
+    Value *BasePtr = CI->getOperand(0);
+
+    SmallVector<OperandBundleDef, 2> OBs;
+    CI->getOperandBundlesAsDefs(OBs); // auth schema
+    II->getOperandBundlesAsDefs(OBs); // sign schema
+
+    // Not replacing auth+sign using the same schema with nop, as auth+sign
+    // pair traps on authentication failure.
+
+    Function *NewFn = Intrinsic::getOrInsertDeclaration(
+        II->getModule(), Intrinsic::ptrauth_resign);
+    return CallInst::Create(NewFn, {BasePtr}, OBs);
+  }
   case Intrinsic::arm_neon_vtbl1:
   case Intrinsic::aarch64_neon_tbl1:
     if (Value *V = simplifyNeonTbl1(*II, Builder))
