@@ -14,8 +14,8 @@ f1:
         ldp     x29, x30, [sp], #16
         // autiasp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f1, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -36,8 +36,8 @@ f_intermediate_overwrite1:
         autiasp
         ldp     x29, x30, [sp], #16
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_intermediate_overwrite1, basic block {{[0-9a-zA-Z.]+}}
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -59,8 +59,8 @@ f_intermediate_overwrite2:
         autiasp
         mov     x30, x0
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_intermediate_overwrite2, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: mov     x30, x0
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -98,8 +98,8 @@ f_intermediate_overwrite3:
         autiasp
         mov     w30, w0
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_intermediate_overwrite3, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: mov     w30, w0
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -122,8 +122,8 @@ f_nonx30_ret:
         mov     x16, x30
         autiasp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_nonx30_ret, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret     x16
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret     x16
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: mov     x16, x30
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -203,8 +203,8 @@ f_nonx30_ret_non_auted:
 f_callclobbered_x30:
         bl      g
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_callclobbered_x30, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: bl
         ret
         .size f_callclobbered_x30, .-f_callclobbered_x30
@@ -214,8 +214,8 @@ f_callclobbered_x30:
 f_callclobbered_calleesaved:
         bl      g
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_callclobbered_calleesaved, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret x19
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret x19
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: bl
         // x19, according to the Arm ABI (AAPCS) is a callee-saved register.
         // Therefore, if function g respects the AAPCS, it should not write
@@ -300,8 +300,8 @@ f_autia1716:
         ldp     x29, x30, [sp], #16
         autia1716
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autia1716, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -322,8 +322,8 @@ f_autib1716:
         ldp     x29, x30, [sp], #16
         autib1716
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autib1716, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -344,8 +344,8 @@ f_autiax12:
         ldp     x29, x30, [sp], #16
         autia   x12, sp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autiax12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -366,8 +366,8 @@ f_autibx12:
         ldp     x29, x30, [sp], #16
         autib   x12, sp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autibx12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -417,8 +417,8 @@ f_autdax12:
         ldp     x29, x30, [sp], #16
         autda   x12, sp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autdax12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -439,8 +439,8 @@ f_autdbx12:
         ldp     x29, x30, [sp], #16
         autdb   x12, sp
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autdbx12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -490,8 +490,8 @@ f_autizax12:
         ldp     x29, x30, [sp], #16
         autiza  x12
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autizax12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -512,8 +512,8 @@ f_autizbx12:
         ldp     x29, x30, [sp], #16
         autizb  x12
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autizbx12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -563,8 +563,8 @@ f_autdzax12:
         ldp     x29, x30, [sp], #16
         autdza  x12
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autdzax12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -585,8 +585,8 @@ f_autdzbx12:
         ldp     x29, x30, [sp], #16
         autdzb  x12
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autdzbx12, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -660,7 +660,7 @@ f_eretaa:
         add     x0, x0, #3
         ldp     x29, x30, [sp], #16
 // CHECK-LABEL: GS-PACRET: Warning: pac-ret analysis could not analyze this return instruction in function f_eretaa, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:   The return instruction is     {{[0-9a-f]+}}:       eretaa
+// CHECK-NEXT:   The instruction is     {{[0-9a-f]+}}:       eretaa
         eretaa
         .size f_eretaa, .-f_eretaa
 
@@ -674,7 +674,7 @@ f_eretab:
         add     x0, x0, #3
         ldp     x29, x30, [sp], #16
 // CHECK-LABEL: GS-PACRET: Warning: pac-ret analysis could not analyze this return instruction in function f_eretab, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:   The return instruction is     {{[0-9a-f]+}}:       eretab
+// CHECK-NEXT:   The instruction is     {{[0-9a-f]+}}:       eretab
         eretab
         .size f_eretab, .-f_eretab
 
@@ -688,7 +688,7 @@ f_eret:
         add     x0, x0, #3
         ldp     x29, x30, [sp], #16
 // CHECK-LABEL: GS-PACRET: Warning: pac-ret analysis could not analyze this return instruction in function f_eret, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:   The return instruction is     {{[0-9a-f]+}}:       eret
+// CHECK-NEXT:   The instruction is     {{[0-9a-f]+}}:       eret
         eret
         .size f_eret, .-f_eret
 
@@ -696,8 +696,8 @@ f_eret:
         .type   f_movx30reg,@function
 f_movx30reg:
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_movx30reg, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: mov x30, x22
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   mov     x30, x22
@@ -843,8 +843,8 @@ f_autia171615:
         ldp     x29, x30, [sp], #16
         autia171615
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autia171615, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
@@ -865,8 +865,8 @@ f_autib171615:
         ldp     x29, x30, [sp], #16
         autib171615
 // CHECK-LABEL: GS-PACRET: non-protected ret found in function f_autib171615, basic block {{[0-9a-zA-Z.]+}}, at address
-// CHECK-NEXT:    The return instruction is     {{[0-9a-f]+}}:       ret
-// CHECK-NEXT:    The 1 instructions that write to the return register after any authentication are:
+// CHECK-NEXT:    The instruction is     {{[0-9a-f]+}}:       ret
+// CHECK-NEXT:    The 1 instructions that write to the affected registers after any authentication are:
 // CHECK-NEXT:    1. {{[0-9a-f]+}}: ldp     x29, x30, [sp], #0x10
 // CHECK-NEXT:  This happens in the following basic block:
 // CHECK-NEXT: {{[0-9a-f]+}}:   add     x0, x0, #0x3
