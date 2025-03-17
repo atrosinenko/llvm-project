@@ -551,6 +551,11 @@ public:
     return Analysis->isReturn(Inst);
   }
 
+  virtual SmallVector<MCPhysReg> getAuthenticatedLiveInRegs() const {
+    llvm_unreachable("not implemented");
+    return {};
+  }
+
   virtual ErrorOr<MCPhysReg> getAuthenticatedReg(const MCInst &Inst) const {
     llvm_unreachable("not implemented");
     return getNoRegister();

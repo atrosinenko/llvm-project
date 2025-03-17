@@ -121,18 +121,16 @@ public:
 
 // The security property that is checked is:
 // When a register is used as the address to jump to in a return instruction,
-// that register must either:
-// (a) never be changed within this function, i.e. have the same value as when
-//     the function started, or
+// that register must be safe-to-dereference. It should either
+// (a) be safe-to-dereference at function entry and never be changed within this
+//     function, i.e. have the same value as when the function started, or
 // (b) the last write to the register must be by an authentication instruction.
 
 // This property is checked by using dataflow analysis to keep track of which
-// registers have been written (def-ed), since last authenticated. Those are
-// exactly the registers containing values that should not be trusted (as they
-// could have changed since the last time they were authenticated). For pac-ret,
-// any return instruction using such a register is a gadget to be reported. For
-// PAuthABI, probably at least any indirect control flow using such a register
-// should be reported.
+// registers have been written (def-ed), since last authenticated. For pac-ret,
+// any return instruction using a register which is not safe-to-dereference is
+// a gadget to be reported. For PAuthABI, probably at least any indirect control
+// flow using such a register should be reported.
 
 // Furthermore, when producing a diagnostic for a found non-pac-ret protected
 // return, the analysis also lists the last instructions that wrote to the
@@ -152,9 +150,7 @@ public:
 //    to also track which instructions last wrote to those registers.
 
 struct State {
-  /// A BitVector containing the registers that have been clobbered, and
-  /// not authenticated.
-  BitVector NonAutClobRegs;
+  BitVector SafeToDerefRegs;
   /// A vector of sets, only used in the second data flow run.
   /// Each element in the vector represents one of the registers for which we
   /// track the set of last instructions that wrote to this register. For
@@ -164,16 +160,16 @@ struct State {
   std::vector<SmallPtrSet<const MCInst *, 4>> LastInstWritingReg;
   State() {}
   State(unsigned NumRegs, unsigned NumRegsToTrack)
-      : NonAutClobRegs(NumRegs), LastInstWritingReg(NumRegsToTrack) {}
+      : SafeToDerefRegs(NumRegs), LastInstWritingReg(NumRegsToTrack) {}
   State &operator|=(const State &StateIn) {
-    NonAutClobRegs |= StateIn.NonAutClobRegs;
+    SafeToDerefRegs &= StateIn.SafeToDerefRegs;
     for (unsigned I = 0; I < LastInstWritingReg.size(); ++I)
       for (const MCInst *J : StateIn.LastInstWritingReg[I])
         LastInstWritingReg[I].insert(J);
     return *this;
   }
   bool operator==(const State &RHS) const {
-    return NonAutClobRegs == RHS.NonAutClobRegs &&
+    return SafeToDerefRegs == RHS.SafeToDerefRegs &&
            LastInstWritingReg == RHS.LastInstWritingReg;
   }
   bool operator!=(const State &RHS) const { return !((*this) == RHS); }
@@ -194,7 +190,7 @@ static void printLastInsts(
 
 raw_ostream &operator<<(raw_ostream &OS, const State &S) {
   OS << "pacret-state<";
-  OS << "NonAutClobRegs: " << S.NonAutClobRegs << ", ";
+  OS << "SafeToDerefRegs: " << S.SafeToDerefRegs << ", ";
   printLastInsts(OS, S.LastInstWritingReg);
   OS << ">";
   return OS;
@@ -212,8 +208,8 @@ private:
 void PacStatePrinter::print(raw_ostream &OS, const State &S) const {
   RegStatePrinter RegStatePrinter(BC);
   OS << "pacret-state<";
-  OS << "NonAutClobRegs: ";
-  RegStatePrinter.print(OS, S.NonAutClobRegs);
+  OS << "SafeToDerefRegs: ";
+  RegStatePrinter.print(OS, S.SafeToDerefRegs);
   OS << ", ";
   printLastInsts(OS, S.LastInstWritingReg);
   OS << ">";
@@ -252,12 +248,25 @@ protected:
 
   void preflight() {}
 
+  State createEntryState() {
+    State S(NumRegs, RegsToTrackInstsFor.getNumTrackedRegisters());
+    for (MCPhysReg Reg : BC.MIB->getAuthenticatedLiveInRegs())
+      S.SafeToDerefRegs |= BC.MIB->getAliases(Reg, /*OnlySmaller=*/true);
+    return S;
+  }
+
+  State createNeutralState() {
+    State S(NumRegs, RegsToTrackInstsFor.getNumTrackedRegisters());
+    S.SafeToDerefRegs.set();
+    return S;
+  }
+
   State getStartingStateAtBB(const BinaryBasicBlock &BB) {
-    return State(NumRegs, RegsToTrackInstsFor.getNumTrackedRegisters());
+    return BB.isEntryPoint() ? createEntryState() :createNeutralState();
   }
 
   State getStartingStateAtPoint(const MCInst &Point) {
-    return State(NumRegs, RegsToTrackInstsFor.getNumTrackedRegisters());
+    return createNeutralState();
   }
 
   void doConfluence(State &StateOut, const State &StateIn) {
@@ -315,7 +324,7 @@ protected:
       // Also see the discussion on this at
       // https://github.com/llvm/llvm-project/pull/122304#discussion_r1939511909
       BC.MIB->getWrittenRegs(Point, Written);
-    Next.NonAutClobRegs |= Written;
+    Next.SafeToDerefRegs.reset(Written);
     // Keep track of this instruction if it writes to any of the registers we
     // need to track that for:
     for (MCPhysReg Reg : RegsToTrackInstsFor.getRegisters())
@@ -328,8 +337,7 @@ protected:
       // FIXME about `getWrittenRegs` above and further discussion about this
       // at
       // https://github.com/llvm/llvm-project/pull/122304#discussion_r1939515516
-      Next.NonAutClobRegs.reset(
-          BC.MIB->getAliases(*AutReg, /*OnlySmaller=*/true));
+      Next.SafeToDerefRegs |= BC.MIB->getAliases(*AutReg, /*OnlySmaller=*/true);
       if (RegsToTrackInstsFor.isTracked(*AutReg))
         lastWritingInsts(Next, *AutReg).clear();
     }
@@ -392,10 +400,11 @@ static std::shared_ptr<Report> tryCheckReturn(const BinaryContext &BC,
   });
   if (BC.MIB->isAuthenticationOfReg(Inst, RetReg))
     return nullptr;
-  BitVector UsedDirtyRegs = S.NonAutClobRegs;
-  LLVM_DEBUG({ traceRegMask(BC, "NonAutClobRegs at Ret", UsedDirtyRegs); });
+  BitVector UsedDirtyRegs = S.SafeToDerefRegs;
+  LLVM_DEBUG({ traceRegMask(BC, "SafeToDerefRegs at Ret", UsedDirtyRegs); });
+  UsedDirtyRegs.flip();
   UsedDirtyRegs &= BC.MIB->getAliases(RetReg, /*OnlySmaller=*/true);
-  LLVM_DEBUG({ traceRegMask(BC, "Intersection with RetReg", UsedDirtyRegs); });
+  LLVM_DEBUG({ traceRegMask(BC, "Intersection with dirty regs", UsedDirtyRegs); });
   if (!UsedDirtyRegs.any())
     return nullptr;
 
