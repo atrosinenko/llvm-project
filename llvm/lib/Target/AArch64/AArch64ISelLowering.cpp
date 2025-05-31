@@ -3353,28 +3353,56 @@ AArch64TargetLowering::EmitGetSMESaveSize(MachineInstr &MI,
   return BB;
 }
 
-MachineBasicBlock *
-AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
+static MachineInstr *followVRegCopyChain(const MachineRegisterInfo &MRI,
+                                         Register Reg) {
+  while (Reg.isVirtual()) {
+    MachineInstr *Def = MRI.getUniqueVRegDef(Reg);
+    if (!Def || Def->getOpcode() != AArch64::COPY)
+      return Def;
+
+    Reg = Def->getOperand(1).getReg();
+  }
+  return nullptr;
+}
+
+void
+AArch64TargetLowering::tryDetectingBlend(MachineInstr &MI,
                                        MachineBasicBlock *BB) const {
   const TargetInstrInfo *TII = Subtarget->getInstrInfo();
   MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
   const DebugLoc &DL = MI.getDebugLoc();
 
-  // Find the unique register definition, skipping copies.
-  auto GetUniqueDef = [&MRI](Register Reg) {
-    for (;;) {
-      MachineInstr *Def = MRI.getUniqueVRegDef(Reg);
-      if (!Def || Def->getOpcode() != AArch64::COPY)
-        return Def;
+  MachineOperand &IntDiscOp = MI.getOperand(1);
+  MachineOperand &AddrDiscOp = MI.getOperand(2);
 
-      Reg = Def->getOperand(1).getReg();
-    }
-  };
-  // Find the unique register definition, skipping copies and increments.
+  // Check if AddrDiscOp is ultimately defined by a blend operation:
+  //     MOVKXi %BlendResult, %AddrDisc, %IntDisc, 48
+  MachineInstr *MaybeBlendDef = followVRegCopyChain(MRI, AddrDiscOp.getReg());
+  if (!MaybeBlendDef || MaybeBlendDef->getOpcode() != AArch64::MOVKXi ||
+      MaybeBlendDef->getOperand(3).getImm() != 48)
+    return;
+
+  // Move BlendResult to the expected register class.
+  Register TmpReg = MRI.createVirtualRegister(&AArch64::GPR64noipRegClass);
+  BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg)
+      .addReg(MaybeBlendDef->getOperand(1).getReg());
+
+  IntDiscOp.setImm(MaybeBlendDef->getOperand(2).getImm());
+  AddrDiscOp.setReg(TmpReg);
+}
+
+MachineInstr *
+AArch64TargetLowering::tryRewritingLoadPAC(MachineInstr &MI,
+                                       MachineBasicBlock *BB) const {
+  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
+  MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
+  const DebugLoc &DL = MI.getDebugLoc();
+
+  // Find vreg definition, skipping copies and accumulating increments.
   auto GetUniqueDefPlusOffset =
-      [GetUniqueDef](Register Reg, int64_t &Offset) -> MachineInstr * {
-    for (;;) {
-      MachineInstr *Def = GetUniqueDef(Reg);
+      [&MRI](Register Reg, int64_t &Offset) -> MachineInstr * {
+    while (Reg.isVirtual()) {
+      MachineInstr *Def = followVRegCopyChain(MRI, Reg);
       if (!Def || Def->getOpcode() != AArch64::ADDXri)
         return Def;
 
@@ -3383,16 +3411,25 @@ AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
       Reg = Def->getOperand(1).getReg();
       Offset += Def->getOperand(2).getImm();
     }
+    return nullptr;
   };
+
+  // AArch64::PAC pseudo instruction is immediately preceded by
+  // $x16 = COPY %vreg and optional $x17 = IMPLICIT_DEF.
+  MachineInstr *CopyToX16 = MI.getPrevNode();
+  if (CopyToX16 && CopyToX16->getOpcode() == TargetOpcode::IMPLICIT_DEF)
+    CopyToX16 = CopyToX16->getPrevNode();
+  assert(CopyToX16 && CopyToX16->getOpcode() == AArch64::COPY &&
+         CopyToX16->getOperand(0).getReg() == AArch64::X16);
 
   // Try to find a known address-setting instruction, accumulating the offset
   // along the way. If no known pattern is found, keep everything as-is.
 
   int64_t AddrOffset = 0;
   MachineInstr *AddrDefInstr =
-      GetUniqueDefPlusOffset(MI.getOperand(1).getReg(), AddrOffset);
+      GetUniqueDefPlusOffset(CopyToX16->getOperand(1).getReg(), AddrOffset);
   if (!AddrDefInstr)
-    return BB;
+    return &MI;
 
   unsigned NewOpcode;
   if (AddrDefInstr->getOpcode() == AArch64::LOADgotAUTH)
@@ -3400,46 +3437,70 @@ AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
   else if (AddrDefInstr->getOpcode() == AArch64::MOVaddr)
     NewOpcode = AArch64::MOVaddrPAC;
   else
-    return BB; // Unknown opcode.
+    return &MI; // Unknown opcode.
 
   MachineOperand &AddrOp = AddrDefInstr->getOperand(1);
   unsigned TargetFlags = AddrOp.getTargetFlags() & ~AArch64II::MO_PAGE;
   const GlobalValue *GV = AddrOp.getGlobal();
   AddrOffset += AddrOp.getOffset();
 
-  // Detect discriminator blend computation, if any.
-  Register RegDisc = isPACWithZeroDisc(MI.getOpcode())
-                         ? AArch64::XZR
-                         : MI.getOperand(2).getReg();
-  unsigned IntDisc = 0;
-  MachineInstr *MaybeBlendDef =
-      RegDisc == AArch64::XZR ? nullptr : GetUniqueDef(RegDisc);
-  if (MaybeBlendDef && MaybeBlendDef->getOpcode() == AArch64::MOVKXi &&
-      MaybeBlendDef->getOperand(3).getImm() == 48) {
-    RegDisc = MaybeBlendDef->getOperand(1).getReg();
-    IntDisc = MaybeBlendDef->getOperand(2).getImm();
-  }
-
-  // MOVaddrPAC and LOADgotPAC pseudos are expanded so that they use X16/X17
-  // internally, thus their restrictions on the register class of $AddrDisc
-  // operand are stricter than those of real PAC* instructions.
-  if (RegDisc != AArch64::XZR) {
-    Register TmpReg = MRI.createVirtualRegister(&AArch64::GPR64noipRegClass);
-    BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg).addReg(RegDisc);
-    RegDisc = TmpReg;
-  }
-
-  BuildMI(*BB, MI, DL, TII->get(NewOpcode))
+  auto NewMI = BuildMI(*BB, MI, DL, TII->get(NewOpcode))
       .addGlobalAddress(GV, AddrOffset, TargetFlags)
-      .addImm(getKeyForPACOpcode(MI.getOpcode()))
-      .addReg(RegDisc)
-      .addImm(IntDisc);
-
-  BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), MI.getOperand(0).getReg())
-      .addReg(AArch64::X16);
+      .addImm(MI.getOperand(0).getImm())
+      .addReg(MI.getOperand(2).getReg())
+      .addImm(MI.getOperand(1).getImm());
 
   MI.removeFromParent();
-  return BB;
+  return NewMI;
+}
+
+void AArch64TargetLowering::expandAuthSignIfOpaqueDisc(MachineInstr &MI, MachineBasicBlock *BB) const {
+  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
+  MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
+  const DebugLoc &DL = MI.getDebugLoc();
+
+  if (MI.getOpcode() != AArch64::AUT && MI.getOpcode() != AArch64::PAC)
+    return;
+
+  if (MI.getOperand(1).getImm() != 0)
+    return;
+
+  // AArch64::PAC pseudo instruction is immediately preceded by
+  // $x16 = COPY %vreg and optional $x17 = IMPLICIT_DEF.
+  MachineInstr *CopyToX16 = MI.getPrevNode();
+  if (CopyToX16 && CopyToX16->getOpcode() == TargetOpcode::IMPLICIT_DEF)
+    CopyToX16 = CopyToX16->getPrevNode();
+  assert(CopyToX16 && CopyToX16->getOpcode() == AArch64::COPY &&
+         CopyToX16->getOperand(0).getReg() == AArch64::X16);
+
+  MachineInstr *CopyFromX16 = MI.getNextNode();
+  assert(CopyFromX16 && CopyFromX16->getOpcode() == AArch64::COPY &&
+         CopyFromX16->getOperand(1).getReg() == AArch64::X16);
+
+  bool IsAUT = MI.getOpcode() == AArch64::AUT;
+  auto Key = static_cast<AArch64PACKey::ID>(MI.getOperand(0).getImm());
+  Register OldDiscReg = MI.getOperand(2).getReg();
+  bool IsZeroDisc = OldDiscReg == AArch64::NoRegister || OldDiscReg == AArch64::XZR;
+  unsigned NewOpcode = IsAUT ? getAUTOpcodeForKey(Key, IsZeroDisc)
+                             : getPACOpcodeForKey(Key, IsZeroDisc);
+
+  Register TmpPtr = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
+  Register TmpDisc = MRI.createVirtualRegister(&AArch64::GPR64spRegClass);
+  Register TmpRes = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
+
+  if (!IsZeroDisc) {
+    BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpDisc)
+        .addReg(MI.getOperand(2).getReg());
+  }
+
+  auto NewMI = BuildMI(*BB, MI, DL, TII->get(NewOpcode), TmpRes)
+      .addReg(TmpPtr);
+  if (!IsZeroDisc)
+    NewMI.addReg(TmpDisc);
+
+  CopyToX16->getOperand(0).setReg(TmpPtr);
+  MI.eraseFromParent();
+  CopyFromX16->getOperand(1).setReg(TmpRes);
 }
 
 MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
@@ -3541,15 +3602,15 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
   case AArch64::MOVT_TIZ_PSEUDO:
     return EmitZTInstr(MI, BB, AArch64::MOVT_TIZ, /*Op0IsDef=*/true);
 
-  case AArch64::PACDA:
-  case AArch64::PACDB:
-  case AArch64::PACIA:
-  case AArch64::PACIB:
-  case AArch64::PACDZA:
-  case AArch64::PACDZB:
-  case AArch64::PACIZA:
-  case AArch64::PACIZB:
-    return tryRewritingPAC(MI, BB);
+  case AArch64::AUT:
+    tryDetectingBlend(MI, BB);
+    // expandAuthSignIfOpaqueDisc(MI, BB);
+    return BB;
+  case AArch64::PAC:
+    tryDetectingBlend(MI, BB);
+    MachineInstr *NewMI = tryRewritingLoadPAC(MI, BB);
+    expandAuthSignIfOpaqueDisc(*NewMI, BB);
+    return BB;
   }
 }
 

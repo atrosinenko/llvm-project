@@ -170,6 +170,9 @@ public:
   // Emit the sequence for AUT or AUTPAC.
   void emitPtrauthAuthResign(const MachineInstr *MI);
 
+  // Emit the sequence for PAC.
+  void emitPtrauthSign(const MachineInstr *MI);
+
   // Emit the sequence to compute the discriminator.
   //
   // ScratchReg should be x16/x17.
@@ -2172,6 +2175,28 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(const MachineInstr *MI) {
     OutStreamer->emitLabel(EndSym);
 }
 
+void AArch64AsmPrinter::emitPtrauthSign(const MachineInstr *MI) {
+  auto Key = (AArch64PACKey::ID)MI->getOperand(0).getImm();
+  uint64_t IntDisc = MI->getOperand(1).getImm();
+  Register AddrDisc = MI->getOperand(2).getReg();
+
+  // Compute the discriminator into x17
+  assert(isUInt<16>(IntDisc));
+  Register DiscReg = emitPtrauthDiscriminator(IntDisc, AddrDisc, AArch64::X17);
+  bool DiscIsZero = DiscReg == AArch64::XZR;
+  unsigned Opc = getAUTOpcodeForKey(Key, DiscIsZero);
+
+  //  paciza x16      ; if  DiscIsZero
+  //  pacia x16, x17  ; if !DiscIsZero
+  MCInst AUTInst;
+  AUTInst.setOpcode(Opc);
+  AUTInst.addOperand(MCOperand::createReg(AArch64::X16));
+  AUTInst.addOperand(MCOperand::createReg(AArch64::X16));
+  if (!DiscIsZero)
+    AUTInst.addOperand(MCOperand::createReg(DiscReg));
+  EmitToStreamer(*OutStreamer, AUTInst);
+}
+
 void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
   bool IsCall = MI->getOpcode() == AArch64::BLRA;
   unsigned BrTarget = MI->getOperand(0).getReg();
@@ -2864,6 +2889,10 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   case AArch64::AUT:
   case AArch64::AUTPAC:
     emitPtrauthAuthResign(MI);
+    return;
+
+  case AArch64::PAC:
+    emitPtrauthSign(MI);
     return;
 
   case AArch64::LOADauthptrstatic:

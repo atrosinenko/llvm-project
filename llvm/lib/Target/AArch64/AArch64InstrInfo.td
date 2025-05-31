@@ -1845,8 +1845,7 @@ let Predicates = [HasPAuth] in {
     def DZB  : SignAuthZero<prefix_z,  0b11, !strconcat(asm, "dzb"), op>;
   }
 
-  let usesCustomInserter = true in
-  defm PAC : SignAuth<0b000, 0b010, "pac", int_ptrauth_sign>;
+  defm PAC : SignAuth<0b000, 0b010, "pac", null_frag>;
 
   defm AUT : SignAuth<0b001, 0b011, "aut", null_frag>;
 
@@ -1951,6 +1950,21 @@ let Predicates = [HasPAuth] in {
     let Size = 32;
     let Defs = [X16,X17,NZCV];
     let Uses = [X16];
+
+    let usesCustomInserter = true;
+  }
+
+  def PAC : Pseudo<(outs), (ins i32imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
+                   []>, Sched<[WriteI, ReadI]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 1;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let Size = 32;
+    let Defs = [X16,X17,NZCV];
+    let Uses = [X16];
+
+    let usesCustomInserter = true;
   }
 
   // AUT and re-PAC a value, using different keys/data.

@@ -679,8 +679,10 @@ public:
                                                MachineBasicBlock *BB) const;
   MachineBasicBlock *EmitGetSMESaveSize(MachineInstr &MI,
                                         MachineBasicBlock *BB) const;
-  MachineBasicBlock *tryRewritingPAC(MachineInstr &MI,
-                                     MachineBasicBlock *BB) const;
+
+  void tryDetectingBlend(MachineInstr &MI, MachineBasicBlock *BB) const;
+  MachineInstr *tryRewritingLoadPAC(MachineInstr &MI, MachineBasicBlock *BB) const;
+  void expandAuthSignIfOpaqueDisc(MachineInstr &MI, MachineBasicBlock *BB) const;
 
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,

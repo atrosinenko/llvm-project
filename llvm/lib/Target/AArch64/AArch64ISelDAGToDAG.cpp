@@ -361,7 +361,7 @@ public:
 
   bool tryIndexedLoad(SDNode *N);
 
-  void SelectPtrauthAuth(SDNode *N);
+  void SelectPtrauthAuthSign(SDNode *N, unsigned Opcode);
   void SelectPtrauthResign(SDNode *N);
 
   bool trySelectStackSlotTagP(SDNode *N);
@@ -1520,26 +1520,24 @@ extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
       AddrDisc);
 }
 
-void AArch64DAGToDAGISel::SelectPtrauthAuth(SDNode *N) {
+void AArch64DAGToDAGISel::SelectPtrauthAuthSign(SDNode *N, unsigned Opcode) {
   SDLoc DL(N);
   // IntrinsicID is operand #0
   SDValue Val = N->getOperand(1);
-  SDValue AUTKey = N->getOperand(2);
-  SDValue AUTDisc = N->getOperand(3);
+  SDValue Key = N->getOperand(2);
+  SDValue Disc = N->getOperand(3);
 
-  unsigned AUTKeyC = cast<ConstantSDNode>(AUTKey)->getZExtValue();
-  AUTKey = CurDAG->getTargetConstant(AUTKeyC, DL, MVT::i64);
+  unsigned KeyC = cast<ConstantSDNode>(Key)->getZExtValue();
+  Key = CurDAG->getTargetConstant(KeyC, DL, MVT::i64);
 
-  SDValue AUTAddrDisc, AUTConstDisc;
-  std::tie(AUTConstDisc, AUTAddrDisc) =
-      extractPtrauthBlendDiscriminators(AUTDisc, CurDAG);
+  auto [ConstDisc, AddrDisc] = extractPtrauthBlendDiscriminators(Disc, CurDAG);
 
   SDValue X16Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
                                          AArch64::X16, Val, SDValue());
-  SDValue Ops[] = {AUTKey, AUTConstDisc, AUTAddrDisc, X16Copy.getValue(1)};
+  SDValue Ops[] = {Key, ConstDisc, AddrDisc, X16Copy.getValue(1)};
 
-  SDNode *AUT = CurDAG->getMachineNode(AArch64::AUT, DL, MVT::i64, Ops);
-  ReplaceNode(N, AUT);
+  SDNode *Result = CurDAG->getMachineNode(Opcode, DL, MVT::i64, Ops);
+  ReplaceNode(N, Result);
 }
 
 void AArch64DAGToDAGISel::SelectPtrauthResign(SDNode *N) {
@@ -5646,7 +5644,11 @@ void AArch64DAGToDAGISel::Select(SDNode *Node) {
       return;
 
     case Intrinsic::ptrauth_auth:
-      SelectPtrauthAuth(Node);
+      SelectPtrauthAuthSign(Node, AArch64::AUT);
+      return;
+
+    case Intrinsic::ptrauth_sign:
+      SelectPtrauthAuthSign(Node, AArch64::PAC);
       return;
 
     case Intrinsic::ptrauth_resign:
