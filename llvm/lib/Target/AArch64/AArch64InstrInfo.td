@@ -1988,6 +1988,8 @@ def PAUTH_PROLOGUE : Pseudo<(outs), (ins), []>, Sched<[]> {
 def PAUTH_EPILOGUE : Pseudo<(outs), (ins), []>, Sched<[]>;
 }
 
+def ScratchReg : OptionalDefOperand<OtherVT, (ops GPR64), (ops (i64 zero_reg))>;
+
 // These pointer authentication instructions require armv8.3a
 let Predicates = [HasPAuth] in {
 
@@ -2018,9 +2020,7 @@ let Predicates = [HasPAuth] in {
     def DZB  : SignAuthZero<prefix_z,  0b11, !strconcat(asm, "dzb"), op>;
   }
 
-  let usesCustomInserter = true in
-  defm PAC : SignAuth<0b000, 0b010, "pac", int_ptrauth_sign>;
-
+  defm PAC : SignAuth<0b000, 0b010, "pac", null_frag>;
   defm AUT : SignAuth<0b001, 0b011, "aut", null_frag>;
 
   def XPACI : ClearAuth<0, "xpaci">;
@@ -2126,6 +2126,39 @@ let Predicates = [HasPAuth] in {
     let Uses = [X16];
   }
 
+  // ScratchReg could be used by
+  // https://github.com/llvm/llvm-project/pull/132857.
+  def AUTxMxN : Pseudo<(outs GPR64:$AuthVal, GPR64:$ScratchWb),
+                       (ins GPR64:$Val, i32imm:$Key,
+                            i64imm:$Disc, GPR64:$AddrDisc, ScratchReg:$Scratch),
+                       [], "$AuthVal = $Val, $ScratchWb = $Scratch">,
+                Sched<[WriteI, ReadI]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 0;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let Size = 32;
+    let Defs = [NZCV];
+    let usesCustomInserter = true;
+  }
+
+  def PAC : Pseudo<(outs GPR64:$SignedVal),
+                   (ins GPR64:$Val, i32imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
+                   [], "$SignedVal = $Val">, Sched<[WriteI, ReadI]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 0;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let Size = 12;
+    let Defs = [X17];
+    let usesCustomInserter = true;
+  }
+
+  def : Pat<(int_ptrauth_auth GPR64:$Val, timm:$Key, GPR64:$AddrDisc),
+            (AUTxMxN GPR64:$Val, $Key, 0, GPR64:$AddrDisc)>;
+  def : Pat<(int_ptrauth_sign GPR64:$Val, timm:$Key, GPR64noip:$AddrDisc),
+            (PAC GPR64:$Val, $Key, 0, GPR64noip:$AddrDisc)>;
+
   // AUT and re-PAC a value, using different keys/data.
   // This directly manipulates x16/x17, which are the only registers the OS
   // guarantees are safe to use for sensitive operations.
@@ -2141,6 +2174,7 @@ let Predicates = [HasPAuth] in {
     let Size = 48;
     let Defs = [X16,X17,NZCV];
     let Uses = [X16];
+    let usesCustomInserter = true;
   }
 
   // Materialize a signed global address, with adrp+add and PAC.

@@ -3103,7 +3103,14 @@ void AArch64TargetLowering::fixupBlendComponents(
   Register AddrDisc = AddrDiscOp.getReg();
   int64_t IntDisc = IntDiscOp.getImm();
 
-  assert(IntDisc == 0 && "Blend components are already expanded");
+  // This function tries to expand an opaque vreg discriminator into address
+  // modifier and immediate modifier components. If the immediate modifier
+  // operand is already non-zero, no fixup needed.
+  if (IntDisc != 0) {
+    assert(AddrDisc == AArch64::XZR || AddrDisc == AArch64::NoRegister ||
+           MRI.getRegClass(AddrDisc) == AddrDiscRC);
+    return;
+  }
 
   int64_t Offset = 0;
   MachineInstr *MaybeBlend = stripAndAccumulateOffset(MRI, AddrDisc, Offset);
@@ -3130,20 +3137,46 @@ void AArch64TargetLowering::fixupBlendComponents(
 }
 
 MachineBasicBlock *
-AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
-                                       MachineBasicBlock *BB) const {
+AArch64TargetLowering::EmitAUTxMxN(MachineInstr &MI,
+                                   MachineBasicBlock *BB) const {
+  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
+  const DebugLoc &DL = MI.getDebugLoc();
+
+  Register AuthVal = MI.getOperand(0).getReg();
+  Register Val = MI.getOperand(2).getReg();
+  unsigned Key = MI.getOperand(3).getImm();
+  int64_t IntDisc = MI.getOperand(4).getImm();
+  Register AddrDisc = MI.getOperand(5).getReg();
+
+  BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), AArch64::X16).addReg(Val);
+  BuildMI(*BB, MI, DL, TII->get(AArch64::AUT))
+      .addImm(Key)
+      .addImm(IntDisc)
+      .addReg(AddrDisc);
+  BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), AuthVal).addReg(AArch64::X16);
+
+  MI.eraseFromParent();
+  return BB;
+}
+
+void AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
+                                            MachineBasicBlock *BB) const {
   const TargetInstrInfo *TII = Subtarget->getInstrInfo();
   MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
   const DebugLoc &DL = MI.getDebugLoc();
+
+  Register Val = MI.getOperand(1).getReg();
+  unsigned Key = MI.getOperand(2).getImm();
+  int64_t IntDisc = MI.getOperand(3).getImm();
+  Register AddrDisc = MI.getOperand(4).getReg();
 
   // Try to find a known address-setting instruction, accumulating the offset
   // along the way. If no known pattern is found, keep everything as-is.
 
   int64_t AddrOffset = 0;
-  MachineInstr *AddrDefInstr =
-      stripAndAccumulateOffset(MRI, MI.getOperand(1).getReg(), AddrOffset);
+  MachineInstr *AddrDefInstr = stripAndAccumulateOffset(MRI, Val, AddrOffset);
   if (!AddrDefInstr)
-    return BB;
+    return;
 
   unsigned NewOpcode;
   if (AddrDefInstr->getOpcode() == AArch64::LOADgotAUTH)
@@ -3151,30 +3184,23 @@ AArch64TargetLowering::tryRewritingPAC(MachineInstr &MI,
   else if (AddrDefInstr->getOpcode() == AArch64::MOVaddr)
     NewOpcode = AArch64::MOVaddrPAC;
   else
-    return BB; // Unknown opcode.
+    return; // Unknown opcode.
 
   MachineOperand &AddrOp = AddrDefInstr->getOperand(1);
   unsigned TargetFlags = AddrOp.getTargetFlags() & ~AArch64II::MO_PAGE;
   const GlobalValue *GV = AddrOp.getGlobal();
   AddrOffset += AddrOp.getOffset();
 
-  Register DiscReg = isPACWithZeroDisc(MI.getOpcode())
-                         ? AArch64::XZR
-                         : MI.getOperand(2).getReg();
-
-  MachineInstr *NewMI = BuildMI(*BB, MI, DL, TII->get(NewOpcode))
-                            .addGlobalAddress(GV, AddrOffset, TargetFlags)
-                            .addImm(getKeyForPACOpcode(MI.getOpcode()))
-                            .addReg(DiscReg)
-                            .addImm(0);
-  fixupBlendComponents(*NewMI, BB, NewMI->getOperand(3), NewMI->getOperand(2),
-                       &AArch64::GPR64noipRegClass);
+  BuildMI(*BB, MI, DL, TII->get(NewOpcode))
+      .addGlobalAddress(GV, AddrOffset, TargetFlags)
+      .addImm(Key)
+      .addReg(AddrDisc)
+      .addImm(IntDisc);
 
   BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), MI.getOperand(0).getReg())
       .addReg(AArch64::X16);
 
   MI.removeFromParent();
-  return BB;
 }
 
 MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
@@ -3276,15 +3302,21 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
   case AArch64::MOVT_TIZ_PSEUDO:
     return EmitZTInstr(MI, BB, AArch64::MOVT_TIZ, /*Op0IsDef=*/true);
 
-  case AArch64::PACDA:
-  case AArch64::PACDB:
-  case AArch64::PACIA:
-  case AArch64::PACIB:
-  case AArch64::PACDZA:
-  case AArch64::PACDZB:
-  case AArch64::PACIZA:
-  case AArch64::PACIZB:
-    return tryRewritingPAC(MI, BB);
+  case AArch64::PAC:
+    fixupBlendComponents(MI, BB, MI.getOperand(3), MI.getOperand(4),
+                         &AArch64::GPR64noipRegClass);
+    tryRewritingPAC(MI, BB);
+    return BB;
+  case AArch64::AUTxMxN:
+    fixupBlendComponents(MI, BB, MI.getOperand(4), MI.getOperand(5),
+                         &AArch64::GPR64noipRegClass);
+    return EmitAUTxMxN(MI, BB);
+  case AArch64::AUTPAC:
+    fixupBlendComponents(MI, BB, MI.getOperand(1), MI.getOperand(2),
+                         &AArch64::GPR64noipRegClass);
+    fixupBlendComponents(MI, BB, MI.getOperand(4), MI.getOperand(5),
+                         &AArch64::GPR64noipRegClass);
+    return BB;
   }
 }
 

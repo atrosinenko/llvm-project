@@ -573,25 +573,25 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 define i64 @test_auth_ia_constdisc(i64 %arg) {
 ; UNCHECKED-LABEL: test_auth_ia_constdisc:
 ; UNCHECKED:       %bb.0:
+; UNCHECKED-NEXT:    mov w8, #256
 ; UNCHECKED-NEXT:    mov x16, x0
-; UNCHECKED-NEXT:    mov x17, #256
-; UNCHECKED-NEXT:    autia x16, x17
+; UNCHECKED-NEXT:    autia x16, x8
 ; UNCHECKED-NEXT:    mov x0, x16
 ; UNCHECKED-NEXT:    ret
 ;
 ; CHECKED-LABEL: test_auth_ia_constdisc:
 ; CHECKED:       %bb.0:
+; CHECKED-NEXT:    mov w8, #256
 ; CHECKED-NEXT:    mov x16, x0
-; CHECKED-NEXT:    mov x17, #256
-; CHECKED-NEXT:    autia x16, x17
+; CHECKED-NEXT:    autia x16, x8
 ; CHECKED-NEXT:    mov x0, x16
 ; CHECKED-NEXT:    ret
 ;
 ; TRAP-LABEL: test_auth_ia_constdisc:
 ; TRAP:       %bb.0:
+; TRAP-NEXT:    mov w8, #256
 ; TRAP-NEXT:    mov x16, x0
-; TRAP-NEXT:    mov x17, #256
-; TRAP-NEXT:    autia x16, x17
+; TRAP-NEXT:    autia x16, x8
 ; TRAP-NEXT:    mov x17, x16
 ; TRAP-NEXT:    xpaci x17
 ; TRAP-NEXT:    cmp x16, x17

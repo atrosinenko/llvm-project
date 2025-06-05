@@ -187,8 +187,9 @@ public:
                             MachineOperand &AddrDiscOp,
                             const TargetRegisterClass *AddrDiscRC) const;
 
-  MachineBasicBlock *tryRewritingPAC(MachineInstr &MI,
-                                     MachineBasicBlock *BB) const;
+  MachineBasicBlock *EmitAUTxMxN(MachineInstr &MI, MachineBasicBlock *BB) const;
+
+  void tryRewritingPAC(MachineInstr &MI, MachineBasicBlock *BB) const;
 
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
