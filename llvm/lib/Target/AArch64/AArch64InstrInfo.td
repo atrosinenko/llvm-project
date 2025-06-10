@@ -2207,6 +2207,7 @@ let Predicates = [HasPAuth] in {
     let hasSideEffects = 0;
     let Defs = [X16,X17,NZCV];
     let Size = 44;
+//     let hasSideEffects = 0;
   }
 
   // Load a signed global address from a special $auth_ptr$ stub slot.
