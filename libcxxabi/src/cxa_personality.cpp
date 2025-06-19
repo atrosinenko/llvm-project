@@ -22,6 +22,8 @@
 #include "private_typeinfo.h"
 #include "unwind.h"
 
+#define EXTRA_PTRAUTH_HARDENING 1
+
 #if __has_include(<ptrauth.h>)
 #  include <ptrauth.h>
 #endif
@@ -596,7 +598,7 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
                 reinterpret_cast<uintptr_t>(unwind_exception));
   _Unwind_SetGR(context, __builtin_eh_return_data_regno(1),
                 static_cast<uintptr_t>(results.ttypeIndex));
-#if defined(__APPLE__) && __has_feature(ptrauth_qualifier)
+#if defined(EXTRA_PTRAUTH_HARDENING) && __has_feature(ptrauth_qualifier)
   auto stack_pointer = _Unwind_GetGR(context, UNW_REG_SP);
   // We manually re-sign the IP as the __ptrauth qualifiers cannot
   // express the required relationship with the destination address

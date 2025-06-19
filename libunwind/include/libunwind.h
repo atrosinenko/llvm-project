@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define EXTRA_PTRAUTH_HARDENING 1
+
 #ifdef __APPLE__
   #if __clang__
     #if __has_include(<Availability.h>)
@@ -47,7 +49,7 @@
 #include <ptrauth.h>
 #endif
 
-#if defined(__APPLE__) && __has_feature(ptrauth_qualifier)
+#if defined(EXTRA_PTRAUTH_HARDENING) && __has_feature(ptrauth_qualifier)
 #define _LIBUNWIND_PTRAUTH(__key, __address_discriminated, __discriminator)    \
   __ptrauth(__key, __address_discriminated,                                    \
             ptrauth_string_discriminator(__discriminator))
