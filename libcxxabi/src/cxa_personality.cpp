@@ -605,7 +605,7 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
   const auto existingDiscriminator = ptrauth_blend_discriminator(
       &results.landingPad, ptrauth_string_discriminator(_LIBCXXABI_PTRAUTH_SCANRESULT_LANDINGPAD_DISC));
   unw_word_t newIP =
-      (unw_word_t)ptrauth_auth_and_resign(*(void**)&results.landingPad, _LIBCXXABI_PTRAUTH_KEY, existingDiscriminator,
+      (unw_word_t)ptrauth_auth_and_resign(*(void**)&results.landingPad, ptrauth_key_process_dependent_data, existingDiscriminator,
                                           ptrauth_key_return_address, stack_pointer);
   _Unwind_SetIP(context, newIP);
 #else

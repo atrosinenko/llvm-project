@@ -2000,7 +2000,7 @@ inline bool Registers_arm64::validRegister(int regNum) const {
 
 inline uint64_t Registers_arm64::getRegister(int regNum) const {
   if (regNum == UNW_REG_IP || regNum == UNW_AARCH64_PC)
-    return _registers.__pc;
+    return getIP();
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
@@ -2016,7 +2016,7 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
 
 inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
   if (regNum == UNW_REG_IP || regNum == UNW_AARCH64_PC)
-    _registers.__pc = value;
+    setIP(value);
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
   else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
