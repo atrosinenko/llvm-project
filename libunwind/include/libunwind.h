@@ -49,7 +49,7 @@
 #include <ptrauth.h>
 #endif
 
-#if defined(EXTRA_PTRAUTH_HARDENING) && __has_feature(ptrauth_qualifier)
+#if defined(EXTRA_PTRAUTH_HARDENING) && __has_feature(ptrauth_intrinsics)
 #define _LIBUNWIND_PTRAUTH(__key, __address_discriminated, __discriminator)    \
   __ptrauth(__key, __address_discriminated,                                    \
             ptrauth_string_discriminator(__discriminator))
