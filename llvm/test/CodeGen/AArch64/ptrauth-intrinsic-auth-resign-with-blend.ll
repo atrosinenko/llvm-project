@@ -84,12 +84,14 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-NEXT:    mov x16, x0
 ; UNCHECKED-ELF-NEXT:    movk x1, #12345, lsl #48
 ; UNCHECKED-ELF-NEXT:    autda x16, x1
+; UNCHECKED-ELF-NEXT:    movk x2, #56789, lsl #48
+; UNCHECKED-ELF-NEXT:    pacdb x16, x2
 ; UNCHECKED-DARWIN-NEXT: mov x17, x1
 ; UNCHECKED-DARWIN-NEXT: movk x17, #12345, lsl #48
 ; UNCHECKED-DARWIN-NEXT: autda x16, x17
-; UNCHECKED-NEXT:    mov x17, x2
-; UNCHECKED-NEXT:    movk x17, #56789, lsl #48
-; UNCHECKED-NEXT:    pacdb x16, x17
+; UNCHECKED-DARWIN-NEXT: mov x17, x2
+; UNCHECKED-DARWIN-NEXT: movk x17, #56789, lsl #48
+; UNCHECKED-DARWIN-NEXT: pacdb x16, x17
 ; UNCHECKED-NEXT:    mov x0, x16
 ; UNCHECKED-NEXT:    ret
 ;
@@ -108,9 +110,11 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; CHECKED-NEXT:    mov x16, x17
 ; CHECKED-NEXT:    b [[L]]resign_end_0
 ; CHECKED-NEXT:  Lauth_success_0:
-; CHECKED-NEXT:    mov x17, x2
-; CHECKED-NEXT:    movk x17, #56789, lsl #48
-; CHECKED-NEXT:    pacdb x16, x17
+; CHECKED-ELF-NEXT:    movk x2, #56789, lsl #48
+; CHECKED-ELF-NEXT:    pacdb x16, x2
+; CHECKED-DARWIN-NEXT: mov x17, x2
+; CHECKED-DARWIN-NEXT: movk x17, #56789, lsl #48
+; CHECKED-DARWIN-NEXT: pacdb x16, x17
 ; CHECKED-NEXT:  Lresign_end_0:
 ; CHECKED-NEXT:    mov x0, x16
 ; CHECKED-NEXT:    ret
@@ -129,9 +133,11 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    b.eq [[L]]auth_success_1
 ; TRAP-NEXT:    brk #0xc472
 ; TRAP-NEXT:  Lauth_success_1:
-; TRAP-NEXT:    mov x17, x2
-; TRAP-NEXT:    movk x17, #56789, lsl #48
-; TRAP-NEXT:    pacdb x16, x17
+; TRAP-ELF-NEXT:    movk x2, #56789, lsl #48
+; TRAP-ELF-NEXT:    pacdb x16, x2
+; TRAP-DARWIN-NEXT: mov x17, x2
+; TRAP-DARWIN-NEXT: movk x17, #56789, lsl #48
+; TRAP-DARWIN-NEXT: pacdb x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)

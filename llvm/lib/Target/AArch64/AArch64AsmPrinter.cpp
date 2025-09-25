@@ -180,7 +180,8 @@ public:
                              const MachineOperand *AUTAddrDisc,
                              Register Scratch,
                              std::optional<AArch64PACKey::ID> PACKey,
-                             uint64_t PACDisc, Register PACAddrDisc);
+                             uint64_t PACDisc,
+                             const MachineOperand *PACAddrDisc);
 
   // Emit the sequence for PAC.
   void emitPtrauthSign(const MachineInstr *MI);
@@ -2165,23 +2166,9 @@ void AArch64AsmPrinter::emitPtrauthTailCallHardening(const MachineInstr *TC) {
       AArch64::LR, ScratchReg, Key, LRCheckMethod);
 }
 
-void AArch64AsmPrinter::emitPtrauthAuthResign(
-    Register AUTVal, AArch64PACKey::ID AUTKey, uint64_t AUTDisc,
-    const MachineOperand *AUTAddrDisc, Register Scratch,
-    std::optional<AArch64PACKey::ID> PACKey, uint64_t PACDisc,
-    Register PACAddrDisc) {
-  const bool IsAUTPAC = PACKey.has_value();
-
-  // We expand AUT/AUTPAC into a sequence of the form
-  //
-  //      ; authenticate x16
-  //      ; check pointer in x16
-  //    Lsuccess:
-  //      ; sign x16 (if AUTPAC)
-  //    Lend:   ; if not trapping on failure
-  //
-  // with the checking sequence chosen depending on whether/how we should check
-  // the pointer and whether we should trap on failure.
+static std::pair<bool, bool> getCheckAndTrapMode(const MachineFunction *MF,
+                                                 bool IsAUTPAC) {
+  const AArch64Subtarget &STI = MF->getSubtarget<AArch64Subtarget>();
 
   // By default, auth/resign sequences check for auth failures.
   bool ShouldCheck = true;
@@ -2190,7 +2177,7 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(
 
   // On an FPAC CPU, you get traps whether you want them or not: there's
   // no point in emitting checks or traps.
-  if (STI->hasFPAC())
+  if (STI.hasFPAC())
     ShouldCheck = ShouldTrap = false;
 
   // However, command-line flags can override this, for experimentation.
@@ -2209,19 +2196,65 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(
     break;
   }
 
-  // Compute aut discriminator
+  // Checked-but-not-trapping mode ("poison") only applies to resigning,
+  // replace with "unchecked" for standalone AUT.
+  if (!IsAUTPAC && ShouldCheck && !ShouldTrap)
+    ShouldCheck = ShouldTrap = false;
+
+  return std::make_pair(ShouldCheck, ShouldTrap);
+}
+
+// We expand AUT/AUTPAC into a sequence of the form
+//
+//      ; authenticate AUTVal
+//      ; check pointer in AUTVal
+//    Lsuccess:
+//      ; sign AUTVal (if AUTPAC)
+//    Lend:   ; if not trapping on failure
+//
+// with the checking sequence chosen depending on whether/how we should check
+// the pointer and whether we should trap on failure.
+void AArch64AsmPrinter::emitPtrauthAuthResign(
+    Register AUTVal, AArch64PACKey::ID AUTKey, uint64_t AUTDisc,
+    const MachineOperand *AUTAddrDisc, Register Scratch,
+    std::optional<AArch64PACKey::ID> PACKey, uint64_t PACDisc,
+    const MachineOperand *PACAddrDisc) {
+  const bool IsAUTPAC = PACKey.has_value();
+
+  // Check if we can save a few MOVs by updating killed address discriminators
+  // in-place:
+
+  // Scratch can be clobbered by design and AUTVal is not expected to alias any
+  // other register (even though this is technically possible to express by
+  // using intrinsics) and thus can be taken out of consideration.
+  if (AUTVal == AUTAddrDisc->getReg())
+    report_fatal_error("Pointer is to be authenticated with its own value");
+  if (PACAddrDisc && AUTVal == PACAddrDisc->getReg())
+    report_fatal_error("Pointer is to be signed with its own value");
+  assert(AUTVal != Scratch);
+  // PACAddrDisc can always be reused, as long as it is killed.
+  bool MayReusePACAddrDisc = PACAddrDisc && PACAddrDisc->isKill();
+  // Even though AUTAddrDisc can alias PACAddrDisc, reusing AUTAddrDisc register
+  // (by overwriting its top 16 bits) is only harmful if PACDisc is zero
+  // (meaning raw 64-bit value of PACAddrDisc has to be used without blending).
+  bool IsSameAddrDiscReg = PACAddrDisc && AUTAddrDisc->getReg() == PACAddrDisc->getReg();
+  bool MayReuseAUTAddrDisc = AUTAddrDisc->isKill() &&
+                             (!IsSameAddrDiscReg || PACDisc != 0);
+
+  // Authenticate the pointer:
+
   Register AUTDiscReg = emitPtrauthDiscriminator(
-      AUTDisc, AUTAddrDisc->getReg(), Scratch, AUTAddrDisc->isKill());
+      AUTDisc, AUTAddrDisc->getReg(), Scratch, MayReuseAUTAddrDisc);
   emitAUT(AUTKey, AUTVal, AUTDiscReg);
 
-  // Unchecked or checked-but-non-trapping AUT is just an "AUT": we're done.
-  if (!IsAUTPAC && (!ShouldCheck || !ShouldTrap))
-    return;
+  // Check the result of authentication as requested:
+
+  auto [ShouldCheck, ShouldTrap] = getCheckAndTrapMode(MF, IsAUTPAC);
+  assert((ShouldCheck || !ShouldTrap) && "ShouldTrap implies ShouldCheck");
 
   MCSymbol *EndSym = nullptr;
-
   if (ShouldCheck) {
-    if (IsAUTPAC && !ShouldTrap)
+    if (!ShouldTrap)
       EndSym = createTempSymbol("resign_end_");
 
     emitPtrauthCheckAuthenticatedValue(AUTVal, Scratch, AUTKey,
@@ -2229,19 +2262,15 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(
                                        EndSym);
   }
 
-  // We already emitted unchecked and checked-but-non-trapping AUTs.
-  // That left us with trapping AUTs, and AUTPACs.
-  // Trapping AUTs don't need PAC: we're done.
   if (!IsAUTPAC)
     return;
 
-  // Compute pac discriminator
-  Register PACDiscReg =
-      emitPtrauthDiscriminator(PACDisc, PACAddrDisc, Scratch);
+  // Re-sign the pointer:
 
+  Register PACDiscReg = emitPtrauthDiscriminator(
+      PACDisc, PACAddrDisc->getReg(), Scratch, MayReusePACAddrDisc);
   emitPAC(*PACKey, AUTVal, PACDiscReg);
 
-  //  Lend:
   if (EndSym)
     OutStreamer->emitLabel(EndSym);
 }
@@ -2259,7 +2288,6 @@ void AArch64AsmPrinter::emitPtrauthSign(const MachineInstr *MI) {
   assert(ScratchReg != AddrDisc &&
          "Neither X16 nor X17 is available as a scratch register");
 
-  // Compute pac discriminator
   Register DiscReg = emitPtrauthDiscriminator(
       Disc, AddrDisc, ScratchReg, /*MayUseAddrAsScratch=*/AddrDiscKilled);
   emitPAC(Key, Val, DiscReg);
@@ -2924,14 +2952,14 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     emitPtrauthAuthResign(AArch64::X16,
                           (AArch64PACKey::ID)MI->getOperand(0).getImm(),
                           MI->getOperand(1).getImm(), &MI->getOperand(2),
-                          AArch64::X17, std::nullopt, 0, 0);
+                          AArch64::X17, std::nullopt, 0, nullptr);
     return;
 
   case AArch64::AUTxMxN:
     emitPtrauthAuthResign(MI->getOperand(0).getReg(),
                           (AArch64PACKey::ID)MI->getOperand(3).getImm(),
                           MI->getOperand(4).getImm(), &MI->getOperand(5),
-                          MI->getOperand(1).getReg(), std::nullopt, 0, 0);
+                          MI->getOperand(1).getReg(), std::nullopt, 0, nullptr);
     return;
 
   case AArch64::AUTPAC:
@@ -2939,7 +2967,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
         AArch64::X16, (AArch64PACKey::ID)MI->getOperand(0).getImm(),
         MI->getOperand(1).getImm(), &MI->getOperand(2), AArch64::X17,
         (AArch64PACKey::ID)MI->getOperand(3).getImm(),
-        MI->getOperand(4).getImm(), MI->getOperand(5).getReg());
+        MI->getOperand(4).getImm(), &MI->getOperand(5));
     return;
 
   case AArch64::PAC:
