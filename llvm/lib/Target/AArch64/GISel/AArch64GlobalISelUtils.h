@@ -55,7 +55,8 @@ void applyEmitBZero(MachineInstr &MI, MachineIRBuilder &MIRBuilder);
 /// and address parts, cracking a ptrauth_blend intrinsic if there is one.
 /// \returns integer/address disc. parts, with NoRegister if no address disc.
 std::tuple<uint16_t, Register>
-extractPtrauthBlendDiscriminators(Register Disc, MachineRegisterInfo &MRI);
+extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
+                                  MachineRegisterInfo &MRI);
 
 /// Find the AArch64 condition codes necessary to represent \p P for a scalar
 /// floating point comparison.
