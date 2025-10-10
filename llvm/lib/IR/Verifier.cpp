@@ -4119,8 +4119,8 @@ void Verifier::visitCallBase(CallBase &Call) {
   bool FoundDeoptBundle = false, FoundFuncletBundle = false,
        FoundGCTransitionBundle = false, FoundCFGuardTargetBundle = false,
        FoundPreallocatedBundle = false, FoundGCLiveBundle = false,
-       FoundPtrauthBundle = false, FoundKCFIBundle = false,
-       FoundAttachedCallBundle = false;
+       FoundKCFIBundle = false, FoundAttachedCallBundle = false;
+  unsigned NumPtrauthBundles = 0;
   for (unsigned i = 0, e = Call.getNumOperandBundles(); i < e; ++i) {
     OperandBundleUse BU = Call.getOperandBundleAt(i);
     uint32_t Tag = BU.getTagID();
@@ -4146,15 +4146,11 @@ void Verifier::visitCallBase(CallBase &Call) {
       Check(BU.Inputs.size() == 1,
             "Expected exactly one cfguardtarget bundle operand", Call);
     } else if (Tag == LLVMContext::OB_ptrauth) {
-      Check(!FoundPtrauthBundle, "Multiple ptrauth operand bundles", Call);
-      FoundPtrauthBundle = true;
-      Check(BU.Inputs.size() == 2,
-            "Expected exactly two ptrauth bundle operands", Call);
-      Check(isa<ConstantInt>(BU.Inputs[0]) &&
-                BU.Inputs[0]->getType()->isIntegerTy(32),
-            "Ptrauth bundle key operand must be an i32 constant", Call);
-      Check(BU.Inputs[1]->getType()->isIntegerTy(64),
-            "Ptrauth bundle discriminator operand must be an i64", Call);
+      ++NumPtrauthBundles;
+      Check(!BU.Inputs.empty(), "Expected non-empty ptrauth bundle", Call);
+      for (Value *V : BU.Inputs)
+        Check(V->getType()->isIntegerTy(32) || V->getType()->isIntegerTy(64),
+              "Ptrauth bundle must only contain i32 or i64 operands", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;
@@ -4187,8 +4183,17 @@ void Verifier::visitCallBase(CallBase &Call) {
   }
 
   // Verify that callee and callsite agree on whether to use pointer auth.
-  Check(!(Call.getCalledFunction() && FoundPtrauthBundle),
-        "Direct call cannot have a ptrauth bundle", Call);
+  switch (Call.getIntrinsicID()) {
+  case Intrinsic::not_intrinsic:
+    Check(!(Call.getCalledFunction() && NumPtrauthBundles),
+          "Direct call cannot have a ptrauth bundle", Call);
+    Check(NumPtrauthBundles <= 1,
+          "Multiple ptrauth operand bundles on a function call", Call);
+    break;
+  default:
+    Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle", Call);
+    break;
+  }
 
   // Verify that each inlinable callsite of a debug-info-bearing function in a
   // debug-info-bearing function has a debug location attached to it. Failure to
