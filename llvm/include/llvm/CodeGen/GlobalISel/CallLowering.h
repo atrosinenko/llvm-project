@@ -99,8 +99,7 @@ public:
   };
 
   struct PtrAuthInfo {
-    uint64_t Key;
-    Register Discriminator;
+    SmallVector<Register> Operands;
   };
 
   struct CallLoweringInfo {
