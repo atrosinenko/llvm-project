@@ -2436,6 +2436,19 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
       IsCall && (AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17);
   Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17,
                                               AddrDiscIsImplicitDef);
+
+  if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+    // Have to emit separate auth and branch instructions for D-key.
+    emitMovXReg(AArch64::X16, BrTarget);
+    emitAUT(Key, AArch64::X16, DiscReg);
+
+    MCInst BranchInst;
+    BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
+    BranchInst.addOperand(MCOperand::createReg(AArch64::X16));
+    EmitToStreamer(BranchInst);
+    return;
+  }
+
   emitBLRA(IsCall, Key, BrTarget, DiscReg);
 }
 
@@ -3368,7 +3381,17 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     Register AddrDisc = MI->getOperand(4).getReg();
 
-    Register ScratchReg = Callee == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+    // AUTH_TCRETURN[_BTI] pseudos are permitted to clobber both X16 and X17.
+    // At the same time, depending on the instruction either Callee or AddrDisc
+    // may be passed in X16 or X17. It is okay to have ScratchDiscReg equal to
+    // DiscReg and and/or ScratchCalleeCopyReg equal to Callee, as long as
+    // Callee != ScratchDiscReg (since Callee is read after the discriminator
+    // computation writes its result).
+    // FIXME: Come up with a cleaner approach.
+    Register ScratchDiscReg = AArch64::X16;
+    Register ScratchCalleeCopyReg = AArch64::X17;
+    if (Callee == ScratchDiscReg)
+      std::swap(ScratchDiscReg, ScratchCalleeCopyReg);
 
     emitPtrauthTailCallHardening(MI);
 
@@ -3382,8 +3405,22 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     // restriction manually not to clobber an unexpected register.
     bool AddrDiscIsImplicitDef =
         AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
-    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
+    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchDiscReg,
                                                 AddrDiscIsImplicitDef);
+
+    if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+      // Have to emit separate auth and branch instructions for D-key.
+      if (Callee != ScratchCalleeCopyReg)
+        emitMovXReg(ScratchCalleeCopyReg, Callee);
+      emitAUT(Key, ScratchCalleeCopyReg, DiscReg);
+
+      MCInst BranchInst;
+      BranchInst.setOpcode(AArch64::BR);
+      BranchInst.addOperand(MCOperand::createReg(ScratchCalleeCopyReg));
+      EmitToStreamer(BranchInst);
+      return;
+    }
+
     emitBLRA(/*IsCall*/ false, Key, Callee, DiscReg);
     return;
   }
