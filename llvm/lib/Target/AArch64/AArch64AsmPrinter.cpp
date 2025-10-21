@@ -2438,6 +2438,18 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
       IsCall && (AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17);
   Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17,
                                               AddrDiscIsImplicitDef);
+
+  if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+    // Have to emit separate auth and branch instructions for D-key.
+    emitAUT(Key, BrTarget, DiscReg);
+
+    MCInst BranchInst;
+    BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
+    BranchInst.addOperand(MCOperand::createReg(BrTarget));
+    EmitToStreamer(BranchInst);
+    return;
+  }
+
   emitBLRA(IsCall, Key, BrTarget, DiscReg);
 }
 
@@ -3384,6 +3396,18 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
         AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
     Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
                                                 AddrDiscIsImplicitDef);
+
+    if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+      // Have to emit separate auth and branch instructions for D-key.
+      emitAUT(Key, Callee, DiscReg);
+
+      MCInst BranchInst;
+      BranchInst.setOpcode(AArch64::BR);
+      BranchInst.addOperand(MCOperand::createReg(Callee));
+      EmitToStreamer(BranchInst);
+      return;
+    }
+
     emitBLRA(/*IsCall*/ false, Key, Callee, DiscReg);
     return;
   }
