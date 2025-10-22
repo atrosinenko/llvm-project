@@ -9,7 +9,7 @@ define i64 @test_strip_ia(i64 %arg) {
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpaci x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 0)
+  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg) [ "ptrauth"(i64 0) ]
   ret i64 %tmp
 }
 
@@ -18,7 +18,7 @@ define i64 @test_strip_ib(i64 %arg) {
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpaci x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 1)
+  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg) [ "ptrauth"(i64 1) ]
   ret i64 %tmp
 }
 
@@ -27,7 +27,7 @@ define i64 @test_strip_da(i64 %arg) {
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpacd x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 2)
+  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg) [ "ptrauth"(i64 2) ]
   ret i64 %tmp
 }
 
@@ -36,8 +36,6 @@ define i64 @test_strip_db(i64 %arg) {
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpacd x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 3)
+  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg) [ "ptrauth"(i64 3) ]
   ret i64 %tmp
 }
-
-declare i64 @llvm.ptrauth.strip(i64, i32)

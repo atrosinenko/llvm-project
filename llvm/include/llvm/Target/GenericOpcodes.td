@@ -140,6 +140,19 @@ def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
   let hasSideEffects = 0;
 }
 
+def G_PTRAUTH_BUNDLE : GenericInstruction {
+  let OutOperandList = (outs unknown:$dst);
+  let InOperandList = (ins type0:$op1, variable_ops);
+  let hasSideEffects = 0;
+  let variadicOpsType = type0;
+}
+
+def G_PTRAUTH_STRIP : GenericInstruction {
+  let OutOperandList = (outs type0:$dst);
+  let InOperandList = (ins type0:$value, unknown:$schema);
+  let hasSideEffects = 0;
+}
+
 def G_CONSTANT_POOL : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
   let InOperandList = (ins unknown:$src);

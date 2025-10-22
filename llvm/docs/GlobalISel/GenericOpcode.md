@@ -49,6 +49,20 @@ The address of a global value.
 %0(p0) = G_GLOBAL_VALUE @var_local
 ```
 
+### G_PTRAUTH_SCHEMA
+
+The signing schema to use for one of Pointer Authentication operations, that is
+the description of how to compute the discriminator value and which key to use.
+The instruction accepts variable number of `i64` operands, whose number and
+semantic is target-dependent and corresponds to the elements of `"ptrauth"`
+operand bundle or the schema part of `ptrauth` constant expression.
+The instruction produces an opaque token value to be passed to other
+`G_PTRAUTH_*` instructions.
+
+```none
+%0:_(s0) = G_PTRAUTH_SCHEMA %1:_(s64), ...
+```
+
 ### G_PTRAUTH_GLOBAL_VALUE
 
 The signed address of a global value. Operands: address to be signed (pointer),
@@ -57,6 +71,17 @@ an extra discriminator (64-bit imm).
 
 ```none
 %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64
+```
+
+### G_PTRAUTH_STRIP
+
+Produces non-signed pointer value without authenticating.
+Accepts a pointer value (converted to an integer) and a token providing the
+information about the signing schema that produced this value (the particular
+semantic of this information is target-specific).
+
+```none
+%0:_(s64) = G_PTRAUTH_STRIP %1:_, %2:_(s0)
 ```
 
 ### G_BLOCK_ADDR
