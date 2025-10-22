@@ -1086,6 +1086,9 @@ AArch64LegalizerInfo::AArch64LegalizerInfo(const AArch64Subtarget &ST)
   getActionDefinitionsBuilder(G_PTRAUTH_GLOBAL_VALUE)
       .legalIf(all(typeIs(0, p0), typeIs(1, p0)));
 
+  getActionDefinitionsBuilder(G_PTRAUTH_BUNDLE).legalForTypeWithAnyImm({s64});
+  getActionDefinitionsBuilder(G_PTRAUTH_STRIP).legalForTypeWithAnyImm({s64});
+
   getActionDefinitionsBuilder(G_PTRTOINT)
       .legalFor({{i64, p0}, {v2i64, v2p0}})
       .widenScalarToNextPow2(0, 64)

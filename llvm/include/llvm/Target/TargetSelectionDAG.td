@@ -953,6 +953,18 @@ def sponentry : SDNode<
   "ISD::SPONENTRY", SDTypeProfile <1, 0, [SDTCisPtrTy<0>]>
 >;
 
+// Pointer Authentication operations.
+
+def SDTPtrAuthBundle : SDTypeProfile<1, -1, [
+  SDTCisVT<0, untyped>
+]>;
+def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>
+]>;
+
+def ptrauth_bundle : SDNode<"ISD::PtrAuthBundle", SDTPtrAuthBundle, []>;
+def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip", SDTPtrAuthOneSchema, []>;
+
 //===----------------------------------------------------------------------===//
 // Selection DAG Condition Codes
 

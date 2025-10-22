@@ -2992,12 +2992,12 @@ def int_ptrauth_resign_load_relative
                  ImmArg<ArgIndex<5>>]>;
 
 // Strip the embedded signature out of a signed pointer.
-// The second argument specifies the key.
+// Requires exactly one "ptrauth" call operand bundle carrying a
+// target-specific information required to remove the signature.
 // This behaves like @llvm.ptrauth.auth, but doesn't require the signature to
 // be valid.
 def int_ptrauth_strip :
-  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty, llvm_i32_ty],
-                        [IntrNoMem, ImmArg<ArgIndex<1>>]>;
+  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Blend a small integer discriminator with an address discriminator, producing
 // a new discriminator value.

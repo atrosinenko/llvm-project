@@ -4613,6 +4613,10 @@ public:
   llvm::CallInst *EmitRuntimeCall(llvm::FunctionCallee callee,
                                   ArrayRef<llvm::Value *> args,
                                   const Twine &name = "");
+  llvm::CallInst *EmitRuntimeCall(llvm::FunctionCallee callee,
+                                  ArrayRef<llvm::Value *> args,
+                                  ArrayRef<llvm::OperandBundleDef> extraBundles,
+                                  const Twine &name = "");
   llvm::CallInst *EmitIntrinsicCall(llvm::Intrinsic::ID ID,
                                     const Twine &Name = "");
   llvm::CallInst *EmitIntrinsicCall(llvm::Intrinsic::ID ID,
@@ -4677,6 +4681,8 @@ public:
   llvm::Value *emitPointerAuthResignCall(llvm::Value *Pointer,
                                          const CGPointerAuthInfo &CurInfo,
                                          const CGPointerAuthInfo &NewInfo);
+  llvm::Value *emitStrip(const CGPointerAuthInfo &PointerAuth,
+                         llvm::Value *Pointer);
 
   void EmitPointerAuthOperandBundle(
       const CGPointerAuthInfo &Info,
