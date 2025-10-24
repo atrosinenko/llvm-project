@@ -106,6 +106,10 @@ enum NodeType {
   PtrAuthBundle,
 
   /// Various PtrAuth operations.
+  PtrAuthAuth,
+  PtrAuthSign,
+  PtrAuthResign,
+  PtrAuthResignLoadRelative,
   PtrAuthStrip,
 
   /// The address of the GOT

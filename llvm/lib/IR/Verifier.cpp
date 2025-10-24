@@ -4190,8 +4190,14 @@ void Verifier::visitCallBase(CallBase &Call) {
     Check(NumPtrauthBundles <= 1,
           "Multiple ptrauth operand bundles on a function call", Call);
     break;
+  case Intrinsic::ptrauth_auth:
+  case Intrinsic::ptrauth_sign:
   case Intrinsic::ptrauth_strip:
     Check(NumPtrauthBundles == 1, "Expected exactly one ptrauth bundle", Call);
+    break;
+  case Intrinsic::ptrauth_resign:
+  case Intrinsic::ptrauth_resign_load_relative:
+    Check(NumPtrauthBundles == 2, "Expected exactly two ptrauth bundles", Call);
     break;
   default:
     Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle", Call);

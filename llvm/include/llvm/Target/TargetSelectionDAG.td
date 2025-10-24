@@ -961,9 +961,23 @@ def SDTPtrAuthBundle : SDTypeProfile<1, -1, [
 def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
   SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>
 ]>;
+def SDTPtrAuthTwoSchemas : SDTypeProfile<1, 3, [    // resign
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>
+]>;
+def SDTPtrAuthResignLoadRelative : SDTypeProfile<1, 4, [    // resign_load_relative
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>, SDTCisVT<4, i64>
+]>;
 
 def ptrauth_bundle : SDNode<"ISD::PtrAuthBundle", SDTPtrAuthBundle, []>;
-def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip", SDTPtrAuthOneSchema, []>;
+def ptrauth_auth   : SDNode<"ISD::PtrAuthAuth",   SDTPtrAuthOneSchema, []>;
+def ptrauth_sign   : SDNode<"ISD::PtrAuthSign",   SDTPtrAuthOneSchema, []>;
+def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip",  SDTPtrAuthOneSchema, []>;
+
+def ptrauth_resign : SDNode<"ISD::PtrAuthResign", SDTPtrAuthTwoSchemas, []>;
+
+def ptrauth_resign_load_relative : SDNode<"ISD::PtrAuthResignLoadRelative",
+                                          SDTPtrAuthResignLoadRelative,
+                                          [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
 
 //===----------------------------------------------------------------------===//
 // Selection DAG Condition Codes

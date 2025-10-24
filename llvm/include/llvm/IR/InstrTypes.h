@@ -2173,6 +2173,20 @@ public:
     return std::nullopt;
   }
 
+  std::optional<OperandBundleUse>
+  getOperandBundleOfTypeAt(uint32_t ID, unsigned Index) const {
+    for (unsigned i = 0, e = getNumOperandBundles(); i != e; ++i) {
+      OperandBundleUse U = getOperandBundleAt(i);
+      if (U.getTagID() != ID)
+        continue;
+      if (Index == 0)
+        return U;
+      --Index;
+    }
+
+    return std::nullopt;
+  }
+
   /// Return the list of operand bundles attached to this instruction as
   /// a vector of OperandBundleDefs.
   ///

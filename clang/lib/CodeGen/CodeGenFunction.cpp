@@ -3472,20 +3472,22 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
   if (!PointerAuth)
     return Pointer;
 
-  auto Key = CGF.Builder.getInt32(PointerAuth.getKey());
+  llvm::Value *Key = CGF.Builder.getInt64(PointerAuth.getKey());
 
   llvm::Value *Discriminator = PointerAuth.getDiscriminator();
   if (!Discriminator) {
     Discriminator = CGF.Builder.getSize(0);
   }
 
+  llvm::OperandBundleDef OB("ptrauth", ArrayRef({Key, Discriminator}));
+
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
   Pointer = CGF.Builder.CreatePtrToInt(Pointer, CGF.IntPtrTy);
 
-  // call i64 @llvm.ptrauth.sign.i64(i64 %pointer, i32 %key, i64 %discriminator)
+  // call i64 @llvm.ptrauth.<op>(i64 %pointer) [ "ptrauth"(<schema>)]
   auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID);
-  Pointer = CGF.EmitRuntimeCall(Intrinsic, {Pointer, Key, Discriminator});
+  Pointer = CGF.EmitRuntimeCall(Intrinsic, {Pointer}, {OB});
 
   // Convert back to the original type.
   Pointer = CGF.Builder.CreateIntToPtr(Pointer, OrigType);

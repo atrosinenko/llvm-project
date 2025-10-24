@@ -12,12 +12,12 @@ define ptr @phi_prot_ptr(i1 %sel, ptr %p1, ptr %p2) {
 ; CHECK:       [[T]]:
 ; CHECK-NEXT:    [[TMP1:%.*]] = load ptr, ptr [[P1]], align 8
 ; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[TMP1]] to i64
-; CHECK-NEXT:    [[TMP3:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[TMP2]], i32 2, i64 1)
+; CHECK-NEXT:    [[TMP3:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 1, i64 0) ]
 ; CHECK-NEXT:    br label %[[EXIT:.*]]
 ; CHECK:       [[F]]:
 ; CHECK-NEXT:    [[TMP4:%.*]] = load ptr, ptr [[P2]], align 8
 ; CHECK-NEXT:    [[TMP5:%.*]] = ptrtoint ptr [[TMP4]] to i64
-; CHECK-NEXT:    [[TMP6:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[TMP5]], i32 2, i64 2)
+; CHECK-NEXT:    [[TMP6:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[TMP5]]) [ "ptrauth"(i64 2, i64 2, i64 0) ]
 ; CHECK-NEXT:    br label %[[EXIT]]
 ; CHECK:       [[EXIT]]:
 ; CHECK-NEXT:    [[RETVAL_IN:%.*]] = phi i64 [ [[TMP3]], %[[T]] ], [ [[TMP6]], %[[F]] ]

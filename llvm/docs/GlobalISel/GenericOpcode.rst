@@ -86,6 +86,36 @@ an extra discriminator (64-bit imm).
 
   %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64
 
+G_PTRAUTH_AUTH
+^^^^^^^^^^^^^^
+
+Authenticate a pointer value (converted to an integer) according to the signing
+schema specified by the token operand.
+
+.. code-block:: none
+
+  %0:_(s64) = G_PTRAUTH_AUTH %1:_, %2:_(s0)
+
+G_PTRAUTH_SIGN
+^^^^^^^^^^^^^^
+
+Sign a pointer value (converted to an integer) according to the signing
+schema specified by the token operand.
+
+.. code-block:: none
+
+  %0:_(s64) = G_PTRAUTH_SIGN %1:_, %2:_(s0)
+
+G_PTRAUTH_RESIGN
+^^^^^^^^^^^^^^^^
+
+Authenticate a pointer value (converted to an integer) and re-sign it according
+to the signing schemas specified by the token operands.
+
+.. code-block:: none
+
+  %0:_(s64) = G_PTRAUTH_RESIGN %1:_, %2:_(s0), %3:_(s0)
+
 G_PTRAUTH_STRIP
 ^^^^^^^^^^^^^^^
 

@@ -506,7 +506,11 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
   for (User *U : llvm::make_early_inc_range(Intr.users())) {
     auto *Call = cast<CallInst>(U);
     // We only support the DA key for now.
-    if (auto *Key = dyn_cast<ConstantInt>(Call->getArgOperand(1));
+    auto Schema = Call->getOperandBundle("ptrauth");
+    if (!Schema)
+      continue;
+
+    if (auto *Key = dyn_cast<ConstantInt>(Schema->Inputs[0]);
         !Key || Key->getZExtValue() != /*AArch64PACKey::DA*/ 2)
       continue;
 
@@ -521,7 +525,7 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
 
     IRBuilder<> B(Call);
     auto *EmuCall = B.CreateCall(
-        EmuIntr, {Call->getArgOperand(0), Call->getArgOperand(2)}, DSBundle);
+        EmuIntr, {Call->getArgOperand(0), Schema->Inputs[1]}, DSBundle);
     Call->replaceAllUsesWith(EmuCall);
     Call->eraseFromParent();
   }

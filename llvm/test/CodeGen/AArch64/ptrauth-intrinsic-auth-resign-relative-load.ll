@@ -75,7 +75,7 @@ define i64 @test_resign_load_relative_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 0, i64 %arg1, i32 0, i64 %arg2, i64 -256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 -256) [ "ptrauth"(i64 0, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -127,7 +127,7 @@ define i64 @test_resign_load_relative_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 1, i64 %arg1, i32 0, i64 %arg2, i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 1, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -178,7 +178,7 @@ define i64 @test_resign_load_relative_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 2, i64 %arg1, i32 0, i64 %arg2, i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -229,7 +229,7 @@ define i64 @test_resign_load_relative_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacda x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 3, i64 %arg1, i32 2, i64 %arg2, i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 3, i64 %arg1), "ptrauth"(i64 2, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -280,7 +280,7 @@ define i64 @test_resign_load_relative_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 0, i64 0, i32 3, i64 %arg2, i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 0, i64 0), "ptrauth"(i64 3, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -331,7 +331,7 @@ define i64 @test_resign_load_relative_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdzb x16
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 2, i64 %arg1, i32 3, i64 0,i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -385,7 +385,7 @@ define i64 @test_resign_load_relative_da_constdisc(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    pacda x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i32 2, i64 %arg1, i32 2, i64 256,i64 256)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 256) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 2, i64 256) ]
   ret i64 %tmp
 }
 
@@ -452,7 +452,7 @@ define i64 @test_resign_load_relative_loadNegOffset_constdisc(i64 %arg,i64 %arg1
 ; TRAP-NEXT:    pacda x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg,i32 2,i64 %arg1,i32 2,i64 256,i64 -2556)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 -2556) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 2, i64 256) ]
   ret i64 %tmp
 }
 define i64 @test_resign_load_relative_largeOffset_constdisc(i64 %arg,i64 %arg1) {
@@ -508,7 +508,7 @@ define i64 @test_resign_load_relative_largeOffset_constdisc(i64 %arg,i64 %arg1) 
 ; TRAP-NEXT:    pacda x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg,i32 2,i64 %arg1,i32 2,i64 256,i64 32556)
+  %tmp = call i64 @llvm.ptrauth.resign.load.relative(i64 %arg, i64 32556) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 2, i64 256) ]
   ret i64 %tmp
 }
 define void  @test_intrinsic_glue_chain_correctly_setup(ptr %0, i64 %1, ptr %2)  {
@@ -562,9 +562,6 @@ define void  @test_intrinsic_glue_chain_correctly_setup(ptr %0, i64 %1, ptr %2) 
 ; TRAP-NEXT:    pacia x16, x17
 ; TRAP-NEXT:    ret
   store ptr %2, ptr %0, align 8
-  %15 = tail call i64 @llvm.ptrauth.resign.load.relative(i64 %1, i32 2, i64 29199, i32 0, i64 29199, i64 0)
+  %15 = tail call i64 @llvm.ptrauth.resign.load.relative(i64 %1, i64 0) [ "ptrauth"(i64 2, i64 29199), "ptrauth"(i64 0, i64 29199) ]
   ret void
 }
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)
-declare i64 @llvm.ptrauth.resign.load.relative(i64,i32,i64,i32,i64,i64)

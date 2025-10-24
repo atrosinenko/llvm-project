@@ -45,7 +45,7 @@ define i64 @small_imm_disc_optimized(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 42)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
   ret i64 %signed
 }
 
@@ -74,7 +74,7 @@ define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 42)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
   ret i64 %signed
 }
 
@@ -101,7 +101,7 @@ define i64 @large_imm_disc_wreg(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 12345678)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 12345678) ]
   ret i64 %signed
 }
 
@@ -126,7 +126,7 @@ define i64 @large_imm_disc_xreg(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 123456789012345)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 123456789012345) ]
   ret i64 %signed
 }
 
@@ -140,12 +140,11 @@ define i64 @blended_disc_non_optimized(i64 %addr, i64 %addrdisc) noinline optnon
   ; DAGISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x0
   ; DAGISEL-NEXT:   [[COPY2:%[0-9]+]]:gpr64 = COPY killed [[COPY1]]
   ; DAGISEL-NEXT:   [[COPY3:%[0-9]+]]:gpr64 = COPY killed [[COPY]]
-  ; DAGISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64 = MOVKXi [[COPY3]], 42, 48
-  ; DAGISEL-NEXT:   [[COPY4:%[0-9]+]]:gpr64noip = COPY [[MOVKXi]]
-  ; DAGISEL-NEXT:   [[COPY5:%[0-9]+]]:gpr64noip = COPY [[COPY3]]
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY2]], 2, 42, [[COPY5]], implicit-def dead $x16, implicit-def dead $x17
-  ; DAGISEL-NEXT:   [[COPY6:%[0-9]+]]:gpr64all = COPY [[PAC]]
-  ; DAGISEL-NEXT:   $x0 = COPY [[COPY6]]
+  ; DAGISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[COPY3]], 42, 48
+  ; DAGISEL-NEXT:   [[COPY4:%[0-9]+]]:gpr64noip = COPY [[COPY3]]
+  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY2]], 2, 42, killed [[COPY4]], implicit-def dead $x16, implicit-def dead $x17
+  ; DAGISEL-NEXT:   [[COPY5:%[0-9]+]]:gpr64all = COPY [[PAC]]
+  ; DAGISEL-NEXT:   $x0 = COPY [[COPY5]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
   ;
   ; GISEL-LABEL: name: blended_disc_non_optimized
@@ -161,7 +160,7 @@ define i64 @blended_disc_non_optimized(i64 %addr, i64 %addrdisc) noinline optnon
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
   %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }
 
@@ -194,7 +193,7 @@ define i64 @blend_and_sign_same_bb(i64 %addr) {
 entry:
   %addrdisc = load i64, ptr @discvar
   %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }
 
@@ -264,7 +263,7 @@ next:
   br label %exit
 
 exit:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }
 
@@ -313,10 +312,10 @@ define i64 @autxmxn_earlyclobbered_scratch(i64 %addr, i64 %disc) {
   ; GISEL-GNU-NEXT: {{  $}}
   ; GISEL-GNU-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; GISEL-GNU-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x1
-  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY1]], implicit-def dead $nzcv
+  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %5:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY1]], implicit-def dead $nzcv
   ; GISEL-GNU-NEXT:   $x0 = COPY %2
   ; GISEL-GNU-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %auted = call i64 @llvm.ptrauth.auth(i64 %addr, i32 2, i64 %disc)
+  %auted = call i64 @llvm.ptrauth.auth(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %auted
 }

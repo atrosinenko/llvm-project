@@ -6645,11 +6645,57 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
   };
 
+  auto SetDeactivationSymbol = [&](SmallVectorImpl<SDValue> &Ops) {
+    auto Bundle = I.getOperandBundle(LLVMContext::OB_deactivation_symbol);
+    if (!Bundle)
+      return;
+
+    auto *Sym = Bundle->Inputs[0].get();
+    SDValue SDSym = getValue(Sym);
+    SDSym = DAG.getDeactivationSymbol(cast<GlobalValue>(Sym));
+    Ops.push_back(SDSym);
+  };
+
   switch (Intrinsic) {
   default:
     // By default, turn this into a target intrinsic node.
     visitTargetIntrinsic(I, Intrinsic);
     return;
+  case Intrinsic::ptrauth_auth: {
+    SmallVector<SDValue> Ops = {getValue(I.getArgOperand(0)),
+                                CreatePtrAuthBundle(0)};
+    SetDeactivationSymbol(Ops);
+    setValue(&I, DAG.getNode(ISD::PtrAuthAuth, sdl, MVT::i64, Ops));
+    return;
+  }
+  case Intrinsic::ptrauth_sign: {
+    SmallVector<SDValue> Ops = {getValue(I.getArgOperand(0)),
+                                CreatePtrAuthBundle(0)};
+    SetDeactivationSymbol(Ops);
+    setValue(&I, DAG.getNode(ISD::PtrAuthSign, sdl, MVT::i64, Ops));
+    return;
+  }
+  case Intrinsic::ptrauth_resign: {
+    SmallVector<SDValue> Ops = {getValue(I.getArgOperand(0)),
+                                CreatePtrAuthBundle(0), CreatePtrAuthBundle(1)};
+    SetDeactivationSymbol(Ops);
+    setValue(&I, DAG.getNode(ISD::PtrAuthResign, sdl, MVT::i64, Ops));
+    return;
+  }
+  case Intrinsic::ptrauth_resign_load_relative: {
+    SDValue Chain = getRoot();
+    SDValue Addend = DAG.getTargetConstant(
+        *cast<ConstantInt>(I.getArgOperand(1)), sdl, MVT::i64);
+    SmallVector<SDValue> Ops = {Chain, getValue(I.getArgOperand(0)),
+                                CreatePtrAuthBundle(0), CreatePtrAuthBundle(1),
+                                Addend};
+    SetDeactivationSymbol(Ops);
+    Res = DAG.getNode(ISD::PtrAuthResignLoadRelative, sdl,
+                      DAG.getVTList(MVT::i64, MVT::Other), Ops);
+    setValue(&I, Res);
+    DAG.setRoot(Res.getValue(1));
+    return;
+  }
   case Intrinsic::ptrauth_strip: {
     setValue(&I,
              DAG.getNode(ISD::PtrAuthStrip, sdl, MVT::i64,
