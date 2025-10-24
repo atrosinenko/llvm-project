@@ -1880,6 +1880,24 @@ static Instruction *foldNeonShift(IntrinsicInst *II, InstCombinerImpl &IC) {
   return IC.replaceInstUsesWith(*II, Result);
 }
 
+static bool areCompatiblePtrAuthBundles(OperandBundleUse LHS,
+                                        OperandBundleUse RHS) {
+  if (LHS.Inputs.size() != RHS.Inputs.size())
+    return false;
+  for (auto [A, B] : llvm::zip(LHS.Inputs, RHS.Inputs)) {
+    auto *ConstA = dyn_cast<ConstantInt>(A);
+    auto *ConstB = dyn_cast<ConstantInt>(B);
+    // This handles the same key ids being specified either as i32 or i64.
+    // FIXME: Should we simply enforce i64 everywhere?
+    if (ConstA && ConstB && ConstA->getZExtValue() == ConstB->getZExtValue())
+      continue;
+
+    if (A != B)
+      return false;
+  }
+  return true;
+}
+
 /// CallInst simplification. This mostly only handles folding of intrinsic
 /// instructions. For normal calls, it allows visitCallBase to do the heavy
 /// lifting.
@@ -3295,54 +3313,57 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
   case Intrinsic::ptrauth_resign: {
     // We don't support this optimization on intrinsic calls with deactivation
     // symbols, which are represented using operand bundles.
-    if (II->hasOperandBundles())
+    if (II->countOperandBundlesOfType(LLVMContext::OB_deactivation_symbol))
       break;
 
     // (sign|resign) + (auth|resign) can be folded by omitting the middle
     // sign+auth component if the key and discriminator match.
     bool NeedSign = II->getIntrinsicID() == Intrinsic::ptrauth_resign;
     Value *Ptr = II->getArgOperand(0);
-    Value *Key = II->getArgOperand(1);
-    Value *Disc = II->getArgOperand(2);
+    auto ThisAutSchema = II->getOperandBundleAt(0);
 
     // AuthKey will be the key we need to end up authenticating against in
     // whatever we replace this sequence with.
-    Value *AuthKey = nullptr, *AuthDisc = nullptr, *BasePtr;
+    std::optional<OperandBundleUse> NewAutSchema;
+    Value *BasePtr = nullptr;
     if (const auto *CI = dyn_cast<CallBase>(Ptr)) {
       // We don't support this optimization on intrinsic calls with deactivation
       // symbols, which are represented using operand bundles.
-      if (CI->hasOperandBundles())
+      if (CI->countOperandBundlesOfType(LLVMContext::OB_deactivation_symbol))
         break;
 
       BasePtr = CI->getArgOperand(0);
       if (CI->getIntrinsicID() == Intrinsic::ptrauth_sign) {
-        if (CI->getArgOperand(1) != Key || CI->getArgOperand(2) != Disc)
+        if (!areCompatiblePtrAuthBundles(ThisAutSchema, CI->getOperandBundleAt(0)))
           break;
       } else if (CI->getIntrinsicID() == Intrinsic::ptrauth_resign) {
-        if (CI->getArgOperand(3) != Key || CI->getArgOperand(4) != Disc)
+        if (!areCompatiblePtrAuthBundles(ThisAutSchema, CI->getOperandBundleAt(1)))
           break;
-        AuthKey = CI->getArgOperand(1);
-        AuthDisc = CI->getArgOperand(2);
+        NewAutSchema = CI->getOperandBundleAt(0);
       } else
         break;
     } else if (const auto *PtrToInt = dyn_cast<PtrToIntOperator>(Ptr)) {
       // ptrauth constants are equivalent to a call to @llvm.ptrauth.sign for
       // our purposes, so check for that too.
       const auto *CPA = dyn_cast<ConstantPtrAuth>(PtrToInt->getOperand(0));
-      if (!CPA || !CPA->isKnownCompatibleWith(Key, Disc, DL))
+      if (!CPA || !CPA->isKnownCompatibleWith(ThisAutSchema.Inputs, DL))
         break;
 
-      // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
-      if (NeedSign && isa<ConstantInt>(II->getArgOperand(4))) {
-        auto *SignKey = cast<ConstantInt>(II->getArgOperand(3));
-        auto *SignDisc = cast<ConstantInt>(II->getArgOperand(4));
-        auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
-        auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), SignKey,
-                                            SignDisc, /*AddrDisc=*/Null,
-                                            /*DeactivationSymbol=*/Null);
-        replaceInstUsesWith(
-            *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
-        return eraseInstFromFunction(*II);
+      if (NeedSign) {
+        auto ThisSignSchema = II->getOperandBundleAt(1);
+        // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
+        if (ThisSignSchema.Inputs.size() == 2 &&
+            isa<ConstantInt>(ThisSignSchema.Inputs[1])) {
+          auto *SignKey = cast<ConstantInt>(ThisSignSchema.Inputs[0]);
+          auto *SignDisc = cast<ConstantInt>(ThisSignSchema.Inputs[1]);
+          auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
+          auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), SignKey,
+                                              SignDisc, /*AddrDisc=*/Null,
+                                              /*DeactivationSymbol=*/Null);
+          replaceInstUsesWith(
+              *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
+          return eraseInstFromFunction(*II);
+        }
       }
 
       // auth(ptrauth(p,k,d),k,d) -> p
@@ -3351,10 +3372,10 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       break;
 
     unsigned NewIntrin;
-    if (AuthKey && NeedSign) {
+    if (NewAutSchema && NeedSign) {
       // resign(0,1) + resign(1,2) = resign(0, 2)
       NewIntrin = Intrinsic::ptrauth_resign;
-    } else if (AuthKey) {
+    } else if (NewAutSchema) {
       // resign(0,1) + auth(1) = auth(0)
       NewIntrin = Intrinsic::ptrauth_auth;
     } else if (NeedSign) {
@@ -3366,21 +3387,26 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       return eraseInstFromFunction(*II);
     }
 
-    SmallVector<Value *, 4> CallArgs;
-    CallArgs.push_back(BasePtr);
-    if (AuthKey) {
-      CallArgs.push_back(AuthKey);
-      CallArgs.push_back(AuthDisc);
+    SmallVector<OperandBundleDef, 2> OBs;
+
+    if (NewAutSchema) {
+      SmallVector<Value *> Ops;
+      for (auto &U : NewAutSchema->Inputs)
+        Ops.push_back(U);
+      OBs.emplace_back("ptrauth", Ops);
     }
 
     if (NeedSign) {
-      CallArgs.push_back(II->getArgOperand(3));
-      CallArgs.push_back(II->getArgOperand(4));
+      SmallVector<Value *> Ops;
+      for (auto &U : II->getOperandBundleAt(1).Inputs)
+        Ops.push_back(U);
+      OBs.emplace_back("ptrauth", Ops);
     }
+
 
     Function *NewFn =
         Intrinsic::getOrInsertDeclaration(II->getModule(), NewIntrin);
-    return CallInst::Create(NewFn, CallArgs);
+    return CallInst::Create(NewFn, {BasePtr}, OBs);
   }
   case Intrinsic::arm_neon_vtbl1:
   case Intrinsic::arm_neon_vtbl2:
@@ -4546,6 +4572,10 @@ static IntrinsicInst *findInitTrampoline(Value *Callee) {
 }
 
 Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
+  // "ptrauth" bundles have different semantic on intrinsics.
+  if (isa<IntrinsicInst>(Call))
+    return nullptr;
+
   const Value *Callee = Call.getCalledOperand();
   const auto *IPC = dyn_cast<IntToPtrInst>(Callee);
   if (!IPC || !IPC->isNoopCast(DL))
@@ -4578,14 +4608,13 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // call(ptrauth.resign(p)), ["ptrauth"()] ->  call p, ["ptrauth"()]
   // assuming the call bundle and the sign operands match.
   case Intrinsic::ptrauth_resign: {
-    // Resign result key should match bundle.
-    if (II->getOperand(3) != PtrAuthBundleOrNone->Inputs[0])
-      return nullptr;
-    // Resign result discriminator should match bundle.
-    if (II->getOperand(4) != PtrAuthBundleOrNone->Inputs[1])
+    if (!areCompatiblePtrAuthBundles(II->getOperandBundleAt(1),
+                                     *PtrAuthBundleOrNone))
       return nullptr;
 
-    Value *NewBundleOps[] = {II->getOperand(1), II->getOperand(2)};
+    SmallVector<Value *> NewBundleOps;
+    for (auto &Op : II->getOperandBundleAt(0).Inputs)
+      NewBundleOps.push_back(Op);
     NewBundles.emplace_back("ptrauth", NewBundleOps);
     NewCallee = II->getOperand(0);
     break;
@@ -4595,11 +4624,8 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // assuming the call bundle and the sign operands match.
   // Non-ptrauth indirect calls are undesirable, but so is ptrauth.sign.
   case Intrinsic::ptrauth_sign: {
-    // Sign key should match bundle.
-    if (II->getOperand(1) != PtrAuthBundleOrNone->Inputs[0])
-      return nullptr;
-    // Sign discriminator should match bundle.
-    if (II->getOperand(2) != PtrAuthBundleOrNone->Inputs[1])
+    if (!areCompatiblePtrAuthBundles(II->getOperandBundleAt(0),
+                                     *PtrAuthBundleOrNone))
       return nullptr;
     NewCallee = II->getOperand(0);
     break;

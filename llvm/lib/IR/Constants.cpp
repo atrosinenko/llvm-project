@@ -2067,6 +2067,9 @@ Value *NoCFIValue::handleOperandChangeImpl(Value *From, Value *To) {
 ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr, ConstantInt *Key,
                                       ConstantInt *Disc, Constant *AddrDisc,
                                       Constant *DeactivationSymbol) {
+  // FIXME Should we simply enforce i64 instead?
+  if (Key->getBitWidth() != 32)
+    Key = ConstantInt::get(Key->getContext(), APInt(32, Key->getZExtValue()));
   Constant *ArgVec[] = {Ptr, Key, Disc, AddrDisc, DeactivationSymbol};
   ConstantPtrAuthKeyType MapKey(ArgVec);
   LLVMContextImpl *pImpl = Ptr->getContext().pImpl;
@@ -2187,7 +2190,8 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
     return false;
 
   // If the keys are different, there's no chance for this to be compatible.
-  if (getKey() != Key)
+  // FIXME: Should we enforce i64 everywhere?
+  if (getKey()->getZExtValue() != cast<ConstantInt>(Key)->getZExtValue())
     return false;
 
   // We can have 3 kinds of discriminators:
@@ -2248,7 +2252,9 @@ bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
   if (BundleOperands.size() == 3)
     return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1],
                                  BundleOperands[2], DL);
-  return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1], DL);
+  if (BundleOperands.size() == 2)
+    return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1], DL);
+  return false;
 }
 
 
