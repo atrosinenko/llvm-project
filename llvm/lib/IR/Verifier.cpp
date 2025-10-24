@@ -4295,8 +4295,15 @@ void Verifier::visitCallBase(CallBase &Call) {
     Check(NumPtrauthBundles <= 1,
           "Multiple ptrauth operand bundles on a function call", Call);
     break;
+  case Intrinsic::ptrauth_auth:
+  case Intrinsic::ptrauth_sign:
   case Intrinsic::ptrauth_strip:
     Check(NumPtrauthBundles == 1, "Expected exactly one ptrauth bundle", Call);
+    break;
+  case Intrinsic::ptrauth_resign:
+  case Intrinsic::ptrauth_auth_with_pc_and_resign:
+  case Intrinsic::ptrauth_resign_load_relative:
+    Check(NumPtrauthBundles == 2, "Expected exactly two ptrauth bundles", Call);
     break;
   default:
     Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle", Call);
@@ -7373,7 +7380,10 @@ void Verifier::visitIntrinsicCall(Intrinsic::ID ID, CallBase &Call) {
   }
   case Intrinsic::ptrauth_auth_with_pc_and_resign: {
     // Verify that the auth key is IA (0) or IB (1), not DA (2) or DB (3)
-    auto *AuthKey = cast<ConstantInt>(Call.getArgOperand(1));
+    Check(Call.getNumOperandBundles() == 2 &&
+          Call.getOperandBundleAt(0).Inputs.size() == 3,
+          "ptrauth.auth.with.pc.and.resign: incorrect operand bundles", &Call);
+    auto *AuthKey = cast<ConstantInt>(Call.getOperandBundleAt(0).Inputs[0]);
     uint64_t Key = AuthKey->getZExtValue();
     Check(Key == 0 || Key == 1,
           "ptrauth.auth.with.pc.and.resign key must be IA (0) or IB (1)",

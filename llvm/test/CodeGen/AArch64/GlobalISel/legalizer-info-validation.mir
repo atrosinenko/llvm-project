@@ -122,6 +122,26 @@
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
 #
+# DEBUG-NEXT: G_PTRAUTH_AUTH (opcode {{[0-9]+}}): 1 type index, 0 imm indices
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
+# DEBUG-NEXT: G_PTRAUTH_SIGN (opcode {{[0-9]+}}): 1 type index, 0 imm indices
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
+# DEBUG-NEXT: G_PTRAUTH_RESIGN (opcode {{[0-9]+}}): 1 type index, 0 imm indices
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
+# DEBUG-NEXT: G_PTRAUTH_RESIGN_LOAD_RELATIVE (opcode {{[0-9]+}}): 1 type index, 1 imm index
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
+# DEBUG-NEXT: G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN (opcode {{[0-9]+}}): 1 type index, 0 imm indices
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
 # DEBUG-NEXT: G_PTRAUTH_STRIP (opcode {{[0-9]+}}): 1 type index, 0 imm indices
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected

@@ -65,7 +65,7 @@ define i64 @test_resign_with_pc_ia_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 0, i64 %arg1, i64 %arg2, i32 0, i64 %arg3)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 %arg3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -113,7 +113,7 @@ define i64 @test_resign_with_pc_ib_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 1, i64 %arg1, i64 %arg2, i32 0, i64 %arg3)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 %arg3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -161,7 +161,7 @@ define i64 @test_resign_with_pc_ia_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacib x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 0, i64 %arg1, i64 %arg2, i32 1, i64 %arg3)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 %arg3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -209,7 +209,7 @@ define i64 @test_resign_with_pc_ib_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacib x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 1, i64 %arg1, i64 %arg2, i32 1, i64 %arg3)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 %arg3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -257,7 +257,7 @@ define i64 @test_resign_with_pc_iza_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacib x17, x2
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 0, i64 0, i64 %arg1, i32 1, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 1, i64 %arg2, i64 0) ]
   ret i64 %tmp
 }
 
@@ -305,7 +305,7 @@ define i64 @test_resign_with_pc_ia_izb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacizb x17
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 0, i64 %arg1, i64 %arg2, i32 1, i64 0)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 0) ]
   ret i64 %tmp
 }
 
@@ -353,8 +353,6 @@ define i64 @test_resign_with_pc_trap_attribute(i64 %arg, i64 %arg1, i64 %arg2, i
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg, i32 0, i64 %arg1, i64 %arg2, i32 0, i64 %arg3)
+  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 %arg3, i64 0) ]
   ret i64 %tmp
 }
-
-declare i64 @llvm.ptrauth.auth.with.pc.and.resign(i64, i32, i64, i64, i32, i64)

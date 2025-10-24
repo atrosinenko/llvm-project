@@ -3043,9 +3043,70 @@ bool IRTranslatorImpl::translateKnownIntrinsic(const CallInst &CI,
     return Res;
   };
 
+  auto SetDeactivationSymbol = [&](MachineInstrBuilder &MIB) {
+    if (auto Bundle = CI.getOperandBundle(LLVMContext::OB_deactivation_symbol))
+      MIB->setDeactivationSymbol(*MF, Bundle->Inputs[0].get());
+  };
+
   switch (ID) {
   default:
     break;
+  case Intrinsic::ptrauth_auth: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register Bundle = TranslatePtrAuthBundle(0);
+
+    MachineInstrBuilder MIB =
+        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_AUTH, {Dst}, {V, Bundle});
+    SetDeactivationSymbol(MIB);
+    return true;
+  }
+  case Intrinsic::ptrauth_sign: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register Bundle = TranslatePtrAuthBundle(0);
+
+    MachineInstrBuilder MIB =
+        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SIGN, {Dst}, {V, Bundle});
+    SetDeactivationSymbol(MIB);
+    return true;
+  }
+  case Intrinsic::ptrauth_resign: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register OldBundle = TranslatePtrAuthBundle(0);
+    Register NewBundle = TranslatePtrAuthBundle(1);
+
+    MachineInstrBuilder MIB = MIRBuilder.buildInstr(
+        TargetOpcode::G_PTRAUTH_RESIGN, {Dst}, {V, OldBundle, NewBundle});
+    SetDeactivationSymbol(MIB);
+    return true;
+  }
+  case Intrinsic::ptrauth_resign_load_relative: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register OldBundle = TranslatePtrAuthBundle(0);
+    Register NewBundle = TranslatePtrAuthBundle(1);
+    uint64_t Addend = cast<ConstantInt>(CI.getArgOperand(1))->getZExtValue();
+
+    MachineInstrBuilder MIB =
+        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE,
+                              {Dst}, {V, OldBundle, NewBundle, Addend});
+    // FIXME Is addMemOperand() call required here?
+    SetDeactivationSymbol(MIB);
+    return true;
+  }
+  case Intrinsic::ptrauth_auth_with_pc_and_resign: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register OldBundle = TranslatePtrAuthBundle(0);
+    Register NewBundle = TranslatePtrAuthBundle(1);
+
+    MachineInstrBuilder MIB = MIRBuilder.buildInstr(
+        TargetOpcode::G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN, {Dst}, {V, OldBundle, NewBundle});
+    SetDeactivationSymbol(MIB);
+    return true;
+  }
   case Intrinsic::ptrauth_strip: {
     Register Dst = getOrCreateVReg(CI);
     Register V = getOrCreateVReg(*CI.getArgOperand(0));

@@ -2645,7 +2645,119 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
   LLT Ty =
       I.getOperand(0).isReg() ? MRI.getType(I.getOperand(0).getReg()) : LLT{};
 
+  auto ParsePtrAuthBundle = [&MRI](Register Schema) {
+    assert(MRI.getType(Schema).isToken());
+    const MachineInstr *Bundle = MRI.getVRegDef(Schema);
+    assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+    SmallVector<Register> Ops;
+    for (auto &Op : Bundle->uses())
+      Ops.push_back(Op.getReg());
+    return extractPtrauthBlendDiscriminators(Ops, MRI);
+  };
+
   switch (Opcode) {
+  case TargetOpcode::G_PTRAUTH_AUTH: {
+    Register DstReg = I.getOperand(0).getReg();
+    Register ValReg = I.getOperand(1).getReg();
+    Register Schema = I.getOperand(2).getReg();
+
+    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] = ParsePtrAuthBundle(Schema);
+
+    if (STI.isX16X17Safer()) {
+      MIB.buildCopy({AArch64::X16}, {ValReg});
+      MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
+      MIB.buildInstr(AArch64::AUTx16x17)
+          .addImm(AUTKey)
+          .addImm(AUTConstDiscC)
+          .addUse(AUTAddrDisc)
+          .constrainAllUses(TII, TRI, RBI);
+      MIB.buildCopy({DstReg}, Register(AArch64::X16));
+    } else {
+      Register ScratchReg =
+          MRI.createVirtualRegister(&AArch64::GPR64commonRegClass);
+      MIB.buildInstr(AArch64::AUTxMxN)
+          .addDef(DstReg)
+          .addDef(ScratchReg)
+          .addUse(ValReg)
+          .addImm(AUTKey)
+          .addImm(AUTConstDiscC)
+          .addUse(AUTAddrDisc)
+          .constrainAllUses(TII, TRI, RBI);
+    }
+
+    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
+    I.eraseFromParent();
+    return true;
+  }
+
+  case TargetOpcode::G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN: {
+    Register DstReg = I.getOperand(0).getReg();
+    Register ValReg = I.getOperand(1).getReg();
+    Register AUTSchema = I.getOperand(2).getReg();
+    Register PACSchema = I.getOperand(3).getReg();
+
+    assert(MRI.getType(AUTSchema).isToken());
+    const MachineInstr *AUTBundle = MRI.getVRegDef(AUTSchema);
+    assert(AUTBundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+
+    uint64_t AUTKey = getIConstantVRegVal(AUTBundle->getOperand(1).getReg(), MRI)->getZExtValue();
+    Register AUTDisc = AUTBundle->getOperand(2).getReg();
+    Register AUTPC = AUTBundle->getOperand(3).getReg();
+
+    auto [PACKey, PACConstDiscC, PACAddrDisc] = ParsePtrAuthBundle(PACSchema);
+
+    assert((AUTKey == AArch64PACKey::IA || AUTKey == AArch64PACKey::IB) &&
+           "auth_with_pc_and_resign only supports IA and IB keys");
+
+    if (!PACAddrDisc.isValid())
+      PACAddrDisc = AArch64::XZR;
+
+    MIB.buildCopy({AArch64::X17}, {ValReg});
+    MIB.buildCopy({AArch64::X16}, {AUTDisc});
+    MIB.buildCopy({AArch64::X15}, {AUTPC});
+
+    MIB.buildInstr(AArch64::AUTPCPAC)
+        .addImm(AUTKey)
+        .addImm(PACKey)
+        .addImm(PACConstDiscC)
+        .addUse(PACAddrDisc)
+        .constrainAllUses(TII, TRI, RBI);
+
+    MIB.buildCopy({DstReg}, Register(AArch64::X17));
+    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
+    I.eraseFromParent();
+    return true;
+  }
+  case TargetOpcode::G_PTRAUTH_RESIGN:
+  case TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE: {
+    Register DstReg = I.getOperand(0).getReg();
+    Register ValReg = I.getOperand(1).getReg();
+    Register AUTSchema = I.getOperand(2).getReg();
+    Register PACSchema = I.getOperand(3).getReg();
+    bool HasLoad = Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE;
+
+    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] = ParsePtrAuthBundle(AUTSchema);
+    auto [PACKey, PACConstDiscC, PACAddrDisc] = ParsePtrAuthBundle(PACSchema);
+
+    MIB.buildCopy({AArch64::X16}, {ValReg});
+    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
+    auto MI = MIB.buildInstr(HasLoad ? AArch64::AUTRELLOADPAC : AArch64::AUTPAC)
+                  .addImm(AUTKey)
+                  .addImm(AUTConstDiscC)
+                  .addUse(AUTAddrDisc)
+                  .addImm(PACKey)
+                  .addImm(PACConstDiscC)
+                  .addUse(PACAddrDisc);
+    if (HasLoad)
+      MI.addImm(I.getOperand(4).getImm());
+    MI.constrainAllUses(TII, TRI, RBI);
+
+    MIB.buildCopy({DstReg}, Register(AArch64::X16));
+
+    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
+    I.eraseFromParent();
+    return true;
+  }
   case TargetOpcode::G_SBFX:
   case TargetOpcode::G_UBFX: {
     static const unsigned OpcTable[2][2] = {
@@ -6854,42 +6966,6 @@ bool AArch64InstructionSelector::selectIntrinsicWithSideEffects(
     constrainSelectedInstRegOperands(*Memset, TII, TRI, RBI);
     break;
   }
-  case Intrinsic::ptrauth_resign_load_relative: {
-    Register DstReg = I.getOperand(0).getReg();
-    Register ValReg = I.getOperand(2).getReg();
-    uint64_t AUTKey = I.getOperand(3).getImm();
-    Register AUTDisc = I.getOperand(4).getReg();
-    uint64_t PACKey = I.getOperand(5).getImm();
-    Register PACDisc = I.getOperand(6).getReg();
-    int64_t Addend = I.getOperand(7).getImm();
-
-    Register AUTAddrDisc = AUTDisc;
-    uint16_t AUTConstDiscC = 0;
-    std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, AUTDisc}, MRI);
-
-    Register PACAddrDisc = PACDisc;
-    uint16_t PACConstDiscC = 0;
-    std::tie(PACConstDiscC, PACAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, PACDisc}, MRI);
-
-    MIB.buildCopy({AArch64::X16}, {ValReg});
-
-    MIB.buildInstr(AArch64::AUTRELLOADPAC)
-        .addImm(AUTKey)
-        .addImm(AUTConstDiscC)
-        .addUse(AUTAddrDisc)
-        .addImm(PACKey)
-        .addImm(PACConstDiscC)
-        .addUse(PACAddrDisc)
-        .addImm(Addend)
-        .constrainAllUses(TII, TRI, RBI);
-    MIB.buildCopy({DstReg}, Register(AArch64::X16));
-
-    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
-    I.eraseFromParent();
-    return true;
-  }
   }
 
   I.eraseFromParent();
@@ -6903,113 +6979,6 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
   switch (IntrinID) {
   default:
     break;
-  case Intrinsic::ptrauth_resign: {
-    Register DstReg = I.getOperand(0).getReg();
-    Register ValReg = I.getOperand(2).getReg();
-    uint64_t AUTKey = I.getOperand(3).getImm();
-    Register AUTDisc = I.getOperand(4).getReg();
-    uint64_t PACKey = I.getOperand(5).getImm();
-    Register PACDisc = I.getOperand(6).getReg();
-
-    Register AUTAddrDisc = AUTDisc;
-    uint16_t AUTConstDiscC = 0;
-    std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, AUTDisc}, MRI);
-
-    Register PACAddrDisc = PACDisc;
-    uint16_t PACConstDiscC = 0;
-    std::tie(PACConstDiscC, PACAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, PACDisc}, MRI);
-
-    MIB.buildCopy({AArch64::X16}, {ValReg});
-    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
-    MIB.buildInstr(AArch64::AUTPAC)
-        .addImm(AUTKey)
-        .addImm(AUTConstDiscC)
-        .addUse(AUTAddrDisc)
-        .addImm(PACKey)
-        .addImm(PACConstDiscC)
-        .addUse(PACAddrDisc)
-        .constrainAllUses(TII, TRI, RBI);
-    MIB.buildCopy({DstReg}, Register(AArch64::X16));
-
-    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
-    I.eraseFromParent();
-    return true;
-  }
-  case Intrinsic::ptrauth_auth_with_pc_and_resign: {
-    Register DstReg = I.getOperand(0).getReg();
-    Register ValReg = I.getOperand(2).getReg();
-    uint64_t AUTKey = I.getOperand(3).getImm();
-    Register AUTDisc = I.getOperand(4).getReg();
-    Register AUTPC = I.getOperand(5).getReg();
-    uint64_t PACKey = I.getOperand(6).getImm();
-    Register PACDisc = I.getOperand(7).getReg();
-
-    assert((AUTKey == AArch64PACKey::IA || AUTKey == AArch64PACKey::IB) &&
-           "auth_with_pc_and_resign only supports IA and IB keys");
-
-    uint16_t PACConstDiscC = 0;
-    Register PACAddrDisc;
-    std::tie(PACConstDiscC, PACAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, PACDisc}, MRI);
-
-    if (!PACAddrDisc.isValid())
-      PACAddrDisc = AArch64::XZR;
-
-    MIB.buildCopy({AArch64::X17}, {ValReg});
-    MIB.buildCopy({AArch64::X16}, {AUTDisc});
-    MIB.buildCopy({AArch64::X15}, {AUTPC});
-
-    MIB.buildInstr(AArch64::AUTPCPAC)
-        .addImm(AUTKey)
-        .addImm(PACKey)
-        .addImm(PACConstDiscC)
-        .addUse(PACAddrDisc)
-        .constrainAllUses(TII, TRI, RBI);
-
-    MIB.buildCopy({DstReg}, Register(AArch64::X17));
-    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
-    I.eraseFromParent();
-    return true;
-  }
-  case Intrinsic::ptrauth_auth: {
-    Register DstReg = I.getOperand(0).getReg();
-    Register ValReg = I.getOperand(2).getReg();
-    uint64_t AUTKey = I.getOperand(3).getImm();
-    Register AUTDisc = I.getOperand(4).getReg();
-
-    Register AUTAddrDisc = AUTDisc;
-    uint16_t AUTConstDiscC = 0;
-    std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators({0, AUTDisc}, MRI);
-
-    if (STI.isX16X17Safer()) {
-      MIB.buildCopy({AArch64::X16}, {ValReg});
-      MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
-      MIB.buildInstr(AArch64::AUTx16x17)
-          .addImm(AUTKey)
-          .addImm(AUTConstDiscC)
-          .addUse(AUTAddrDisc)
-          .constrainAllUses(TII, TRI, RBI);
-      MIB.buildCopy({DstReg}, Register(AArch64::X16));
-    } else {
-      Register ScratchReg =
-          MRI.createVirtualRegister(&AArch64::GPR64commonRegClass);
-      MIB.buildInstr(AArch64::AUTxMxN)
-          .addDef(DstReg)
-          .addDef(ScratchReg)
-          .addUse(ValReg)
-          .addImm(AUTKey)
-          .addImm(AUTConstDiscC)
-          .addUse(AUTAddrDisc)
-          .constrainAllUses(TII, TRI, RBI);
-    }
-
-    RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
-    I.eraseFromParent();
-    return true;
-  }
   case Intrinsic::frameaddress:
   case Intrinsic::returnaddress: {
     MachineFunction &MF = *I.getParent()->getParent();

@@ -78,7 +78,7 @@ define i64 @test_auth_blend(i64 %arg, i64 %arg1) {
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 65535)
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %tmp0)
+  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0) ]
   ret i64 %tmp1
 }
 
@@ -146,7 +146,7 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
   %tmp1 = call i64 @llvm.ptrauth.blend(i64 %arg2, i64 56789)
-  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %tmp1)
+  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 %tmp1) ]
   ret i64 %tmp2
 }
 
@@ -204,7 +204,7 @@ define i64 @test_resign_blend_and_const(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 56789)
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 56789) ]
   ret i64 %tmp1
 }
 
@@ -259,7 +259,7 @@ define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %arg2)
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 %arg2) ]
   ret i64 %tmp1
 }
 
@@ -305,7 +305,7 @@ define i64 @test_auth_too_large_discriminator(i64 %arg, i64 %arg1) {
 ; TRAP-DARWIN-NEXT: mov x0, x16
 ; TRAP-NEXT:        ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 65536)
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %tmp0)
+  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0) ]
   ret i64 %tmp1
 }
 
@@ -324,7 +324,7 @@ entry:
   br label %some.bb
 
 some.bb:
-  %authed = call i64 @llvm.ptrauth.auth(i64 %ptr, i32 0, i64 %discr)
+  %authed = call i64 @llvm.ptrauth.auth(i64 %ptr) [ "ptrauth"(i64 0, i64 %discr) ]
   br label %some.other.bb
 
 some.other.bb:
@@ -401,7 +401,7 @@ define void @test_auth_live_addrdisc(i64 %p, i64 %arg, ptr %out) {
 ; TRAP-ELF-NEXT:    str     x1, [x2]
 ; TRAP-ELF-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %arg, i64 12345)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %p, i32 2, i64 %auth.disc)
+  %authed = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc) ]
   store volatile i64 %authed, ptr %out
   store volatile i64 %arg, ptr %out
   ret void
@@ -468,7 +468,7 @@ define void @test_resign_live_autaddrdisc(i64 %p, i64 %auth.arg, i64 %sign.arg, 
 ; TRAP-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %auth.arg, i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %sign.arg, i64 54321)
-  %resigned = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc)
+  %resigned = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   store volatile i64 %resigned, ptr %out
   store volatile i64 %auth.arg, ptr %out
   ret void
@@ -535,7 +535,7 @@ define void @test_resign_live_pacaddrdisc(i64 %p, i64 %auth.arg, i64 %sign.arg, 
 ; TRAP-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %auth.arg, i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %sign.arg, i64 54321)
-  %resigned = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc)
+  %resigned = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   store volatile i64 %resigned, ptr %out
   store volatile i64 %sign.arg, ptr %out
   ret void
@@ -589,7 +589,7 @@ define i64 @test_resign_aliased_discs_raw_sign_disc(i64 %p, i64 %arg) {
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %arg, i64 12345)
-  %res = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %arg)
+  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %arg) ]
   ret i64 %res
 }
 
@@ -619,7 +619,7 @@ define i64 @test_auth_pointer_aliased_with_addrdisc(i64 %p) {
 ; UNCHECKED-ELF-NEXT:    autda x0, x8
 ; UNCHECKED-ELF-NEXT:    ret
   %disc = call i64 @llvm.ptrauth.blend(i64 %p, i64 12345)
-  %res = call i64 @llvm.ptrauth.auth(i64 %p, i32 2, i64 %disc)
+  %res = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %res
 }
 
@@ -647,7 +647,7 @@ define i64 @test_resign_pointer_aliased_with_autaddrdisc(i64 %p, i64 %arg) {
 ; UNCHECKED-ELF-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %p,   i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %arg, i64 54321)
-  %res = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc)
+  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   ret i64 %res
 }
 
@@ -676,7 +676,7 @@ define i64 @test_resign_pointer_aliased_with_pacaddrdisc(i64 %p, i64 %arg) {
 ; UNCHECKED-ELF-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %arg, i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %p,   i64 54321)
-  %res = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc)
+  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   ret i64 %res
 }
 
@@ -694,7 +694,7 @@ define i64 @test_resign_pointer_aliased_with_both_addrdisc(i64 %p) {
 ; UNCHECKED-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %p, i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %p, i64 54321)
-  %res = call i64 @llvm.ptrauth.resign(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc)
+  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   ret i64 %res
 }
 
@@ -722,7 +722,7 @@ define i64 @test_autpcpac_pointer_aliased_with_pacaddrdisc(i64 %p, i64 %arg, i64
 ; UNCHECKED-ELF-NEXT:    mov x0, x17
 ; UNCHECKED-ELF-NEXT:    ret
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %p, i64 54321)
-  %res = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %p, i32 0, i64 %arg, i64 %auth.pc, i32 1, i64 %sign.disc)
+  %res = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %p) [ "ptrauth"(i64 0, i64 %arg, i64 %auth.pc), "ptrauth"(i64 1, i64 %sign.disc) ]
   ret i64 %res
 }
 
@@ -755,10 +755,6 @@ define i64 @test_autrelloadpac_pointer_aliased_with_pacaddrdisc(i64 %p, i64 %arg
 ; UNCHECKED-ELF-NEXT:    ret
   %auth.disc = call i64 @llvm.ptrauth.blend(i64 %arg, i64 12345)
   %sign.disc = call i64 @llvm.ptrauth.blend(i64 %p,   i64 54321)
-  %res = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 2, i64 %auth.disc, i32 3, i64 %sign.disc, i64 8)
+  %res = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i64 8) [ "ptrauth"(i64 2, i64 %auth.disc), "ptrauth"(i64 3, i64 %sign.disc) ]
   ret i64 %res
 }
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)
-declare i64 @llvm.ptrauth.blend(i64, i64)

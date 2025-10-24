@@ -236,6 +236,11 @@ def : GINodeEquiv<G_STRICT_FSQRT, strict_fsqrt>;
 def : GINodeEquiv<G_STRICT_FLDEXP, strict_fldexp>;
 
 def : GINodeEquiv<G_PTRAUTH_BUNDLE, ptrauth_bundle>;
+def : GINodeEquiv<G_PTRAUTH_AUTH,   ptrauth_auth>;
+def : GINodeEquiv<G_PTRAUTH_SIGN,   ptrauth_sign>;
+def : GINodeEquiv<G_PTRAUTH_RESIGN, ptrauth_resign>;
+def : GINodeEquiv<G_PTRAUTH_RESIGN_LOAD_RELATIVE, ptrauth_resign_load_relative>;
+def : GINodeEquiv<G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN, ptrauth_auth_with_pc_and_resign>;
 def : GINodeEquiv<G_PTRAUTH_STRIP,  ptrauth_strip>;
 
 // Broadly speaking G_LOAD is equivalent to ISD::LOAD but there are some
