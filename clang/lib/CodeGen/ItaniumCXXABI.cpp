@@ -880,6 +880,22 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
     assert(Schema.getKey() == AuthInfo.getKey() &&
            "Keys for virtual and non-virtual member functions must match");
     auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
+    assert(!AuthInfo.isBlended() &&
+           isa<llvm::ConstantInt>(NonVirtualDiscriminator));
+    // FIXME Investigate re-signing VirtualFn pointer in FnVirtual basic block
+    //       to the same non-zero discriminator or other safer options.
+    //
+    //       Depending on its origin, CalleePtr is authenticated using one of
+    //       two possible constant discriminators. That integer discriminator
+    //       may end up being spilled to the stack and thus be susceptible to
+    //       substitution by the attacker. Authenticating CalleePtr at this
+    //       point is not an option, as it would make things even worse by
+    //       exposing completely unprotected function pointer instead of less
+    //       sensitive discriminator value.
+    //
+    //       "Upgrading" VirtualFn's schema to a custom constant discriminator
+    //       would probably help, but it still requires investigation.
+
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
         Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
@@ -918,6 +934,7 @@ static llvm::Constant *pointerAuthResignConstant(
   assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey() &&
          CPA->getAddrDiscriminator()->isNullValue() &&
          CPA->getDiscriminator() == CurAuthInfo.getDiscriminator() &&
+         !CurAuthInfo.isBlended() && !NewAuthInfo.isBlended() &&
          "unexpected key or discriminators");
 
   return CGM.getConstantSignedPointer(
@@ -1780,7 +1797,7 @@ llvm::Value *ItaniumCXXABI::emitExactDynamicCast(
     // authenticate the resulting v-table at the end of the cast check.
     PerformPostCastAuthentication = CGF.getLangOpts().PointerAuthCalls;
     CGPointerAuthInfo StrippingAuthInfo(0, PointerAuthenticationMode::Strip,
-                                        false, false, nullptr);
+                                        false, false);
     Address VTablePtrPtr = ThisAddr.withElementType(CGF.VoidPtrPtrTy);
     VTable = CGF.Builder.CreateLoad(VTablePtrPtr, "vtable");
     if (PerformPostCastAuthentication)
