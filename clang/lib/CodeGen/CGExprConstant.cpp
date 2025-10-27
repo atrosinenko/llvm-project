@@ -2303,6 +2303,7 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
         if (hasNonZeroOffset())
           return ConstantLValue(nullptr);
 
+        assert(!AuthInfo.isBlended());
         C = applyOffset(C);
         C = CGM.getConstantSignedPointer(
             C, AuthInfo.getKey(), nullptr,

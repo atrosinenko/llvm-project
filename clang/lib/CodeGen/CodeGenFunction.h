@@ -4741,9 +4741,6 @@ public:
   /// Check whether the underlying base pointer is a constant null.
   bool isUnderlyingBasePointerConstantNull(const Expr *E);
 
-  /// Create the discriminator from the storage address and the entity hash.
-  llvm::Value *EmitPointerAuthBlendDiscriminator(llvm::Value *StorageAddress,
-                                                 llvm::Value *Discriminator);
   CGPointerAuthInfo EmitPointerAuthInfo(const PointerAuthSchema &Schema,
                                         llvm::Value *StorageAddress,
                                         llvm::ConstantInt *Discriminator);
