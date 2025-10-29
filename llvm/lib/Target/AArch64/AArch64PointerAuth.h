@@ -9,6 +9,8 @@
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64POINTERAUTH_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64POINTERAUTH_H
 
+#include "llvm/IR/Analysis.h"
+#include "llvm/IR/PassManager.h"
 #include "Utils/AArch64BaseInfo.h"
 
 namespace llvm {
@@ -111,6 +113,16 @@ enum class AuthCheckMethod {
 unsigned getCheckerSizeInBytes(AuthCheckMethod Method);
 
 } // end namespace AArch64PAuth
+
+class AArch64PointerAuthEarlyIRFixupPass
+    : public RequiredPassInfoMixin<AArch64PointerAuthEarlyIRFixupPass> {
+  bool eliminateBlendAllocas(Function &F) const;
+  bool updateOperandBundles(Function &F) const;
+
+public:
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+};
+
 } // end namespace llvm
 
 #endif
