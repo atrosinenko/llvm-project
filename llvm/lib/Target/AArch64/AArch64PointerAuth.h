@@ -11,6 +11,8 @@
 
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/Register.h"
+#include "llvm/IR/Analysis.h"
+#include "llvm/IR/PassManager.h"
 
 namespace llvm {
 namespace AArch64PAuth {
@@ -105,6 +107,16 @@ enum class AuthCheckMethod {
 unsigned getCheckerSizeInBytes(AuthCheckMethod Method);
 
 } // end namespace AArch64PAuth
+
+class AArch64PointerAuthEarlyIRFixupPass
+    : public RequiredPassInfoMixin<AArch64PointerAuthEarlyIRFixupPass> {
+  bool eliminateBlendAllocas(Function &F) const;
+  bool updateOperandBundles(Function &F) const;
+
+public:
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+};
+
 } // end namespace llvm
 
 #endif
