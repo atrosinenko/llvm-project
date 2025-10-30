@@ -13,8 +13,13 @@
 
 @discvar = dso_local global i64 0
 
-; Make sure the components of blend(addr, imm) and integer constants are
-; recognized and passed to PAC pseudo via separate operands to prevent
+; FIXME Should we remove this file?
+
+; Make sure various forms of "ptrauth" call bundles are properly normalized
+; to a full, three-operand form and then passed as the operands of PAC pseudo.
+; Specifically, make sure that "ptrauth"(i64 key, i64 disc) is handled as
+; "ptrauth"(i64 key, i64 disc, i64 0) when disc is uint16 constant and as
+; "ptrauth"(i64 key, i64 0, i64 disc) otherwise. This is important to prevent
 ; substitution of the immediate modifier.
 ;
 ; MIR output of the instruction selector is inspected, as it is hard to reliably
@@ -28,9 +33,7 @@ define i64 @small_imm_disc_optimized(i64 %addr) {
   ; DAGISEL-NEXT:   liveins: $x0
   ; DAGISEL-NEXT: {{  $}}
   ; DAGISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; DAGISEL-NEXT:   [[MOVi32imm:%[0-9]+]]:gpr32 = MOVi32imm 42
-  ; DAGISEL-NEXT:   [[SUBREG_TO_REG:%[0-9]+]]:gpr64noip = SUBREG_TO_REG killed [[MOVi32imm]], %subreg.sub_32
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, killed $noreg, implicit-def dead $x16, implicit-def dead $x17
+  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, $noreg, implicit-def dead $x16, implicit-def dead $x17
   ; DAGISEL-NEXT:   $x0 = COPY [[PAC]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
   ;
@@ -39,17 +42,14 @@ define i64 @small_imm_disc_optimized(i64 %addr) {
   ; GISEL-NEXT:   liveins: $x0
   ; GISEL-NEXT: {{  $}}
   ; GISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; GISEL-NEXT:   [[MOVi32imm:%[0-9]+]]:gpr32 = MOVi32imm 42
-  ; GISEL-NEXT:   [[SUBREG_TO_REG:%[0-9]+]]:gpr64noip = SUBREG_TO_REG [[MOVi32imm]], %subreg.sub_32
   ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, $noreg, implicit-def dead $x16, implicit-def dead $x17
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i64 %signed
 }
 
-; Without optimization, MOVi64imm may be used for small i64 constants as well.
 define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; DAGISEL-LABEL: name: small_imm_disc_non_optimized
   ; DAGISEL: bb.0.entry:
@@ -57,11 +57,9 @@ define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; DAGISEL-NEXT: {{  $}}
   ; DAGISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; DAGISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY killed [[COPY]]
-  ; DAGISEL-NEXT:   [[MOVi32imm:%[0-9]+]]:gpr32 = MOVi32imm 42
-  ; DAGISEL-NEXT:   [[SUBREG_TO_REG:%[0-9]+]]:gpr64noip = SUBREG_TO_REG killed [[MOVi32imm]], %subreg.sub_32
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY1]], 2, 42, killed $noreg, implicit-def dead $x16, implicit-def dead $x17
-  ; DAGISEL-NEXT:   [[COPY2:%[0-9]+]]:gpr64all = COPY [[PAC]]
-  ; DAGISEL-NEXT:   $x0 = COPY [[COPY2]]
+  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY1]], 2, 42, $noreg, implicit-def dead $x16, implicit-def dead $x17
+  ; DAGISEL-NEXT:   [[COPY3:%[0-9]+]]:gpr64all = COPY [[PAC]]
+  ; DAGISEL-NEXT:   $x0 = COPY [[COPY3]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
   ;
   ; GISEL-LABEL: name: small_imm_disc_non_optimized
@@ -69,17 +67,16 @@ define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; GISEL-NEXT:   liveins: $x0
   ; GISEL-NEXT: {{  $}}
   ; GISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; GISEL-NEXT:   [[MOVi64imm:%[0-9]+]]:gpr64noip = MOVi64imm 42
   ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, $noreg, implicit-def dead $x16, implicit-def dead $x17
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i64 %signed
 }
 
-define i64 @large_imm_disc_wreg(i64 %addr) {
-  ; DAGISEL-LABEL: name: large_imm_disc_wreg
+define i64 @large_imm_disc(i64 %addr) {
+  ; DAGISEL-LABEL: name: large_imm_disc
   ; DAGISEL: bb.0.entry:
   ; DAGISEL-NEXT:   liveins: $x0
   ; DAGISEL-NEXT: {{  $}}
@@ -90,7 +87,7 @@ define i64 @large_imm_disc_wreg(i64 %addr) {
   ; DAGISEL-NEXT:   $x0 = COPY [[PAC]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
   ;
-  ; GISEL-LABEL: name: large_imm_disc_wreg
+  ; GISEL-LABEL: name: large_imm_disc
   ; GISEL: bb.1.entry:
   ; GISEL-NEXT:   liveins: $x0
   ; GISEL-NEXT: {{  $}}
@@ -101,99 +98,35 @@ define i64 @large_imm_disc_wreg(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 12345678) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 0, i64 12345678) ]
   ret i64 %signed
 }
 
-define i64 @large_imm_disc_xreg(i64 %addr) {
-  ; DAGISEL-LABEL: name: large_imm_disc_xreg
-  ; DAGISEL: bb.0.entry:
-  ; DAGISEL-NEXT:   liveins: $x0
-  ; DAGISEL-NEXT: {{  $}}
-  ; DAGISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; DAGISEL-NEXT:   [[MOVi64imm:%[0-9]+]]:gpr64noip = MOVi64imm 123456789012345
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 0, killed [[MOVi64imm]], implicit-def dead $x16, implicit-def dead $x17
-  ; DAGISEL-NEXT:   $x0 = COPY [[PAC]]
-  ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
-  ;
-  ; GISEL-LABEL: name: large_imm_disc_xreg
-  ; GISEL: bb.1.entry:
-  ; GISEL-NEXT:   liveins: $x0
-  ; GISEL-NEXT: {{  $}}
-  ; GISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; GISEL-NEXT:   [[MOVi64imm:%[0-9]+]]:gpr64noip = MOVi64imm 123456789012345
-  ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 0, [[MOVi64imm]], implicit-def dead $x16, implicit-def dead $x17
-  ; GISEL-NEXT:   $x0 = COPY [[PAC]]
-  ; GISEL-NEXT:   RET_ReallyLR implicit $x0
-entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 123456789012345) ]
-  ret i64 %signed
-}
-
-; Make sure blend() is lowered as expected when optimization is disabled.
-define i64 @blended_disc_non_optimized(i64 %addr, i64 %addrdisc) noinline optnone {
-  ; DAGISEL-LABEL: name: blended_disc_non_optimized
-  ; DAGISEL: bb.0.entry:
-  ; DAGISEL-NEXT:   liveins: $x0, $x1
-  ; DAGISEL-NEXT: {{  $}}
-  ; DAGISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x1
-  ; DAGISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x0
-  ; DAGISEL-NEXT:   [[COPY2:%[0-9]+]]:gpr64 = COPY killed [[COPY1]]
-  ; DAGISEL-NEXT:   [[COPY3:%[0-9]+]]:gpr64 = COPY killed [[COPY]]
-  ; DAGISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[COPY3]], 42, 48
-  ; DAGISEL-NEXT:   [[COPY4:%[0-9]+]]:gpr64noip = COPY [[COPY3]]
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY2]], 2, 42, killed [[COPY4]], implicit-def dead $x16, implicit-def dead $x17
-  ; DAGISEL-NEXT:   [[COPY5:%[0-9]+]]:gpr64all = COPY [[PAC]]
-  ; DAGISEL-NEXT:   $x0 = COPY [[COPY5]]
-  ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
-  ;
-  ; GISEL-LABEL: name: blended_disc_non_optimized
-  ; GISEL: bb.1.entry:
-  ; GISEL-NEXT:   liveins: $x0, $x1
-  ; GISEL-NEXT: {{  $}}
-  ; GISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
-  ; GISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x1
-  ; GISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[COPY1]], 42, 48
-  ; GISEL-NEXT:   [[COPY2:%[0-9]+]]:gpr64noip = COPY [[COPY1]]
-  ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, [[COPY2]], implicit-def dead $x16, implicit-def dead $x17
-  ; GISEL-NEXT:   $x0 = COPY [[PAC]]
-  ; GISEL-NEXT:   RET_ReallyLR implicit $x0
-entry:
-  %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
-  ret i64 %signed
-}
-
-define i64 @blend_and_sign_same_bb(i64 %addr) {
-  ; DAGISEL-LABEL: name: blend_and_sign_same_bb
+define i64 @blended_disc(i64 %addr) {
+  ; DAGISEL-LABEL: name: blended_disc
   ; DAGISEL: bb.0.entry:
   ; DAGISEL-NEXT:   liveins: $x0
   ; DAGISEL-NEXT: {{  $}}
   ; DAGISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; DAGISEL-NEXT:   [[ADRP:%[0-9]+]]:gpr64common = ADRP target-flags(aarch64-page) @discvar
-  ; DAGISEL-NEXT:   [[LDRXui:%[0-9]+]]:gpr64 = LDRXui killed [[ADRP]], target-flags(aarch64-pageoff, aarch64-nc) @discvar :: (dereferenceable load (s64) from @discvar)
-  ; DAGISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[LDRXui]], 42, 48
-  ; DAGISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64noip = COPY [[LDRXui]]
-  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, killed [[COPY1]], implicit-def dead $x16, implicit-def dead $x17
+  ; DAGISEL-NEXT:   [[LDRXui:%[0-9]+]]:gpr64noip = LDRXui killed [[ADRP]], target-flags(aarch64-pageoff, aarch64-nc) @discvar :: (dereferenceable load (s64) from @discvar)
+  ; DAGISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, killed [[LDRXui]], implicit-def dead $x16, implicit-def dead $x17
   ; DAGISEL-NEXT:   $x0 = COPY [[PAC]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0
   ;
-  ; GISEL-LABEL: name: blend_and_sign_same_bb
+  ; GISEL-LABEL: name: blended_disc
   ; GISEL: bb.1.entry:
   ; GISEL-NEXT:   liveins: $x0
   ; GISEL-NEXT: {{  $}}
   ; GISEL-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; GISEL-NEXT:   [[ADRP:%[0-9]+]]:gpr64common = ADRP target-flags(aarch64-page) @discvar
-  ; GISEL-NEXT:   [[LDRXui:%[0-9]+]]:gpr64 = LDRXui [[ADRP]], target-flags(aarch64-pageoff, aarch64-nc) @discvar :: (dereferenceable load (i64) from @discvar)
-  ; GISEL-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[LDRXui]], 42, 48
-  ; GISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64noip = COPY [[LDRXui]]
-  ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, [[COPY1]], implicit-def dead $x16, implicit-def dead $x17
+  ; GISEL-NEXT:   [[LDRXui:%[0-9]+]]:gpr64noip = LDRXui [[ADRP]], target-flags(aarch64-pageoff, aarch64-nc) @discvar :: (dereferenceable load (i64) from @discvar)
+  ; GISEL-NEXT:   [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 42, [[LDRXui]], implicit-def dead $x16, implicit-def dead $x17
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
   %addrdisc = load i64, ptr @discvar
-  %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 %addrdisc) ]
   ret i64 %signed
 }
 
@@ -312,7 +245,7 @@ define i64 @autxmxn_earlyclobbered_scratch(i64 %addr, i64 %disc) {
   ; GISEL-GNU-NEXT: {{  $}}
   ; GISEL-GNU-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; GISEL-GNU-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x1
-  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %5:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY1]], implicit-def dead $nzcv
+  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY1]], implicit-def dead $nzcv
   ; GISEL-GNU-NEXT:   $x0 = COPY %2
   ; GISEL-GNU-NEXT:   RET_ReallyLR implicit $x0
 entry:

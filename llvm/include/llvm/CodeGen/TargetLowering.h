@@ -4712,6 +4712,26 @@ public:
   /// Return true if the target supports ptrauth operand bundles.
   virtual bool supportPtrAuthBundles() const { return false; }
 
+  /// Perform target-specific validation of "ptrauth" call operand bundles that
+  /// is not covered by Verifier but relied upon by the backend.
+  virtual std::optional<std::string>
+  validatePtrAuthBundles(const CallBase &CB) const {
+    return std::nullopt;
+  };
+
+  /// Convenience function to report fatal error if user-provided IR violates
+  /// the assumptions relied upon by the backend.
+  ///
+  /// This function is intended to handle possible invalid user input and thus
+  /// always performs the check, whether the assertions are enabled or not.
+  void reportFatalErrorOnInvalidPtrAuthBundles(const CallBase &CB) const {
+    if (auto Error = validatePtrAuthBundles(CB)) {
+      errs() << "Ptrauth bundle violates target-specific constraints:\n";
+      CB.print(errs());
+      reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
+    }
+  }
+
   /// Perform necessary initialization to handle a subset of CSRs explicitly
   /// via copies. This function is called at the beginning of instruction
   /// selection.

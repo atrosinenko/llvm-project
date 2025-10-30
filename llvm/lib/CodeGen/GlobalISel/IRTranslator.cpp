@@ -2231,6 +2231,42 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
   return true;
 }
 
+bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
+                                             unsigned Opcode,
+                                             MachineIRBuilder &MIRBuilder) {
+  TLI->reportFatalErrorOnInvalidPtrAuthBundles(CI);
+
+  auto TranslatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = CI.getOperandBundleAt(Index);
+    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+
+    Register Res = MRI->createGenericVirtualRegister(LLT::token());
+    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
+    Builder.addDef(Res);
+    for (const Use &Operand : Bundle.Inputs)
+      Builder.addUse(getOrCreateVReg(*Operand));
+
+    return Res;
+  };
+
+  SmallVector<SrcOp> SrcOps;
+  SrcOps.push_back(getOrCreateVReg(*CI.getArgOperand(0)));
+  SrcOps.push_back(TranslatePtrAuthBundle(0));
+  if (Opcode == TargetOpcode::G_PTRAUTH_RESIGN ||
+      Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
+    SrcOps.push_back(TranslatePtrAuthBundle(1));
+  if (Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
+    // FIXME Is addMemOperand() call required here?
+    SrcOps.push_back(cast<ConstantInt>(CI.getArgOperand(1))->getZExtValue());
+
+  Register Dst = getOrCreateVReg(CI);
+  auto MIB = MIRBuilder.buildInstr(Opcode, {Dst}, SrcOps);
+  if (auto Bundle = CI.getOperandBundle(LLVMContext::OB_deactivation_symbol))
+    MIB->setDeactivationSymbol(*MF, Bundle->Inputs[0].get());
+
+  return true;
+}
+
 bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                            MachineIRBuilder &MIRBuilder) {
   if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
@@ -2247,78 +2283,24 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   if (translateSimpleIntrinsic(CI, ID, MIRBuilder))
     return true;
 
-  auto TranslatePtrAuthBundle = [&](unsigned Index) {
-    auto Bundle = CI.getOperandBundleAt(Index);
-    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
-    Register Res = MRI->createGenericVirtualRegister(LLT::token());
-    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
-    Builder.addDef(Res);
-    for (Value *Operand : Bundle.Inputs)
-      Builder.addUse(getOrCreateVReg(*Operand));
-    return Res;
-  };
-
-  auto SetDeactivationSymbol = [&](MachineInstrBuilder &MIB) {
-    if (auto Bundle = CI.getOperandBundle(LLVMContext::OB_deactivation_symbol))
-      MIB->setDeactivationSymbol(*MF, Bundle->Inputs[0].get());
-  };
-
   switch (ID) {
   default:
     break;
-  case Intrinsic::ptrauth_auth: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MachineInstrBuilder MIB =
-        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_AUTH, {Dst}, {V, Bundle});
-    SetDeactivationSymbol(MIB);
-    return true;
-  }
-  case Intrinsic::ptrauth_sign: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MachineInstrBuilder MIB =
-        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SIGN, {Dst}, {V, Bundle});
-    SetDeactivationSymbol(MIB);
-    return true;
-  }
-  case Intrinsic::ptrauth_resign: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register OldBundle = TranslatePtrAuthBundle(0);
-    Register NewBundle = TranslatePtrAuthBundle(1);
-
-    MachineInstrBuilder MIB = MIRBuilder.buildInstr(
-        TargetOpcode::G_PTRAUTH_RESIGN, {Dst}, {V, OldBundle, NewBundle});
-    SetDeactivationSymbol(MIB);
-    return true;
-  }
-  case Intrinsic::ptrauth_resign_load_relative: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register OldBundle = TranslatePtrAuthBundle(0);
-    Register NewBundle = TranslatePtrAuthBundle(1);
-    uint64_t Addend = cast<ConstantInt>(CI.getArgOperand(1))->getZExtValue();
-
-    MachineInstrBuilder MIB =
-        MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE,
-                              {Dst}, {V, OldBundle, NewBundle, Addend});
-    // FIXME Is addMemOperand() call required here?
-    SetDeactivationSymbol(MIB);
-    return true;
-  }
-  case Intrinsic::ptrauth_strip: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_STRIP, {Dst}, {V, Bundle});
-    return true;
-  }
+  case Intrinsic::ptrauth_auth:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_AUTH,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_sign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_SIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_resign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_RESIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_resign_load_relative:
+    return translatePtrAuthIntrinsic(
+        CI, TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE, MIRBuilder);
+  case Intrinsic::ptrauth_strip:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_STRIP,
+                                     MIRBuilder);
   case Intrinsic::lifetime_start:
   case Intrinsic::lifetime_end: {
     // No stack colouring in O0, discard region information.
@@ -2851,17 +2833,23 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     // Functions should never be ptrauth-called directly.
     assert(!CB.getCalledFunction() && "invalid direct ptrauth call");
 
-    assert(!isa<IntrinsicInst>(CB));
+    assert(!isa<IntrinsicInst>(CB) &&
+           "Should be handled by translateKnownIntrinsic");
+
+    TLI->reportFatalErrorOnInvalidPtrAuthBundles(CB);
+
+    SmallVector<Value *> BundleOperands(Bundle->Inputs.begin(),
+                                        Bundle->Inputs.end());
 
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(Bundle->Inputs, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(BundleOperands, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
       PAI = CallLowering::PtrAuthInfo();
-      for (const Value *V : Bundle->Inputs)
+      for (const Value *V : BundleOperands)
         PAI->Operands.push_back(getOrCreateVReg(*V));
     }
   }
