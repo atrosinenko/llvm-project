@@ -25,7 +25,7 @@ define i32 @test_call_ia_0(ptr %arg0) #0 {
 ; ELF-NEXT:    blraaz x0
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 0, i64 0) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -41,21 +41,21 @@ define i32 @test_call_ib_0(ptr %arg0) #0 {
 ; ELF-NEXT:    blrabz x0
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 1, i64 0) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
 define i32 @test_tailcall_ia_0(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_ia_0:
 ; CHECK-NEXT:    braaz x0
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 0, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
 define i32 @test_tailcall_ib_0(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_ib_0:
 ; CHECK-NEXT:   brabz x0
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 1, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -73,7 +73,7 @@ define i32 @test_call_ia_imm(ptr %arg0) #0 {
 ; ELF-NEXT:    blraa x0, x17
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 0, i64 42) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -91,7 +91,7 @@ define i32 @test_call_ib_imm(ptr %arg0) #0 {
 ; ELF-NEXT:    blrab x0, x17
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 1, i64 42) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 1, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -99,7 +99,7 @@ define i32 @test_tailcall_ia_imm(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_ia_imm:
 ; CHECK-NEXT:    mov x16, #42
 ; CHECK-NEXT:    braa x0, x16
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 0, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -107,7 +107,7 @@ define i32 @test_tailcall_ib_imm(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_ib_imm:
 ; CHECK-NEXT:    mov x16, #42
 ; CHECK-NEXT:    brab x0, x16
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 1, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -126,7 +126,7 @@ define i32 @test_call_ia_var(ptr %arg0, ptr %arg1) #0 {
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
   %tmp0 = load i64, ptr %arg1
-  %tmp1 = call i32 %arg0() [ "ptrauth"(i32 0, i64 %tmp0) ]
+  %tmp1 = call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -145,7 +145,7 @@ define i32 @test_call_ib_var(ptr %arg0, ptr %arg1) #0 {
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
   %tmp0 = load i64, ptr %arg1
-  %tmp1 = call i32 %arg0() [ "ptrauth"(i32 1, i64 %tmp0) ]
+  %tmp1 = call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -154,7 +154,7 @@ define i32 @test_tailcall_ia_var(ptr %arg0, ptr %arg1) #0 {
 ; CHECK:    ldr x1, [x1]
 ; CHECK:    braa x0, x1
   %tmp0 = load i64, ptr %arg1
-  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i32 0, i64 %tmp0) ]
+  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -163,7 +163,7 @@ define i32 @test_tailcall_ib_var(ptr %arg0, ptr %arg1) #0 {
 ; CHECK:    ldr x1, [x1]
 ; CHECK:    brab x0, x1
   %tmp0 = load i64, ptr %arg1
-  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i32 1, i64 %tmp0) ]
+  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -183,7 +183,7 @@ define i32 @test_call_da_0(ptr %arg0) #0 {
 ; ELF-NEXT:    blr x16
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 2, i64 0) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 2, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -203,7 +203,7 @@ define i32 @test_call_db_0(ptr %arg0) #0 {
 ; ELF-NEXT:    blr x16
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 3, i64 0) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 3, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -225,7 +225,7 @@ define i32 @test_call_da_imm(ptr %arg0) #0 {
 ; ELF-NEXT:    blr x16
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 2, i64 42) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -247,7 +247,7 @@ define i32 @test_call_db_imm(ptr %arg0) #0 {
 ; ELF-NEXT:    blr x16
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 3, i64 42) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 3, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -256,7 +256,7 @@ define i32 @test_tailcall_da_0(ptr %arg0) #0 {
 ; CHECK-NEXT:    mov x17, x0
 ; CHECK-NEXT:    autdza x17
 ; CHECK-NEXT:    br x17
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 2, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 2, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -265,7 +265,7 @@ define i32 @test_tailcall_db_0(ptr %arg0) #0 {
 ; CHECK-NEXT:    mov x17, x0
 ; CHECK-NEXT:    autdzb x17
 ; CHECK-NEXT:    br x17
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 3, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 3, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -275,7 +275,7 @@ define i32 @test_tailcall_da_imm(ptr %arg0) #0 {
 ; CHECK-NEXT:    mov x17, x0
 ; CHECK-NEXT:    autda x17, x16
 ; CHECK-NEXT:    br x17
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 2, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -285,7 +285,7 @@ define i32 @test_tailcall_db_imm(ptr %arg0) #0 {
 ; CHECK-NEXT:    mov x17, x0
 ; CHECK-NEXT:    autdb x17, x16
 ; CHECK-NEXT:    br x17
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 3, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 3, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -308,13 +308,11 @@ define void @test_tailcall_omit_mov_x16_x16(ptr %objptr) #0 {
 ; ELF-NEXT:       braa    x2, x16
   %vtable.signed = load ptr, ptr %objptr, align 8
   %objptr.int = ptrtoint ptr %objptr to i64
-  %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
   %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 %vtable.discr) ]
+  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
   %vtable.unsigned = inttoptr i64 %vtable.unsigned.int to ptr
   %virt.func.signed = load ptr, ptr %vtable.unsigned, align 8
-  %virt.func.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.unsigned.int, i64 54167)
-  tail call void %virt.func.signed(ptr %objptr) [ "ptrauth"(i32 0, i64 %virt.func.discr) ]
+  tail call void %virt.func.signed(ptr %objptr) [ "ptrauth"(i64 0, i64 54167, i64 %vtable.unsigned.int) ]
   ret void
 }
 
@@ -344,13 +342,11 @@ define i32 @test_call_omit_extra_moves(ptr %objptr) #0 {
 ; CHECK-NEXT:    ret
   %vtable.signed = load ptr, ptr %objptr
   %objptr.int = ptrtoint ptr %objptr to i64
-  %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
   %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 %vtable.discr) ]
+  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
   %vtable = inttoptr i64 %vtable.int to ptr
   %callee.signed = load ptr, ptr %vtable
-  %callee.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.int, i64 34646)
-  %call.result = tail call i32 %callee.signed(ptr %objptr) [ "ptrauth"(i32 0, i64 %callee.discr) ]
+  %call.result = tail call i32 %callee.signed(ptr %objptr) [ "ptrauth"(i64 0, i64 34646, i64 %vtable.int) ]
   ret i32 42
 }
 
@@ -371,9 +367,8 @@ define i64 @test_call_discr_csr_live(ptr %fnptr, i64 %addr.discr) #0 {
 ; ELF-NEXT:    ldp     x20, x19, [sp, #16]
 ; ELF-NEXT:    ldr     x30, [sp], #32
 ; ELF-NEXT:    ret
-  %discr = tail call i64 @llvm.ptrauth.blend(i64 %addr.discr, i64 6503)
-  tail call void %fnptr() [ "ptrauth"(i32 0, i64 %discr) ]
-  tail call void %fnptr() [ "ptrauth"(i32 0, i64 %discr) ]
+  tail call void %fnptr() [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
+  tail call void %fnptr() [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
   ret i64 %addr.discr
 }
 
@@ -394,9 +389,8 @@ define i64 @test_call_discr_csr_killed(ptr %fnptr, i64 %addr.discr) #0 {
 ; ELF-NEXT:    mov     w0, #42
 ; ELF-NEXT:    ldr     x30, [sp], #32
 ; ELF-NEXT:    ret
-  %discr = tail call i64 @llvm.ptrauth.blend(i64 %addr.discr, i64 6503)
-  tail call void %fnptr() [ "ptrauth"(i32 0, i64 %discr) ]
-  tail call void %fnptr() [ "ptrauth"(i32 0, i64 %discr) ]
+  tail call void %fnptr() [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
+  tail call void %fnptr() [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
   ret i64 42
 }
 
@@ -412,8 +406,7 @@ define i64 @test_call_discr_arg(ptr %fnptr, i64 %addr.discr) #0 {
 ; ELF-NEXT:    mov     w0, #42
 ; ELF-NEXT:    ldr     x30, [sp], #16
 ; ELF-NEXT:    ret
-  %discr = tail call i64 @llvm.ptrauth.blend(i64 %addr.discr, i64 6503)
-  tail call void %fnptr(ptr null, i64 %addr.discr) [ "ptrauth"(i32 0, i64 %discr) ]
+  tail call void %fnptr(ptr null, i64 %addr.discr) [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
   ret i64 42
 }
 
@@ -427,8 +420,7 @@ define i64 @test_call_discr_non_arg(ptr %fnptr, i64 %addr.discr) #0 {
 ; ELF-NEXT:    mov     w0, #42
 ; ELF-NEXT:    ldr     x30, [sp], #16
 ; ELF-NEXT:    ret
-  %discr = tail call i64 @llvm.ptrauth.blend(i64 %addr.discr, i64 6503)
-  tail call void %fnptr() [ "ptrauth"(i32 0, i64 %discr) ]
+  tail call void %fnptr() [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
   ret i64 42
 }
 
@@ -440,8 +432,7 @@ define i64 @test_tailcall_discr_arg(ptr %fnptr, i64 %addr.discr) #0 {
 ; ELF-NEXT:    mov     x16, x1
 ; ELF-NEXT:    movk    x16, #6503, lsl #48
 ; ELF-NEXT:    braa    x2, x16
-  %discr = tail call i64 @llvm.ptrauth.blend(i64 %addr.discr, i64 6503)
-  %result = tail call i64 %fnptr(ptr null, i64 %addr.discr) [ "ptrauth"(i32 0, i64 %discr) ]
+  %result = tail call i64 %fnptr(ptr null, i64 %addr.discr) [ "ptrauth"(i64 0, i64 6503, i64 %addr.discr) ]
   ret i64 %result
 }
 
@@ -457,7 +448,7 @@ define i32 @test_call_ia_arg(ptr %arg0, i64 %arg1) #0 {
 ; ELF-NEXT:    blraa x0, x1
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 0, i64 %arg1) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
@@ -473,21 +464,21 @@ define i32 @test_call_ib_arg(ptr %arg0, i64 %arg1) #0 {
 ; ELF-NEXT:    blrab x0, x1
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
-  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 1, i64 %arg1) ]
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
 define i32 @test_tailcall_ia_arg(ptr %arg0, i64 %arg1) #0 {
 ; CHECK-LABEL: test_tailcall_ia_arg:
 ; CHECK:    braa x0, x1
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 0, i64 %arg1) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
 define i32 @test_tailcall_ib_arg(ptr %arg0, i64 %arg1) #0 {
 ; CHECK-LABEL: test_tailcall_ib_arg:
 ; CHECK:    brab x0, x1
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 1, i64 %arg1) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
@@ -506,7 +497,7 @@ define i32 @test_call_ia_arg_ind(ptr %arg0, i64 %arg1) #0 {
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
   %tmp0 = load ptr, ptr %arg0
-  %tmp1 = call i32 %tmp0() [ "ptrauth"(i32 0, i64 %arg1) ]
+  %tmp1 = call i32 %tmp0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 
@@ -525,7 +516,7 @@ define i32 @test_call_ib_arg_ind(ptr %arg0, i64 %arg1) #0 {
 ; ELF-NEXT:    ldr x30, [sp], #16
 ; ELF-NEXT:    ret
   %tmp0 = load ptr, ptr %arg0
-  %tmp1 = call i32 %tmp0() [ "ptrauth"(i32 1, i64 %arg1) ]
+  %tmp1 = call i32 %tmp0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 
@@ -534,7 +525,7 @@ define i32 @test_tailcall_ia_arg_ind(ptr %arg0, i64 %arg1) #0 {
 ; CHECK:    ldr x0, [x0]
 ; CHECK:    braa x0, x1
   %tmp0 = load ptr, ptr %arg0
-  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i32 0, i64 %arg1) ]
+  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 
@@ -543,7 +534,7 @@ define i32 @test_tailcall_ib_arg_ind(ptr %arg0, i64 %arg1) #0 {
 ; CHECK:    ldr x0, [x0]
 ; CHECK:    brab x0, x1
   %tmp0 = load ptr, ptr %arg0
-  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i32 1, i64 %arg1) ]
+  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 
@@ -561,7 +552,7 @@ define i32 @test_direct_call() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i32 0, i64 42) ]
+  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -571,7 +562,7 @@ define i32 @test_direct_tailcall(ptr %arg0) #0 {
 ;
 ; ELF-LABEL: test_direct_tailcall:
 ; ELF-NEXT:   b f
-  %tmp0 = tail call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i32 0, i64 42) ]
+  %tmp0 = tail call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -599,7 +590,7 @@ define i32 @test_direct_call_mismatch() #0 {
 ; ELF-NEXT:   blrab x8, x17
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i32 1, i64 42) ]
+  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 1, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -615,7 +606,7 @@ define i32 @test_direct_call_addr() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr @f.ref.ib.0.addr)() [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f.ref.ib.0.addr to i64)) ]
+  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr @f.ref.ib.0.addr)() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr @f.ref.ib.0.addr to i64)) ]
   ret i32 %tmp0
 }
 
@@ -631,24 +622,7 @@ define i32 @test_direct_call_addr_blend() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f.ref.ib.42.addr to i64), i64 42)
-  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 42, ptr @f.ref.ib.42.addr)() [ "ptrauth"(i32 1, i64 %tmp0) ]
-  ret i32 %tmp1
-}
-
-define i32 @test_direct_call_addr_blending_bundle() #0 {
-; DARWIN-LABEL: test_direct_call_addr_blending_bundle:
-; DARWIN-NEXT:   stp x29, x30, [sp, #-16]!
-; DARWIN-NEXT:   bl _f
-; DARWIN-NEXT:   ldp x29, x30, [sp], #16
-; DARWIN-NEXT:   ret
-;
-; ELF-LABEL: test_direct_call_addr_blending_bundle:
-; ELF-NEXT:   str x30, [sp, #-16]!
-; ELF-NEXT:   bl f
-; ELF-NEXT:   ldr x30, [sp], #16
-; ELF-NEXT:   ret
-  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 42, ptr @f.ref.ib.42.addr)() [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64), i64 42) ]
+  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 42, ptr @f.ref.ib.42.addr)() [ "ptrauth"(i64 1, i64 42, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64)) ]
   ret i32 %tmp1
 }
 
@@ -664,7 +638,7 @@ define i32 @test_direct_call_addr_gep_different_index_types() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i64 0, i32 0))() [ "ptrauth"(i32 1, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i32 0, i32 0) to i64)) ]
+  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i64 0, i32 0))() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i32 0, i32 0) to i64)) ]
   ret i32 %tmp0
 }
 
@@ -680,8 +654,7 @@ define i32 @test_direct_call_addr_blend_gep_different_index_types() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i32 0, i32 0) to i64), i64 123)
-  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 123, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i64 0, i32 0))() [ "ptrauth"(i32 1, i64 %tmp0) ]
+  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 123, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i64 0, i32 0))() [ "ptrauth"(i64 1, i64 123, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i32 0, i32 0) to i64)) ]
   ret i32 %tmp1
 }
 

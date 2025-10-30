@@ -106,41 +106,18 @@ bool AArch64GISelUtils::matchEmitBZero(const MachineInstr &MI,
 std::tuple<uint64_t, uint64_t, Register>
 AArch64GISelUtils::extractPtrauthBlendDiscriminators(
     SmallVector<Register> Operands, MachineRegisterInfo &MRI) {
+  assert(Operands.size() == 3);
+
   uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
-  if (Operands.size() == 3) {
-    uint64_t ConstDiscVal =
-        getIConstantVRegVal(Operands[2], MRI)->getZExtValue();
-    assert(isUInt<16>(ConstDiscVal));
-    return {KeyVal, ConstDiscVal, Operands[1]};
-  }
+  uint64_t ConstDiscVal = getIConstantVRegVal(Operands[1], MRI)->getZExtValue();
+  assert(isUInt<16>(ConstDiscVal));
 
-  // Stay fully compatible for now.
-  Register Disc = Operands[1];
+  Register AddrDisc = Operands[2];
+  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
+  if (AddrDiscVal && AddrDiscVal->isZero())
+    AddrDisc = AArch64::NoRegister;
 
-  Register AddrDisc = Disc;
-  uint16_t ConstDisc = 0;
-
-  if (auto ConstDiscVal = getIConstantVRegVal(Disc, MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = Register();
-    }
-    return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
-  }
-
-  Register BlendAddrDisc, BlendConstDisc;
-  if (!mi_match(Disc, MRI,
-                m_GIntrinsic<Intrinsic::ptrauth_blend>(m_Reg(BlendAddrDisc),
-                                                       m_Reg(BlendConstDisc))))
-    return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
-
-  if (auto ConstDiscVal = getIConstantVRegVal(BlendConstDisc, MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = BlendAddrDisc;
-    }
-  }
-  return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
+  return {KeyVal, ConstDiscVal, AddrDisc};
 }
 
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(

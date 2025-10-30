@@ -11,6 +11,6 @@ target triple = "aarch64-unknown-linux-pauthtest"
 
 define dso_local void @foo() local_unnamed_addr {
 entry:
-  tail call void @global() [ "ptrauth"(i32 0, i64 0) ]
+  tail call void @global() [ "ptrauth"(i64 0, i64 0, i64 0) ]
   ret void
 }
