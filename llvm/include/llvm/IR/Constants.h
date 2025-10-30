@@ -1112,6 +1112,8 @@ public:
                              const Value *AddrDisc,
                              const Value *IntDisc,
                              const DataLayout &DL) const;
+  bool isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
+                             const DataLayout &DL) const;
   bool isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
                              const DataLayout &DL) const;
 
