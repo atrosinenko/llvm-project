@@ -123,7 +123,14 @@ namespace llvm {
 
   /// Upgrade operand bundles (without knowing about their user instruction).
   LLVM_ABI void
-  UpgradeOperandBundles(std::vector<OperandBundleDef> &OperandBundles);
+  UpgradeOperandBundles(SmallVectorImpl<OperandBundleDef> &OperandBundles);
+
+  /// Upgrade the users of llvm.ptrauth.blend intrinsic calls.
+  //
+  // It is only permitted for UpgradeIntrinsicCall to remove the call
+  // instruction passed as its argument, but upgrading the users of
+  // llvm.ptrauth.blend involves replacing arbitrary instructions.
+  LLVM_ABI void UpgradePtrauthBlendUsers(Module &M);
 
 } // End llvm namespace
 
