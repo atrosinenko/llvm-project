@@ -2947,11 +2947,6 @@ def int_ptrauth_resign_load_relative
 def int_ptrauth_strip :
   DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
-// Blend a small integer discriminator with an address discriminator, producing
-// a new discriminator value.
-def int_ptrauth_blend :
-  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty, llvm_i64_ty], [IntrNoMem]>;
-
 // Compute the signature of a value, using a given discriminator.
 // This differs from @llvm.ptrauth.sign in that it doesn't embed the computed
 // signature in the pointer, but instead returns the signature as a value.
