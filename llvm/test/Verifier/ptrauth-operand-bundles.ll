@@ -13,6 +13,8 @@ define void @test_ptrauth_bundle(i64 %arg.64, ptr %arg.ptr, ptr %ok) {
   call void @g() [ "ptrauth"(i64 42, i64 120) ]
 
 ; CHECK-NOT: call void %ok()
+  call void %ok() [ "ptrauth"(i32 42, i64 120) ]   ; OK
+  call void %ok() [ "ptrauth"(i32 42, i64 %arg.64) ] ; OK
   call void %ok() [ "ptrauth"(i64 %arg.64, i64 123) ] ; OK
   call void %ok() [ "ptrauth"(i64 %arg.64, i64 123, i64 %arg.64, i64 42) ] ; OK
 
@@ -31,6 +33,12 @@ define void @test_ptrauth_bundle(i64 %arg.64, ptr %arg.ptr, ptr %ok) {
 ; CHECK: Ptrauth bundle must only contain i64 operands
 ; CHECK-NEXT: call void %arg.ptr() [ "ptrauth"(i64 42, i64 120, i32 123) ]
   call void %arg.ptr() [ "ptrauth"(i64 42, i64 120, i32 123) ]
+
+; Note that for compatibility reasons the first operand (originally, "the key ID")
+; might be auto-upgraded to i64:
+;
+; CHECK-NOT:  call void %ok()
+  call void %ok() [ "ptrauth"(i32 42, i64 120) ]
 
 ; CHECK: Expected exactly one ptrauth bundle
 ; CHECK-NEXT: call i64 @llvm.ptrauth.auth(i64 0)

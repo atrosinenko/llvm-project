@@ -5102,7 +5102,7 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
     return nullptr;
   };
 
-  std::vector<OperandBundleDef> OperandBundles;
+  SmallVector<OperandBundleDef> OperandBundles;
 
   // Read all the records.
   SmallVector<uint64_t, 64> Record;
@@ -7331,6 +7331,8 @@ Error BitcodeReader::materializeModule() {
   UpgradeARCRuntime(*TheModule);
 
   copyModuleAttrToFunctions(*TheModule);
+
+  UpgradePtrauthBlendUsers(*TheModule);
 
   return Error::success();
 }
