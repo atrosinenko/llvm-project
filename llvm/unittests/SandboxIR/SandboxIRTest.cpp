@@ -1403,8 +1403,8 @@ define ptr @foo() {
             LLVMPtrAuth->hasSpecialAddressDiscriminator(0u));
   // Check isKnownCompatibleWith().
   const DataLayout &DL = M->getDataLayout();
-  EXPECT_TRUE(PtrAuth->isKnownCompatibleWith(PtrAuth->getKey(),
-                                             PtrAuth->getDiscriminator(), DL));
+  EXPECT_TRUE(PtrAuth->isKnownCompatibleWith({PtrAuth->getKey(),
+                                             PtrAuth->getDiscriminator()}, DL));
   // Check getWithSameSchema().
   EXPECT_EQ(PtrAuth->getWithSameSchema(&F), PtrAuth);
 }
