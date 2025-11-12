@@ -3316,6 +3316,8 @@ AArch64TargetLowering::EmitEntryPStateSM(MachineInstr &MI,
   return BB;
 }
 
+// Used by https://github.com/llvm/llvm-project/pull/130809.
+#if 0
 // Helper function to find the instruction that defined a virtual register.
 // If unable to find such instruction, returns nullptr.
 static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
@@ -3341,33 +3343,7 @@ static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
   }
   return nullptr;
 }
-
-void AArch64TargetLowering::fixupPtrauthDiscriminator(
-    MachineInstr &MI, MachineBasicBlock *BB, MachineOperand &IntDiscOp,
-    MachineOperand &AddrDiscOp, const TargetRegisterClass *AddrDiscRC) const {
-  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
-  MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
-  const DebugLoc &DL = MI.getDebugLoc();
-
-  Register AddrDisc = AddrDiscOp.getReg();
-  int64_t IntDisc = IntDiscOp.getImm();
-
-  // For uniformity, always use NoRegister, as XZR is not necessarily contained
-  // in the requested register class.
-  if (AddrDisc == AArch64::XZR)
-    AddrDisc = AArch64::NoRegister;
-#if 0
-  // Make sure AddrDisc operand respects the register class imposed by MI.
-  if (AddrDisc && MRI.getRegClass(AddrDisc) != AddrDiscRC) {
-    Register TmpReg = MRI.createVirtualRegister(AddrDiscRC);
-    BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg).addReg(AddrDisc);
-    AddrDisc = TmpReg;
-  }
 #endif
-
-  AddrDiscOp.setReg(AddrDisc);
-  IntDiscOp.setImm(IntDisc);
-}
 
 MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
@@ -3466,8 +3442,6 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     return EmitZTInstr(MI, BB, AArch64::MOVT_TIZ, /*Op0IsDef=*/true);
 
   case AArch64::PAC:
-    fixupPtrauthDiscriminator(MI, BB, MI.getOperand(3), MI.getOperand(4),
-                              &AArch64::GPR64noipRegClass);
     return BB;
   }
 }
@@ -31523,9 +31497,38 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
 }
 
 std::optional<std::string>
-AArch64TargetLowering::validatePtrAuthBundles(const CallBase &CB) const {
-  auto GetMsg = [&CB](StringRef Str) {
+AArch64TargetLowering::validatePtrAuthSchema(const CallBase &CB) const {
+  auto GetMsg = [&CB](Twine Str) -> std::string {
     return (CB.getFunction()->getName() + ": " + Str).str();
+  };
+
+  auto ValidateSchema =
+      [&](ArrayRef<Use> Schema,
+          bool ExpectSingleElement) -> std::optional<std::string> {
+    unsigned NumOperands = Schema.size();
+    if (ExpectSingleElement) {
+      if (NumOperands != 1)
+        return GetMsg("single-element ptrauth bundle expected");
+    } else {
+      if (NumOperands != 3)
+        return GetMsg("three-element ptrauth bundle expected");
+    }
+
+    // The first operand is always the key ID.
+    auto *Key = dyn_cast<ConstantInt>(Schema[0]);
+    if (!Key || Key->getZExtValue() > AArch64PACKey::LAST)
+      return GetMsg("key must be constant in range [0, " +
+                    Twine((int)AArch64PACKey::LAST) + "]");
+
+    // Done validating single-operand bundles.
+    if (NumOperands == 1)
+      return std::nullopt;
+
+    auto *IntDisc = dyn_cast<ConstantInt>(Schema[1]);
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return GetMsg("constant modifier must be 16-bit unsigned constant");
+
+    return std::nullopt;
   };
 
   for (unsigned I = 0, N = CB.getNumOperandBundles(); I < N; ++I) {
@@ -31533,29 +31536,10 @@ AArch64TargetLowering::validatePtrAuthBundles(const CallBase &CB) const {
     if (OB.getTagID() != LLVMContext::OB_ptrauth)
       continue;
 
-    unsigned NumOperands = OB.Inputs.size();
-    if (CB.getIntrinsicID() == Intrinsic::ptrauth_strip) {
-      if (NumOperands != 1)
-        return GetMsg("Single-element ptrauth bundle expected");
-    } else {
-      if (NumOperands != 3)
-        return GetMsg("Three-element ptrauth bundle expected");
-    }
-
-    // The first operand is always the key ID.
-    if (!isa<ConstantInt>(OB.Inputs[0]))
-      return GetMsg("Key must be constant in ptrauth bundle on AArch64");
-
-    // Done validating single-operand bundles.
-    if (NumOperands == 1)
-      continue;
-
-    auto *IntDisc = dyn_cast<ConstantInt>(OB.Inputs[1]);
-    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
-      return GetMsg("Constant modifier must be 16-bit unsigned constant in "
-                    "ptrauth bundle on AArch64");
+    bool ExpectSingleElement = CB.getIntrinsicID() == Intrinsic::ptrauth_strip;
+    if (auto Err = ValidateSchema(OB.Inputs, ExpectSingleElement))
+      return Err;
   }
-
   return std::nullopt;
 }
 

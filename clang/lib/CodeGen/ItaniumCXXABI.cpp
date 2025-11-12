@@ -879,9 +879,9 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
         CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
     assert(Schema.getKey() == AuthInfo.getKey() &&
            "Keys for virtual and non-virtual member functions must match");
-    auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
-    assert(!AuthInfo.isBlended() &&
-           isa<llvm::ConstantInt>(NonVirtualDiscriminator));
+    auto *NonVirtualDiscriminator =
+        Builder.getInt64(AuthInfo.getIntDiscriminator());
+    assert(!AuthInfo.getAddrDiscriminator());
     // FIXME Investigate re-signing VirtualFn pointer in FnVirtual basic block
     //       to the same non-zero discriminator or other safer options.
     //
@@ -899,7 +899,7 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
         Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI);
+        Schema.authenticatesNullValues(), 0, DiscriminatorPHI);
   }
 
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
@@ -931,15 +931,14 @@ static llvm::Constant *pointerAuthResignConstant(
   if (!CPA)
     return nullptr;
 
-  assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey() &&
-         CPA->getAddrDiscriminator()->isNullValue() &&
-         CPA->getDiscriminator() == CurAuthInfo.getDiscriminator() &&
-         !CurAuthInfo.isBlended() && !NewAuthInfo.isBlended() &&
-         "unexpected key or discriminators");
+  assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey());
+  assert(CPA->getDiscriminator()->getZExtValue() ==
+         CurAuthInfo.getIntDiscriminator());
+  assert(!CurAuthInfo.getAddrDiscriminator() &&
+         !NewAuthInfo.getAddrDiscriminator() &&
+         CPA->getAddrDiscriminator()->isNullValue());
 
-  return CGM.getConstantSignedPointer(
-      CPA->getPointer(), NewAuthInfo.getKey(), nullptr,
-      cast<llvm::ConstantInt>(NewAuthInfo.getDiscriminator()));
+  return CGM.getConstantSignedPointer(CPA->getPointer(), NewAuthInfo);
 }
 
 /// Perform a bitcast, derived-to-base, or base-to-derived member pointer
@@ -1797,7 +1796,7 @@ llvm::Value *ItaniumCXXABI::emitExactDynamicCast(
     // authenticate the resulting v-table at the end of the cast check.
     PerformPostCastAuthentication = CGF.getLangOpts().PointerAuthCalls;
     CGPointerAuthInfo StrippingAuthInfo(0, PointerAuthenticationMode::Strip,
-                                        false, false);
+                                        false, false, 0, nullptr);
     Address VTablePtrPtr = ThisAddr.withElementType(CGF.VoidPtrPtrTy);
     VTable = CGF.Builder.CreateLoad(VTablePtrPtr, "vtable");
     if (PerformPostCastAuthentication)

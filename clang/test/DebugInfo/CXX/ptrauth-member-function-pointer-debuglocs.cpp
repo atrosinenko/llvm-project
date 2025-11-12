@@ -12,7 +12,7 @@
 // CHECK-SAME:     !dbg ![[SCOPE_INDEX:[0-9]+]]
 // CHECK-NOT:  define
 // CHECK:        musttail call void %{{[0-9]+}}(ptr
-// CHECK-SAME:     [ "ptrauth"(i64 0, i64 %{{[0-9]+}}, i64 9385) ]
+// CHECK-SAME:     [ "ptrauth"(i64 0, i64 9385, i64 %{{[0-9]+}}) ]
 // CHECK-SAME:     !dbg ![[LOCATION_INDEX:[0-9]+]]
 
 // CHECK:      ![[SCOPE_INDEX]] = distinct !DISubprogram(

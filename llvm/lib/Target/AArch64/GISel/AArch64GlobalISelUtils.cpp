@@ -114,6 +114,18 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(
   return {KeyVal, ConstDiscVal, AddrDisc};
 }
 
+std::tuple<uint64_t, uint64_t, Register>
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register BundleToken,
+                                                     MachineRegisterInfo &MRI) {
+  assert(MRI.getType(BundleToken).isToken());
+  const MachineInstr *Bundle = MRI.getVRegDef(BundleToken);
+  assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+  SmallVector<Register> Ops;
+  for (auto &Op : Bundle->uses())
+    Ops.push_back(Op.getReg());
+  return extractPtrauthBlendDiscriminators(Ops, MRI);
+}
+
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(
     const CmpInst::Predicate P, AArch64CC::CondCode &CondCode,
     AArch64CC::CondCode &CondCode2) {

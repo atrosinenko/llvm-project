@@ -6629,7 +6629,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
   const TargetLowering &TLI = DAG.getTargetLoweringInfo();
   SDLoc SDL = getCurSDLoc();
 
-  TLI.reportFatalErrorOnInvalidPtrAuthBundles(I);
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(I);
 
   auto CreatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = I.getOperandBundleAt(Index);
@@ -6639,7 +6639,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
     for (const Use &Operand : Bundle.Inputs)
       Ops.push_back(getValue(Operand));
 
-    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+    return DAG.getNode(ISD::PtrAuthBundle, SDL, MVT::Other, Ops);
   };
   auto CreateDeactivationSymbol = [&]() -> std::optional<SDValue> {
     auto Bundle = I.getOperandBundle(LLVMContext::OB_deactivation_symbol);
@@ -9321,12 +9321,8 @@ void SelectionDAGBuilder::LowerCallTo(const CallBase &CB, SDValue Callee,
       .setDeactivationSymbol(DeactivationSymbol);
 
   // Set the pointer authentication info if we have it.
-  if (PAI) {
-    if (!TLI.supportPtrAuthBundles())
-      report_fatal_error(
-          "This target doesn't support calls with ptrauth operand bundles.");
+  if (PAI)
     CLI.setPtrAuth(*PAI);
-  }
 
   std::pair<SDValue, SDValue> Result = lowerInvokable(CLI, EHPadBB);
 
@@ -9937,7 +9933,7 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
 
   assert(!isa<IntrinsicInst>(CB) && "Should be handled by visitIntrinsicCall");
 
-  TLI.reportFatalErrorOnInvalidPtrAuthBundles(CB);
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
   SmallVector<Value *> BundleOperands(PAB->Inputs.begin(), PAB->Inputs.end());
 

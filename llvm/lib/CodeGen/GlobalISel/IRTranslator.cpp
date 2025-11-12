@@ -2234,7 +2234,7 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
 bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
                                              unsigned Opcode,
                                              MachineIRBuilder &MIRBuilder) {
-  TLI->reportFatalErrorOnInvalidPtrAuthBundles(CI);
+  TLI->reportFatalErrorOnInvalidPtrAuthSchema(CI);
 
   auto TranslatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = CI.getOperandBundleAt(Index);
@@ -2836,7 +2836,7 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     assert(!isa<IntrinsicInst>(CB) &&
            "Should be handled by translateKnownIntrinsic");
 
-    TLI->reportFatalErrorOnInvalidPtrAuthBundles(CB);
+    TLI->reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
     SmallVector<Value *> BundleOperands(Bundle->Inputs.begin(),
                                         Bundle->Inputs.end());
