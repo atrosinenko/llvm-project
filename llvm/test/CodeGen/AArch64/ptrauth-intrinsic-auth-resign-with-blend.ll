@@ -262,15 +262,17 @@ define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
 ;
 ;     Assertion `ScratchReg != AddrDisc && "Forbidden to clobber AddrDisc, but have to"
 ;
-define i64 @autxmxn_scratch_is_earlyclobber(i64 %ptr, i64 %arg) {
-entry:
-  %discr = call i64 @llvm.ptrauth.blend(i64 %arg, i64 1)
-  br label %some.bb
-
-some.bb:
-  %authed = call i64 @llvm.ptrauth.auth(i64 %ptr) [ "ptrauth"(i64 0, i64 %discr) ]
-  br label %some.other.bb
-
-some.other.bb:
-  ret i64 %authed
-}
+; FIXME: After removal of the standalone blend intrinsic, testing this behavior
+;        requires some other trick.
+; define i64 @autxmxn_scratch_is_earlyclobber(i64 %ptr, i64 %arg) {
+; entry:
+;   %discr = call i64 @llvm.ptrauth.blend(i64 %arg, i64 1)
+;   br label %some.bb
+;
+; some.bb:
+;   %authed = call i64 @llvm.ptrauth.auth(i64 %ptr) [ "ptrauth"(i64 0, i64 %discr) ]
+;   br label %some.other.bb
+;
+; some.other.bb:
+;   ret i64 %authed
+; }
