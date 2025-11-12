@@ -6636,7 +6636,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
     for (const Use &Operand : Bundle.Inputs)
       Ops.push_back(getValue(Operand));
 
-    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+    return DAG.getNode(ISD::PtrAuthBundle, SDL, MVT::Other, Ops);
   };
   auto CreateDeactivationSymbol = [&]() -> std::optional<SDValue> {
     auto Bundle = I.getOperandBundle(LLVMContext::OB_deactivation_symbol);

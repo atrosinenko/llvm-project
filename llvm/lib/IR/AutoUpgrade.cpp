@@ -4967,25 +4967,23 @@ static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs)
 //
 // Caller of this function is responsible for distinguishing between old-style
 // AArch64 bundles (i32 key) and new-style non-AArch64 bundles that happen to
-// have two operands (which must be all i64 in the new-style bundles).
+// have two operands (which must all have i64 type in the new-style bundles).
 //
 // Note that this function never expands calls to @llvm.ptrauth.blend, which
 // are handled by upgradePtrAuthBlend later.
 static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
-                                                    Value *DiscOrNull) {
+                                                    Value *Disc) {
   LLVMContext &Ctx = Key->getContext();
   Value *Zero = ConstantInt::get(Ctx, APInt::getZero(64));
   SmallVector<Value *, 3> Inputs;
 
   Inputs.push_back(ConstantInt::get(Ctx, Key->getValue().zext(64)));
 
-  auto *IntDisc = dyn_cast_or_null<ConstantInt>(DiscOrNull);
+  auto *IntDisc = dyn_cast<ConstantInt>(Disc);
   if (IntDisc && isUInt<16>(IntDisc->getZExtValue()))
     Inputs.append({IntDisc, Zero});
-  else if (DiscOrNull)
-    Inputs.append({Zero, DiscOrNull});
   else
-    Inputs.append({Zero, Zero});
+    Inputs.append({Zero, Disc});
 
   return OperandBundleDef("ptrauth", Inputs);
 }
@@ -5014,8 +5012,10 @@ static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
 // case of "ptrauth" bundles (indirect authenticated calls) as well as any
 // @llvm.ptrauth.* intrinsics which were lazily processed already.
 //
-// Note that the half-upgraded call formally uses the same called function
-// and the same function signature as the original one.
+// Note: the half-upgraded call formally uses the same called function
+//       and the same function signature as the original one.
+// Note: authenticated indirect calls with old-style bundles are handled by
+//       UpgradeOperandBundles function.
 static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   // Skip: intrinsic calls are never indirect.
   if (CI->isIndirectCall())
@@ -5095,7 +5095,7 @@ static void upgradePtrAuthBlend(CallBase *BlendCall) {
     // If Call is an old-style @llvm.ptrauth.* intrinsic call, lazily migrate
     // it to "ptrauth" bundles first.
     // If Call is an authenticated indirect call, it is expected to have
-    // already been migrated to a three-operand form by this time.
+    // already been migrated to a three-operand form by UpgradeOperandBundles.
     Call = upgradeToPtrAuthBundles(Call);
 
     SmallVector<OperandBundleDef> OBs;

@@ -3374,6 +3374,8 @@ AArch64TargetLowering::EmitEntryPStateSM(MachineInstr &MI,
   return BB;
 }
 
+// Used by https://github.com/llvm/llvm-project/pull/130809.
+#if 0
 // Helper function to find the instruction that defined a virtual register.
 // If unable to find such instruction, returns nullptr.
 static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
@@ -3399,33 +3401,7 @@ static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
   }
   return nullptr;
 }
-
-void AArch64TargetLowering::fixupPtrauthDiscriminator(
-    MachineInstr &MI, MachineBasicBlock *BB, MachineOperand &IntDiscOp,
-    MachineOperand &AddrDiscOp, const TargetRegisterClass *AddrDiscRC) const {
-  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
-  MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
-  const DebugLoc &DL = MI.getDebugLoc();
-
-  Register AddrDisc = AddrDiscOp.getReg();
-  int64_t IntDisc = IntDiscOp.getImm();
-
-  // For uniformity, always use NoRegister, as XZR is not necessarily contained
-  // in the requested register class.
-  if (AddrDisc == AArch64::XZR)
-    AddrDisc = AArch64::NoRegister;
-#if 0
-  // Make sure AddrDisc operand respects the register class imposed by MI.
-  if (AddrDisc && MRI.getRegClass(AddrDisc) != AddrDiscRC) {
-    Register TmpReg = MRI.createVirtualRegister(AddrDiscRC);
-    BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg).addReg(AddrDisc);
-    AddrDisc = TmpReg;
-  }
 #endif
-
-  AddrDiscOp.setReg(AddrDisc);
-  IntDiscOp.setImm(IntDisc);
-}
 
 MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
@@ -3532,8 +3508,6 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     return EmitZTInstr(MI, BB, AArch64::MOVT_TIZ, /*Op0IsDef=*/true);
 
   case AArch64::PAC:
-    fixupPtrauthDiscriminator(MI, BB, MI.getOperand(3), MI.getOperand(4),
-                              &AArch64::GPR64noipRegClass);
     return BB;
   }
 }
