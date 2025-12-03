@@ -4634,15 +4634,12 @@ public:
   /// Return true if the target supports kcfi operand bundles.
   virtual bool supportKCFIBundles() const { return false; }
 
-  /// Return true if the target supports ptrauth operand bundles.
-  virtual bool supportPtrAuthBundles() const { return false; }
-
   /// Perform target-specific validation of "ptrauth" call operand bundles that
   /// is not covered by Verifier but relied upon by the backend.
   virtual std::optional<std::string>
   validatePtrAuthBundles(const CallBase &CB) const {
-    return std::nullopt;
-  };
+    return "This target doesn't support calls with ptrauth operand bundles";
+  }
 
   /// Convenience function to report fatal error if user-provided IR violates
   /// the assumptions relied upon by the backend.
@@ -4653,6 +4650,7 @@ public:
     if (auto Error = validatePtrAuthBundles(CB)) {
       errs() << "Ptrauth bundle violates target-specific constraints:\n";
       CB.print(errs());
+      errs() << "\n";
       reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
     }
   }

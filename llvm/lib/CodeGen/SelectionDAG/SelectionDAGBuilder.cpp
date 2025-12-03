@@ -9318,12 +9318,8 @@ void SelectionDAGBuilder::LowerCallTo(const CallBase &CB, SDValue Callee,
       .setDeactivationSymbol(DeactivationSymbol);
 
   // Set the pointer authentication info if we have it.
-  if (PAI) {
-    if (!TLI.supportPtrAuthBundles())
-      report_fatal_error(
-          "This target doesn't support calls with ptrauth operand bundles.");
+  if (PAI)
     CLI.setPtrAuth(*PAI);
-  }
 
   std::pair<SDValue, SDValue> Result = lowerInvokable(CLI, EHPadBB);
 
