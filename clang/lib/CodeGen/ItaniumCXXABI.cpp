@@ -882,8 +882,19 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
     auto *NonVirtualDiscriminator =
         Builder.getInt64(AuthInfo.getIntDiscriminator());
     assert(!AuthInfo.getAddrDiscriminator());
-    // FIXME This does not involve call to @llvm.ptrauth.blend(), but such
-    //       usage of constant modifier is unsafe.
+    // FIXME Investigate re-signing VirtualFn pointer in FnVirtual basic block
+    //       to the same non-zero discriminator or other safer options.
+    //
+    //       Depending on its origin, CalleePtr is authenticated using one of
+    //       two possible constant discriminators. That integer discriminator
+    //       may end up being spilled to the stack and thus be susceptible to
+    //       substitution by the attacker. Authenticating CalleePtr at this
+    //       point is not an option, as it would make things even worse by
+    //       exposing completely unprotected function pointer instead of less
+    //       sensitive discriminator value.
+    //
+    //       "Upgrading" VirtualFn's schema to a custom constant discriminator
+    //       would probably help, but it still requires investigation.
 
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
