@@ -6817,19 +6817,10 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
     MachineInstr &I, MachineRegisterInfo &MRI) const {
   Register DefReg = I.getOperand(0).getReg();
   Register Addr = I.getOperand(1).getReg();
-  uint64_t Key = I.getOperand(2).getImm();
-  Register AddrDisc = I.getOperand(3).getReg();
-  uint64_t Disc = I.getOperand(4).getImm();
+  Register Schema = I.getOperand(2).getReg();
   int64_t Offset = 0;
 
-  if (Key > AArch64PACKey::LAST)
-    report_fatal_error("key in ptrauth global out of range [0, " +
-                       Twine((int)AArch64PACKey::LAST) + "]");
-
-  // Blend only works if the integer discriminator is 16-bit wide.
-  if (!isUInt<16>(Disc))
-    report_fatal_error(
-        "constant discriminator in ptrauth global out of range [0, 0xffff]");
+  auto [Key, Disc, AddrDisc] = extractPtrauthBlendDiscriminators(Schema, MRI);
 
   // Choosing between 3 lowering alternatives is target-specific.
   if (!STI.isTargetELF() && !STI.isTargetMachO())
@@ -6878,8 +6869,7 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
   assert((!GV->hasExternalWeakLinkage() || NeedsGOTLoad) &&
          "unsupported non-GOT reference to weak ptrauth global");
 
-  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
-  bool HasAddrDisc = !AddrDiscVal || *AddrDiscVal != 0;
+  bool HasAddrDisc = AddrDisc != AArch64::NoRegister;
 
   // Non-extern_weak:
   // - No GOT load needed -> MOVaddrPAC
@@ -6891,7 +6881,8 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
     MIB.buildInstr(NeedsGOTLoad ? AArch64::LOADgotPAC : AArch64::MOVaddrPAC)
         .addGlobalAddress(GV, Offset)
         .addImm(Key)
-        .addReg(HasAddrDisc ? AddrDisc : AArch64::XZR)
+        .addReg(HasAddrDisc ? AddrDisc
+                            : AArch64::XZR) // FIXME Use NoRegister instead?
         .addImm(Disc)
         .constrainAllUses(TII, TRI, RBI);
     MIB.buildCopy(DefReg, Register(AArch64::X16));

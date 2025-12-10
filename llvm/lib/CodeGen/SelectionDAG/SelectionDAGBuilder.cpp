@@ -1873,10 +1873,18 @@ SDValue SelectionDAGBuilder::getValueImpl(const Value *V) {
       return DAG.getGlobalAddress(GV, getCurSDLoc(), VT);
 
     if (const ConstantPtrAuth *CPA = dyn_cast<ConstantPtrAuth>(C)) {
+      const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+      TLI.reportFatalErrorOnInvalidPtrAuthSchema(*CPA);
+
+      SmallVector<SDValue> Ops;
+      for (const Use &Operand : CPA->getSchema())
+        Ops.push_back(getValue(Operand));
+
+      SDValue Bundle =
+          DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+
       return DAG.getNode(ISD::PtrAuthGlobalAddress, getCurSDLoc(), VT,
-                         getValue(CPA->getPointer()), getValue(CPA->getKey()),
-                         getValue(CPA->getAddrDiscriminator()),
-                         getValue(CPA->getDiscriminator()));
+                         getValue(CPA->getPointer()), Bundle);
     }
 
     if (isa<ConstantPointerNull>(C))

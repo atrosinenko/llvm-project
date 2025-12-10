@@ -5446,7 +5446,7 @@ need to refer to the actual function body.
 Pointer Authentication Constants
 --------------------------------
 
-``ptrauth (ptr CST, i32 KEY[, i64 DISC[, ptr ADDRDISC[, ptr DS]?]?]?)``
+``ptrauth (ptr CST, [i64 op1, ...], ptr DS)`` or ``ptrauth (ptr CST, [i64 op1, ...])``
 
 A '``ptrauth``' constant represents a pointer with a cryptographic
 authentication signature embedded into some bits, as described in the
@@ -5455,16 +5455,15 @@ authentication signature embedded into some bits, as described in the
 A '``ptrauth``' constant is simply a constant equivalent to the
 ``llvm.ptrauth.sign`` intrinsic.
 
-Its type is the same as the first argument.  An integer constant discriminator
-and an address discriminator may be optionally specified.  Otherwise, they have
-values ``i64 0`` and ``ptr null``.
+Its type is the same as the first argument. A variable number of `i64` operands
+corresponds to a "``ptrauth``" operand bundle.
 
-The expression '``ptrauth(ptr CST, i32 KEY, i64 DISC, ptr ADDRDISC)``' is
+The expression '``ptrauth(ptr CST, [i64 op1, ..., i64 opN])``' is
 equivalent to
 
 .. code-block:: llvm
 
-    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 KEY, i64 DISC, i64 ptrtoint (ptr ADDRDISC to i64)) ]
+    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 op1, ..., i64 opN) ]
     %val = inttoptr i64 %tmp to ptr
 
 If the deactivation symbol operand ``DS`` has a non-null value,
@@ -5473,11 +5472,6 @@ the semantics are as if a :ref:`deactivation-symbol operand bundle
 calls above, with ``DS`` as the only operand.
 
 .. _constantexprs:
-
-That is, the first operand of '``ptrauth``' constant is the pointer to be
-signed (the only argument of '``@llvm.ptrauth.sign``') and all the remaining
-operands have the same interpretation as in ``"ptrauth"`` call operand bundle
-(with trivial type conversion).
 
 Constant Expressions
 --------------------

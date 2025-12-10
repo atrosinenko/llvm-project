@@ -78,13 +78,12 @@ The instruction produces an opaque token value to be passed to other
 G_PTRAUTH_GLOBAL_VALUE
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The signed address of a global value. Operands: address to be signed (pointer),
-key (32-bit imm), address for address discrimination (zero if not needed) and
-an extra discriminator (64-bit imm).
+The signed address of a global value. Operands: address to be signed (pointer)
+and an opaque token produced by `G_PTRAUTH_SCHEMA`.
 
 .. code-block:: none
 
-  %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64
+  %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), %2:_(s0)
 
 G_PTRAUTH_AUTH
 ^^^^^^^^^^^^^^

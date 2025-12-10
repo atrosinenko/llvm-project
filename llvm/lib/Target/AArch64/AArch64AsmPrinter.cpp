@@ -1467,7 +1467,7 @@ void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
             ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
       report_fatal_error(
           "unexpected address discrimination value for ctors/dtors entry, only "
-          "'ptr inttoptr (i64 1 to ptr)' is allowed");
+          "'i64 1' is allowed");
   // If we have signed pointers in xxstructors list, they'll be lowered to @AUTH
   // MCExpr's via AArch64AsmPrinter::lowerConstantPtrAuth. It does not look at
   // actual address discrimination value and only checks

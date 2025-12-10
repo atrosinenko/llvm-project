@@ -42,7 +42,7 @@ void (*test_member)() = (void (*)())pm.fptr_;
 void test_cast_to_opaque() {
   opaque = (void *)f;
 
-  // TYPE: [[RESIGN_VAL:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
+  // TYPE: [[RESIGN_VAL:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, [i64 0, i64 18983, i64 0]) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
   // TYPE: [[RESIGN_PTR:%.*]] = inttoptr i64 [[RESIGN_VAL]] to ptr
   // ZERO-NOT: @llvm.ptrauth.resign
 }
@@ -95,11 +95,11 @@ void test_call_lvalue_cast() {
   (*(void (*)(int))f)(42);
 
   // TYPE: entry:
-  // TYPE-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
+  // TYPE-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, [i64 0, i64 18983, i64 0]) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
   // TYPE-NEXT: [[RESIGN_INT:%.*]] = inttoptr i64 [[RESIGN]] to ptr
   // TYPE-NEXT: call void [[RESIGN_INT]](i32 noundef 42) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 42) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  // ZERO: call void ptrauth (ptr @f, [i64 0, i64 0, i64 0])(i32 noundef 42) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 }
 
 

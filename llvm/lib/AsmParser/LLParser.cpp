@@ -4479,27 +4479,43 @@ bool LLParser::parseValID(ValID &ID, PerFunctionState *PFS, Type *ExpectedTy) {
     return false;
   }
   case lltok::kw_ptrauth: {
-    // ValID ::= 'ptrauth' '(' ptr @foo ',' i32 <key>
-    //                         (',' i64 <disc> (',' ptr addrdisc (',' ptr ds)?
-    //                         )? )? ')'
+    // ValID ::= 'ptrauth' '(' ptr @foo ','
+    //                         '[' i64 schema_op (',' i64 schema_op)* ']'
+    //                         (',' ptr ds)? ')'
     Lex.Lex();
 
-    Constant *Ptr, *Key;
-    Constant *Disc = nullptr, *AddrDisc = nullptr,
-             *DeactivationSymbol = nullptr;
+    Constant *Ptr;
+    SmallVector<Constant *> Schema;
+    Constant *DeactivationSymbol = nullptr;
+
+    Constant *TmpSchemaOp;
 
     if (parseToken(lltok::lparen,
                    "expected '(' in constant ptrauth expression") ||
         parseGlobalTypeAndValue(Ptr) ||
         parseToken(lltok::comma,
                    "expected comma in constant ptrauth expression") ||
-        parseGlobalTypeAndValue(Key))
+        parseToken(lltok::lsquare,
+                   "expected '[' in constant ptrauth expression"))
       return true;
-    // If present, parse the optional disc/addrdisc/ds.
-    if (EatIfPresent(lltok::comma) && parseGlobalTypeAndValue(Disc))
+
+    if (EatIfPresent(lltok::rsquare))
+      return error(ID.Loc, "schema of ptrauth constant must not be empty");
+
+    if (parseGlobalTypeAndValue(TmpSchemaOp))
       return true;
-    if (EatIfPresent(lltok::comma) && parseGlobalTypeAndValue(AddrDisc))
+
+    Schema.push_back(TmpSchemaOp);
+    while (EatIfPresent(lltok::comma)) {
+      if (parseGlobalTypeAndValue(TmpSchemaOp))
+        return true;
+      Schema.push_back(TmpSchemaOp);
+    }
+
+    if (parseToken(lltok::rsquare,
+                   "expected ']' in constant ptrauth expression"))
       return true;
+
     if (EatIfPresent(lltok::comma) &&
         parseGlobalTypeAndValue(DeactivationSymbol))
       return true;
@@ -4508,29 +4524,13 @@ bool LLParser::parseValID(ValID &ID, PerFunctionState *PFS, Type *ExpectedTy) {
       return true;
 
     if (!Ptr->getType()->isPointerTy())
-      return error(ID.Loc, "constant ptrauth base pointer must be a pointer");
+      return error(ID.Loc,
+                   "base pointer of ptrauth constant must be a pointer");
 
-    auto *KeyC = dyn_cast<ConstantInt>(Key);
-    if (!KeyC || KeyC->getBitWidth() != 32)
-      return error(ID.Loc, "constant ptrauth key must be i32 constant");
-
-    ConstantInt *DiscC = nullptr;
-    if (Disc) {
-      DiscC = dyn_cast<ConstantInt>(Disc);
-      if (!DiscC || DiscC->getBitWidth() != 64)
-        return error(
-            ID.Loc,
-            "constant ptrauth integer discriminator must be i64 constant");
-    } else {
-      DiscC = ConstantInt::get(Type::getInt64Ty(Context), 0);
-    }
-
-    if (AddrDisc) {
-      if (!AddrDisc->getType()->isPointerTy())
-        return error(
-            ID.Loc, "constant ptrauth address discriminator must be a pointer");
-    } else {
-      AddrDisc = ConstantPointerNull::get(PointerType::get(Context, 0));
+    for (Constant *Op : Schema) {
+      if (!Op->getType()->isIntegerTy(64))
+        return error(ID.Loc,
+                     "schema of ptrauth constant must be a tuple of i64");
     }
 
     if (!DeactivationSymbol)
@@ -4540,8 +4540,7 @@ bool LLParser::parseValID(ValID &ID, PerFunctionState *PFS, Type *ExpectedTy) {
       return error(ID.Loc,
                    "constant ptrauth deactivation symbol must be a pointer");
 
-    ID.ConstantVal =
-        ConstantPtrAuth::get(Ptr, KeyC, DiscC, AddrDisc, DeactivationSymbol);
+    ID.ConstantVal = ConstantPtrAuth::get(Ptr, Schema, DeactivationSymbol);
     ID.Kind = ValID::t_Constant;
     return false;
   }

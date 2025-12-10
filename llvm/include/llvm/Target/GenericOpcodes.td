@@ -136,7 +136,7 @@ def G_GLOBAL_VALUE : GenericInstruction {
 
 def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins unknown:$addr, i32imm:$key, type1:$addrdisc, i64imm:$disc);
+  let InOperandList = (ins type0:$addr, untyped_imm_0:$schema);
   let hasSideEffects = 0;
 }
 

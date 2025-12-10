@@ -3343,20 +3343,17 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         auto ThisSignSchema =
             *II->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 1);
         // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
-        // FIXME Generalize ptrauth constant and drop AArch64-specific
-        //       assumptions.
-        if (ThisSignSchema.Inputs.size() == 3) {
-          auto *SignKey = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[0]);
-          auto *SignIntDisc = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[1]);
+        auto IsConstant = [](Value *V) { return isa<Constant>(V); };
+        if (llvm::all_of(ThisSignSchema.Inputs, IsConstant)) {
           auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
-          if (SignKey && SignIntDisc) {
-            auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), SignKey,
-                                                SignIntDisc, /*AddrDisc=*/Null,
-                                                /*DeactivationSymbol=*/Null);
-            replaceInstUsesWith(
-                *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
-            return eraseInstFromFunction(*II);
-          }
+          SmallVector<Constant *> Ops;
+          for (Value *V : ThisSignSchema.Inputs)
+            Ops.push_back(cast<Constant>(V));
+          auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), Ops,
+                                              /*DeactivationSymbol=*/Null);
+          replaceInstUsesWith(
+              *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
+          return eraseInstFromFunction(*II);
         }
       }
 

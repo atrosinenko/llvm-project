@@ -31,7 +31,7 @@
 @fptr = private global ptr null
 
 define void @foo() {
-  store ptr ptrauth (ptr @bar, i32 0), ptr @fptr
+  store ptr ptrauth (ptr @bar, [i64 0, i64 0, i64 0]), ptr @fptr
   ret void
 }
 

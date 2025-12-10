@@ -41,6 +41,7 @@
 #include "llvm/CodeGenTypes/MachineValueType.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/CallingConv.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
@@ -4713,7 +4714,7 @@ protected:
   /// Perform target-specific validation of PtrAuth schema descriptions that
   /// is not covered by Verifier but relied upon by the backend.
   virtual std::optional<std::string>
-  validatePtrAuthSchema(const CallBase &CB) const {
+  validatePtrAuthSchema(const Value &V) const {
     return "this target does not support pointer authentication";
   }
 
@@ -4723,10 +4724,11 @@ public:
   ///
   /// This function is intended to handle possible invalid user input and thus
   /// always performs the check, whether the assertions are enabled or not.
-  void reportFatalErrorOnInvalidPtrAuthSchema(const CallBase &CB) const {
-    if (auto Error = validatePtrAuthSchema(CB)) {
+  void reportFatalErrorOnInvalidPtrAuthSchema(const Value &V) const {
+    assert(isa<CallBase>(V) || isa<ConstantPtrAuth>(V));
+    if (auto Error = validatePtrAuthSchema(V)) {
       errs() << "Ptrauth schema violates target-specific constraints:\n";
-      CB.print(errs());
+      V.print(errs());
       errs() << "\n";
       reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
     }

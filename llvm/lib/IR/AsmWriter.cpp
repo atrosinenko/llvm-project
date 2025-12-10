@@ -1690,22 +1690,23 @@ static void writeConstantInternal(raw_ostream &Out, const Constant *CV,
   if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV)) {
     Out << "ptrauth (";
 
-    // ptrauth (ptr CST, i32 KEY[, i64 DISC[, ptr ADDRDISC[, ptr DS]?]?]?)
-    unsigned NumOpsToWrite = 2;
-    if (!CPA->getOperand(2)->isNullValue())
-      NumOpsToWrite = 3;
-    if (!isa<ConstantPointerNull>(CPA->getOperand(3)))
-      NumOpsToWrite = 4;
-    if (!isa<ConstantPointerNull>(CPA->getOperand(4)))
-      NumOpsToWrite = 5;
-
+    // ptrauth (ptr CST, [i64 ARG, ...] (, ptr DS)?)
+    writeAsOperandInternal(Out, CPA->getOperand(0), WriterCtx,
+                           /*PrintType=*/true);
+    Out << ", [";
     ListSeparator LS;
-    for (unsigned i = 0, e = NumOpsToWrite; i != e; ++i) {
+    auto Schema = CPA->getSchema();
+    for (unsigned I = 0, N = Schema.size(); I < N; ++I) {
       Out << LS;
-      writeAsOperandInternal(Out, CPA->getOperand(i), WriterCtx,
-                             /*PrintType=*/true);
+      writeAsOperandInternal(Out, Schema[I], WriterCtx, /*PrintType=*/true);
     }
-    Out << ')';
+    Out << "]";
+    Constant *Sym = CPA->getDeactivationSymbol();
+    if (!Sym->isNullValue()) {
+      Out << ", ";
+      writeAsOperandInternal(Out, Sym, WriterCtx, /*PrintType=*/true);
+    }
+    Out << ")";
     return;
   }
 

@@ -2846,27 +2846,24 @@ void Verifier::visitConstantExpr(const ConstantExpr *CE) {
 
 void Verifier::visitConstantPtrAuth(const ConstantPtrAuth *CPA) {
   Check(CPA->getPointer()->getType()->isPointerTy(),
-        "signed ptrauth constant base pointer must have pointer type");
+        "ptrauth constant base pointer must have pointer type", CPA);
 
   Check(CPA->getType() == CPA->getPointer()->getType(),
-        "signed ptrauth constant must have same type as its base pointer");
+        "ptrauth constant must have same type as its base pointer", CPA);
 
-  Check(CPA->getKey()->getBitWidth() == 32,
-        "signed ptrauth constant key must be i32 constant integer");
-
-  Check(CPA->getAddrDiscriminator()->getType()->isPointerTy(),
-        "signed ptrauth constant address discriminator must be a pointer");
-
-  Check(CPA->getDiscriminator()->getBitWidth() == 64,
-        "signed ptrauth constant discriminator must be i64 constant integer");
+  Check(!CPA->getSchema().empty(),
+        "ptrauth constant must not have empty schema");
+  for (Value *V : CPA->getSchema())
+    Check(V->getType()->isIntegerTy(64),
+          "ptrauth constant schema must have i64 constant operands", CPA);
 
   Check(CPA->getDeactivationSymbol()->getType()->isPointerTy(),
-        "signed ptrauth constant deactivation symbol must be a pointer");
+        "ptrauth constant deactivation symbol must be a pointer", CPA);
 
   Check(isa<GlobalValue>(CPA->getDeactivationSymbol()) ||
             isa<ConstantPointerNull>(CPA->getDeactivationSymbol()),
-        "signed ptrauth constant deactivation symbol must be a global value "
-        "or null");
+        "ptrauth constant deactivation symbol must be a global value or null",
+        CPA);
 }
 
 bool Verifier::verifyAttributeCount(AttributeList Attrs, unsigned Params) {

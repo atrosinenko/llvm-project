@@ -9,7 +9,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .rodata
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@nullref = constant ptr ptrauth (ptr null, i32 2, i64 1, ptr null), align 8
+@nullref = constant ptr ptrauth (ptr null, [i64 2, i64 1, i64 0]), align 8
 
 @dsolocal = external dso_local global i8
 
@@ -23,7 +23,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@dsolocalref = constant ptr ptrauth (ptr @dsolocal, i32 2, i64 2, ptr null), align 8
+@dsolocalref = constant ptr ptrauth (ptr @dsolocal, [i64 2, i64 2, i64 0]), align 8
 
 @ds = external global i8
 
@@ -40,7 +40,7 @@
 ; CHECK-NEXT: ret
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@dsolocalrefds = constant ptr ptrauth (ptr @dsolocal, i32 2, i64 2, ptr null, ptr @ds), align 8
+@dsolocalrefds = constant ptr ptrauth (ptr @dsolocal, [i64 2, i64 2, i64 0], ptr @ds), align 8
 
 ; CHECK: dsolocalref8:
 ; CHECK-NEXT: [[PLACE:.*]]:
@@ -52,7 +52,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@dsolocalref8 = constant ptr ptrauth (ptr getelementptr (i8, ptr @dsolocal, i64 8), i32 2, i64 3, ptr null), align 8
+@dsolocalref8 = constant ptr ptrauth (ptr getelementptr (i8, ptr @dsolocal, i64 8), [i64 2, i64 3, i64 0]), align 8
 
 ; CHECK: disc:
 ; CHECK-NEXT: [[PLACE:.*]]:
@@ -65,7 +65,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@disc = constant ptr ptrauth (ptr @dsolocal, i32 2, i64 0, ptr @disc), align 8
+@disc = constant ptr ptrauth (ptr @dsolocal, [i64 2, i64 0, i64 ptrtoint (ptr @disc to i64)]), align 8
 
 ; CHECK: disc65536:
 ; CHECK-NEXT: [[PLACE:.*]]:
@@ -78,7 +78,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@disc65536 = constant ptr ptrauth (ptr @dsolocal, i32 2, i64 65536, ptr @disc), align 8
+@disc65536 = constant ptr ptrauth (ptr @dsolocal, [i64 2, i64 65536, i64 ptrtoint (ptr @disc to i64)]), align 8
 
 @global = external global i8
 
@@ -92,7 +92,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@globalref = constant ptr ptrauth (ptr @global, i32 2, i64 4, ptr null), align 8
+@globalref = constant ptr ptrauth (ptr @global, [i64 2, i64 4, i64 0]), align 8
 
 ; CHECK: globalref8:
 ; CHECK-NEXT: [[PLACE:.*]]:
@@ -105,7 +105,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@globalref8 = constant ptr ptrauth (ptr getelementptr (i8, ptr @global, i64 8), i32 2, i64 5, ptr null), align 8
+@globalref8 = constant ptr ptrauth (ptr getelementptr (i8, ptr @global, i64 8), [i64 2, i64 5, i64 0]), align 8
 
 ; CHECK: globalref16777216:
 ; CHECK-NEXT: [[PLACE:.*]]:
@@ -120,10 +120,10 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@globalref16777216 = constant ptr ptrauth (ptr getelementptr (i8, ptr @global, i64 16777216), i32 2, i64 5, ptr null), align 8
+@globalref16777216 = constant ptr ptrauth (ptr getelementptr (i8, ptr @global, i64 16777216), [i64 2, i64 5, i64 0]), align 8
 
 $comdat = comdat any
-@comdat = constant ptr ptrauth (ptr null, i32 2, i64 1, ptr null), align 8, comdat
+@comdat = constant ptr ptrauth (ptr null, [i64 2, i64 1, i64 0]), align 8, comdat
 ; CHECK: comdat:
 ; CHECK-NEXT: [[PLACE:.*]]:
 ; CHECK-NEXT: .section	.text.startup,"axG",@progbits,comdat,comdat

@@ -94,7 +94,7 @@ enum NodeType {
   BlockAddress,
 
   /// A ptrauth constant.
-  /// ptr, key, addr-disc, disc
+  /// ptr, bundle_token
   /// Note that the addr-disc can be a non-constant value, to allow representing
   /// a constant global address signed using address-diversification, in code.
   PtrAuthGlobalAddress,

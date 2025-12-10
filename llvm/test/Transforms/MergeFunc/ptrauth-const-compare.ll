@@ -18,22 +18,22 @@ declare void @callee(ptr)
 define i32 @f_ptr_null() {
 ; CHECK-LABEL: define i32 @f_ptr_null() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr null, i32 0))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr null, [i64 0, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 1
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr null, i32 0))
+  call void @callee(ptr ptrauth (ptr null, [i64 0, i64 0, i64 0]))
   ret i32 1
 }
 
 define i32 @g_ptr_baz() {
 ; CHECK-LABEL: define i32 @g_ptr_baz() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 1
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
   ret i32 1
 }
 
@@ -42,22 +42,22 @@ entry:
 define i32 @f_key0() {
 ; CHECK-LABEL: define i32 @f_key0() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 2
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
   ret i32 2
 }
 
 define i32 @g_key1() {
 ; CHECK-LABEL: define i32 @g_key1() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 1))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 1, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 2
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 1))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 1, i64 0, i64 0]))
   ret i32 2
 }
 
@@ -66,22 +66,22 @@ entry:
 define i32 @f_disc0() {
 ; CHECK-LABEL: define i32 @f_disc0() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 3
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
   ret i32 3
 }
 
 define i32 @g_disc7() {
 ; CHECK-LABEL: define i32 @g_disc7() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 7))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 7, i64 0]))
 ; CHECK-NEXT:    ret i32 3
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 7))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 7, i64 0]))
   ret i32 3
 }
 
@@ -90,22 +90,22 @@ entry:
 define i32 @f_addr_null() {
 ; CHECK-LABEL: define i32 @f_addr_null() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
 ; CHECK-NEXT:    ret i32 4
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 0]))
   ret i32 4
 }
 
 define i32 @g_addr_ADDR() {
 ; CHECK-LABEL: define i32 @g_addr_ADDR() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 0, ptr @ADDR))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 ptrtoint (ptr @ADDR to i64)]))
 ; CHECK-NEXT:    ret i32 4
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 0, ptr @ADDR))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 ptrtoint (ptr @ADDR to i64)]))
   ret i32 4
 }
 
@@ -114,11 +114,11 @@ entry:
 define void @merge_ptrauth_a() {
 ; CHECK-LABEL: define void @merge_ptrauth_a() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 0, ptr @ADDR))
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 ptrtoint (ptr @ADDR to i64)]))
 ; CHECK-NEXT:    ret void
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 0, ptr @ADDR))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 ptrtoint (ptr @ADDR to i64)]))
   ret void
 }
 
@@ -128,6 +128,6 @@ define void @merge_ptrauth_b() {
 ; CHECK-NEXT:    ret void
 ;
 entry:
-  call void @callee(ptr ptrauth (ptr @baz, i32 0, i64 0, ptr @ADDR))
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0, i64 ptrtoint (ptr @ADDR to i64)]))
   ret void
 }

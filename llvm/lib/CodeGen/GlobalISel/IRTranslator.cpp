@@ -2240,11 +2240,12 @@ bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
     auto Bundle = CI.getOperandBundleAt(Index);
     assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
 
-    Register Res = MRI->createGenericVirtualRegister(LLT::token());
-    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
-    Builder.addDef(Res);
+    SmallVector<SrcOp> SchemaOps;
     for (const Use &Operand : Bundle.Inputs)
-      Builder.addUse(getOrCreateVReg(*Operand));
+      SchemaOps.push_back(getOrCreateVReg(*Operand));
+
+    Register Res = MRI->createGenericVirtualRegister(LLT::token());
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE, {Res}, SchemaOps);
 
     return Res;
   };
@@ -3914,9 +3915,18 @@ bool IRTranslator::translate(const Constant &C, Register Reg) {
   else if (auto GV = dyn_cast<GlobalValue>(&C))
     EntryBuilder->buildGlobalValue(Reg, GV);
   else if (auto CPA = dyn_cast<ConstantPtrAuth>(&C)) {
+    TLI->reportFatalErrorOnInvalidPtrAuthSchema(*CPA);
+
     Register Addr = getOrCreateVReg(*CPA->getPointer());
-    Register AddrDisc = getOrCreateVReg(*CPA->getAddrDiscriminator());
-    EntryBuilder->buildConstantPtrAuth(Reg, CPA, Addr, AddrDisc);
+    SmallVector<SrcOp> SchemaOps;
+    for (const Use &Operand : CPA->getSchema())
+      SchemaOps.push_back(getOrCreateVReg(*Operand));
+
+    Register SchemaReg = MRI->createGenericVirtualRegister(LLT::token());
+    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE, {SchemaReg},
+                             SchemaOps);
+
+    EntryBuilder->buildConstantPtrAuth(Reg, Addr, SchemaReg);
   } else if (auto CAZ = dyn_cast<ConstantAggregateZero>(&C)) {
     Constant &Elt = *CAZ->getElementValue(0u);
     if (isa<ScalableVectorType>(CAZ->getType())) {

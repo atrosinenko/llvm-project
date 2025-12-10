@@ -13,23 +13,23 @@
 // RUN: %clang_cc1 -triple aarch64-linux-gnu -fptrauth-calls -fptrauth-intrinsics -emit-llvm -std=c++11 -O1 -disable-llvm-passes -stack-protector 3 -o - %s | FileCheck %s -check-prefix=STACK-PROT
 
 
-// CHECK: @gmethod0 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 [[TYPEDISC1:35591]]) to i64), i64 0 }, align 8
-// CHECK: @gmethod1 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011nonvirtual5Ev, i32 0, i64 [[TYPEDISC0:22163]]) to i64), i64 0 }, align 8
-// CHECK: @gmethod2 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 [[TYPEDISC0]]) to i64), i64 0 }, align 8
+// CHECK: @gmethod0 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 [[TYPEDISC1:35591]], i64 0]) to i64), i64 0 }, align 8
+// CHECK: @gmethod1 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011nonvirtual5Ev, [i64 0, i64 [[TYPEDISC0:22163]], i64 0]) to i64), i64 0 }, align 8
+// CHECK: @gmethod2 = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC0]], i64 0]) to i64), i64 0 }, align 8
 
-// CHECK: @__const._Z13testArrayInitv.p0 = private unnamed_addr constant [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 35591) to i64), i64 0 }], align 8
-// CHECK: @__const._Z13testArrayInitv.p1 = private unnamed_addr constant [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 35591) to i64), i64 0 }], align 8
-// CHECK: @__const._Z13testArrayInitv.c0 = private unnamed_addr constant %struct.Class0 { { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 35591) to i64), i64 0 } }, align 8
-// CHECK: @__const._Z13testArrayInitv.c1 = private unnamed_addr constant %struct.Class0 { { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 35591) to i64), i64 0 } }, align 8
+// CHECK: @__const._Z13testArrayInitv.p0 = private unnamed_addr constant [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 35591, i64 0]) to i64), i64 0 }], align 8
+// CHECK: @__const._Z13testArrayInitv.p1 = private unnamed_addr constant [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 35591, i64 0]) to i64), i64 0 }], align 8
+// CHECK: @__const._Z13testArrayInitv.c0 = private unnamed_addr constant %struct.Class0 { { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 35591, i64 0]) to i64), i64 0 } }, align 8
+// CHECK: @__const._Z13testArrayInitv.c1 = private unnamed_addr constant %struct.Class0 { { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 35591, i64 0]) to i64), i64 0 } }, align 8
 
-// CHECK: @_ZN22testNoexceptConversion6mfptr1E = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, i32 0, i64 [[TYPEDISC3:.*]]) to i64), i64 0 },
-// CHECK: @_ZN22testNoexceptConversion6mfptr2E = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S16virtual_noexceptEv_vfpthunk_, i32 0, i64 [[TYPEDISC3]]) to i64), i64 0 },
-// CHECK: @_ZN22testNoexceptConversion15mfptr3_noexceptE = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, i32 0, i64 [[TYPEDISC3]]) to i64), i64 0 },
+// CHECK: @_ZN22testNoexceptConversion6mfptr1E = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, [i64 0, i64 [[TYPEDISC3:.*]], i64 0]) to i64), i64 0 },
+// CHECK: @_ZN22testNoexceptConversion6mfptr2E = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S16virtual_noexceptEv_vfpthunk_, [i64 0, i64 [[TYPEDISC3]], i64 0]) to i64), i64 0 },
+// CHECK: @_ZN22testNoexceptConversion15mfptr3_noexceptE = global { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, [i64 0, i64 [[TYPEDISC3]], i64 0]) to i64), i64 0 },
 
 // CHECK: @_ZTV5Base0 = unnamed_addr constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_ZTI5Base0,
-// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base08virtual1Ev, i32 0, i64 55600, ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 2)),
-// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base08virtual3Ev, i32 0, i64 53007, ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 3)),
-// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base016virtual_variadicEiz, i32 0, i64 7464, ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 4))] }, align 8
+// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base08virtual1Ev, [i64 0, i64 55600, i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 2) to i64)]),
+// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base08virtual3Ev, [i64 0, i64 53007, i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 3) to i64)]),
+// CHECK-SAME: ptr ptrauth (ptr @_ZN5Base016virtual_variadicEiz, [i64 0, i64 7464, i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr] }, ptr @_ZTV5Base0, i32 0, i32 0, i32 4) to i64)])] }, align 8
 
 typedef __SIZE_TYPE__ size_t;
 
@@ -104,21 +104,21 @@ struct Class0 {
 // CHECK-NEXT: %[[METHOD5:.*]] = alloca { i64, i64 }, align 8
 // CHECK-NEXT: %[[METHOD6:.*]] = alloca { i64, i64 }, align 8
 // CHECK-NEXT: %[[METHOD7:.*]] = alloca { i64, i64 }, align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 [[TYPEDISC0]]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 [[TYPEDISC0]]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual3Ev_vfpthunk_, i32 0, i64 [[TYPEDISC0]]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base016virtual_variadicEiz_vfpthunk_, i32 0, i64 34368) to i64), i64 0 }, ptr %[[VARMETHOD1]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual3Ev_vfpthunk_, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011nonvirtual5Ev, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived08virtual6Ev_vfpthunk_, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived010return_aggEv_vfpthunk_, i32 0, i64 64418) to i64), i64 0 }, ptr %[[METHOD3]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived04sretEv_vfpthunk_, i32 0, i64 28187) to i64), i64 0 }, ptr %[[METHOD4]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011trivial_abiE8TrivialS_vfpthunk_, i32 0, i64 8992) to i64), i64 0 }, ptr %[[METHOD5]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base18virtual7Ev_vfpthunk_, i32 0, i64 [[TYPEDISC2:61596]]) to i64), i64 0 }, ptr %[[METHOD6]], align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived18virtual7Ev_vfpthunk_, i32 0, i64 25206) to i64), i64 0 }, ptr %[[METHOD7]], align 8
-// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 25206) to i64), i64 0 }, ptr %[[METHOD7]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 [[TYPEDISC0]], i64 0]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC0]], i64 0]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual3Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC0]], i64 0]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base016virtual_variadicEiz_vfpthunk_, [i64 0, i64 34368, i64 0]) to i64), i64 0 }, ptr %[[VARMETHOD1]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual3Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011nonvirtual5Ev, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived08virtual6Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %[[METHOD2]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived010return_aggEv_vfpthunk_, [i64 0, i64 64418, i64 0]) to i64), i64 0 }, ptr %[[METHOD3]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived04sretEv_vfpthunk_, [i64 0, i64 28187, i64 0]) to i64), i64 0 }, ptr %[[METHOD4]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived011trivial_abiE8TrivialS_vfpthunk_, [i64 0, i64 8992, i64 0]) to i64), i64 0 }, ptr %[[METHOD5]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base18virtual7Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC2:61596]], i64 0]) to i64), i64 0 }, ptr %[[METHOD6]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN8Derived18virtual7Ev_vfpthunk_, [i64 0, i64 25206, i64 0]) to i64), i64 0 }, ptr %[[METHOD7]], align 8
+// CHECK-NEXT: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 25206, i64 0]) to i64), i64 0 }, ptr %[[METHOD7]], align 8
 // CHECK: ret void
 
 // CHECK: define linkonce_odr hidden void @_ZN5Base08virtual1Ev_vfpthunk_(ptr noundef %[[THIS:.*]])
@@ -374,7 +374,7 @@ void testConversion3(MethodTy1 method1) {
 
 // CHECK: define{{.*}} void @_Z15testConversion4v(
 // CHECK: %[[METHOD0:.*]] = alloca { i64, i64 }, align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 [[TYPEDISC0]]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC0]], i64 0]) to i64), i64 0 }, ptr %[[METHOD0]], align 8
 // CHECK: ret void
 
 void testConversion4() {
@@ -423,8 +423,8 @@ MethodTy0 gmethod2 = reinterpret_cast<MethodTy0>(&Derived0::virtual1);
 // CHECK: call void @llvm.memcpy.p0.p0.i64(ptr align 8 %p1, ptr align 8 @__const._Z13testArrayInitv.p1, i64 16, i1 false)
 // CHECK: call void @llvm.memcpy.p0.p0.i64(ptr align 8 %c0, ptr align 8 @__const._Z13testArrayInitv.c0, i64 16, i1 false)
 // CHECK: call void @llvm.memcpy.p0.p0.i64(ptr align 8 %c1, ptr align 8 @__const._Z13testArrayInitv.c1, i64 16, i1 false)
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %{{.*}} align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, i32 0, i64 [[TYPEDISC1]]) to i64), i64 0 }, ptr %{{.*}}, align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base011nonvirtual0Ev, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %{{.*}} align 8
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN5Base08virtual1Ev_vfpthunk_, [i64 0, i64 [[TYPEDISC1]], i64 0]) to i64), i64 0 }, ptr %{{.*}}, align 8
 
 void initList(std::initializer_list<MethodTy1>);
 
@@ -462,11 +462,11 @@ namespace testNoexceptConversion {
 
 // CHECK: define {{.*}}void @_ZN22testNoexceptConversion5test0Ev()
 // CHECK: %[[P0:.*]] = alloca { i64, i64 }, align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, i32 0, i64 [[TYPEDISC3]]) to i64), i64 0 }, ptr %[[P0]], align 8,
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S19nonvirtual_noexceptEv, [i64 0, i64 [[TYPEDISC3]], i64 0]) to i64), i64 0 }, ptr %[[P0]], align 8,
 
 // CHECK: define {{.*}}void @_ZN22testNoexceptConversion5test1Ev()
 // CHECK: %[[P0:.*]] = alloca { i64, i64 }, align 8
-// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S16virtual_noexceptEv_vfpthunk_, i32 0, i64 [[TYPEDISC3]]) to i64), i64 0 }, ptr %[[P0]], align 8,
+// CHECK: store { i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN22testNoexceptConversion1S16virtual_noexceptEv_vfpthunk_, [i64 0, i64 [[TYPEDISC3]], i64 0]) to i64), i64 0 }, ptr %[[P0]], align 8,
 
 // CHECK: define {{.*}}void @_ZN22testNoexceptConversion5test2Ev()
 // CHECK: %[[P0:.*]] = alloca { i64, i64 }, align 8

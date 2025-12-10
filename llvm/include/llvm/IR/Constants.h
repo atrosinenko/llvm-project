@@ -1208,20 +1208,19 @@ class ConstantPtrAuth final : public Constant {
   friend struct ConstantPtrAuthKeyType;
   friend class Constant;
 
-  constexpr static IntrusiveOperandsAllocMarker AllocMarker{5};
-
-  ConstantPtrAuth(Constant *Ptr, ConstantInt *Key, ConstantInt *Disc,
-                  Constant *AddrDisc, Constant *DeactivationSymbol);
-
-  void *operator new(size_t s) { return User::operator new(s, AllocMarker); }
+  ConstantPtrAuth(Constant *Ptr, ArrayRef<Constant *> Schema,
+                  Constant *DeactivationSymbol, AllocInfo AllocInfo);
 
   void destroyConstantImpl();
   Value *handleOperandChangeImpl(Value *From, Value *To);
 
 public:
   /// Return a pointer signed with the specified parameters.
-  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantInt *Key,
-                                       ConstantInt *Disc, Constant *AddrDisc,
+  // LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantArray *Schema,
+                                       // Constant *DeactivationSymbol);
+
+  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr,
+                                       ArrayRef<Constant *> SchemaArgs,
                                        Constant *DeactivationSymbol);
 
   /// Produce a new ptrauth expression signing the given value using
@@ -1234,28 +1233,40 @@ public:
   /// The pointer that is signed in this ptrauth signed pointer.
   Constant *getPointer() const { return cast<Constant>(Op<0>().get()); }
 
+  ArrayRef<Use> getSchema() const {
+    return ArrayRef<Use>(op_begin() + 2, op_end());
+  }
+
   /// The Key ID, an i32 constant.
-  ConstantInt *getKey() const { return cast<ConstantInt>(Op<1>().get()); }
+  ConstantInt *getKey() const {
+    // FIXME remove this
+    return cast<ConstantInt>(getSchema()[0]);
+  }
 
   /// The integer discriminator, an i64 constant, or 0.
   ConstantInt *getDiscriminator() const {
-    return cast<ConstantInt>(Op<2>().get());
+    // FIXME remove this
+    return cast<ConstantInt>(getSchema()[1]);
   }
 
   /// The address discriminator if any, or the null constant.
   /// If present, this must be a value equivalent to the storage location of
   /// the only global-initializer user of the ptrauth signed pointer.
+  // FIXME Remove
   Constant *getAddrDiscriminator() const {
-    return cast<Constant>(Op<3>().get());
+    // FIXME remove this
+    return cast<Constant>(getSchema()[2]);
   }
 
   /// Whether there is any non-null address discriminator.
+  // FIXME Remove
   bool hasAddressDiscriminator() const {
+    // FIXME remove this
     return !isa<ConstantPointerNull>(getAddrDiscriminator());
   }
 
   Constant *getDeactivationSymbol() const {
-    return cast<Constant>(Op<4>().get());
+    return cast<Constant>(Op<1>().get());
   }
 
   /// A constant value for the address discriminator which has special
@@ -1269,6 +1280,7 @@ public:
   /// These discriminators can't be used in real pointer-auth values; they
   /// can only be used in "prototype" values that indicate how some real
   /// schema is supposed to be produced.
+  // FIXME Rethink?
   LLVM_ABI bool hasSpecialAddressDiscriminator(uint64_t Value) const;
 
   /// Check whether an authentication operation with key \p Key and (possibly
@@ -1286,7 +1298,7 @@ public:
 
 template <>
 struct OperandTraits<ConstantPtrAuth>
-    : public FixedNumOperandTraits<ConstantPtrAuth, 5> {};
+    : public VariadicOperandTraits<ConstantPtrAuth> {};
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(ConstantPtrAuth, Constant)
 
