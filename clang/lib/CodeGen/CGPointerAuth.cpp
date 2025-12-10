@@ -382,9 +382,10 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
   llvm::Constant *AddressDiscriminator;
   if (StorageAddress) {
     assert(StorageAddress->getType() == DefaultPtrTy);
-    AddressDiscriminator = StorageAddress;
+    AddressDiscriminator = llvm::ConstantExpr::getPtrToInt(StorageAddress,
+                                                           Int64Ty);
   } else {
-    AddressDiscriminator = llvm::Constant::getNullValue(DefaultPtrTy);
+    AddressDiscriminator = llvm::ConstantInt::get(Int64Ty, 0);
   }
 
   llvm::ConstantInt *IntegerDiscriminator;
@@ -395,10 +396,15 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
     IntegerDiscriminator = llvm::ConstantInt::get(Int64Ty, 0);
   }
 
-  return llvm::ConstantPtrAuth::get(
-      Pointer, llvm::ConstantInt::get(Int32Ty, Key), IntegerDiscriminator,
-      AddressDiscriminator,
-      /*DeactivationSymbol=*/llvm::Constant::getNullValue(DefaultPtrTy));
+  SmallVector<llvm::Constant *, 3> Schema;
+  Schema.push_back(llvm::ConstantInt::get(Int64Ty, Key));
+  Schema.push_back(IntegerDiscriminator);
+  Schema.push_back(AddressDiscriminator);
+
+  llvm::Constant *Null = llvm::Constant::getNullValue(DefaultPtrTy);
+
+  return llvm::ConstantPtrAuth::get(Pointer, Schema,
+                                    /*DeactivationSymbol=*/Null);
 }
 
 /// Does a given PointerAuthScheme require us to sign a value

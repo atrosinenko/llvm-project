@@ -9,11 +9,11 @@ __INTPTR_TYPE__ __ptrauth(1, 1, 1272) g2 = 0;
 extern __UINTPTR_TYPE__ test_int;
 __UINTPTR_TYPE__ __ptrauth(3, 1, 23) g3 = (__UINTPTR_TYPE__)&test_int;
 // CHECK: @test_int = external global i64
-// CHECK: @g3 = global i64 ptrtoint (ptr ptrauth (ptr @test_int, i32 3, i64 23, ptr @g3) to i64)
+// CHECK: @g3 = global i64 ptrtoint (ptr ptrauth (ptr @test_int, [i64 3, i64 23, i64 ptrtoint (ptr @g3 to i64)]) to i64)
 
 __INTPTR_TYPE__ __ptrauth(1, 1, 712) ga[3] = {0,0,(__UINTPTR_TYPE__)&test_int};
 
-// CHECK: @ga = global [3 x i64] [i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, i32 1, i64 712, ptr getelementptr inbounds ([3 x i64], ptr @ga, i32 0, i32 2)) to i64)]
+// CHECK: @ga = global [3 x i64] [i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, [i64 1, i64 712, i64 ptrtoint (ptr getelementptr inbounds ([3 x i64], ptr @ga, i32 0, i32 2) to i64)]) to i64)]
 
 struct A {
   __INTPTR_TYPE__ __ptrauth(1, 0, 431) f0;
@@ -22,7 +22,7 @@ struct A {
 };
 
 struct A gs1 = {0, 0, (__UINTPTR_TYPE__)&test_int};
-// CHECK: @gs1 = global %struct.A { i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, i32 1, i64 783) to i64) }
+// CHECK: @gs1 = global %struct.A { i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, [i64 1, i64 783, i64 0]) to i64) }
 
 struct B {
   __INTPTR_TYPE__ __ptrauth(1, 1, 1276) f0;
@@ -31,7 +31,7 @@ struct B {
 };
 
 struct B gs2 = {0, 0, (__UINTPTR_TYPE__)&test_int};
-// CHECK: @gs2 = global %struct.B { i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, i32 1, i64 163, ptr getelementptr inbounds (%struct.B, ptr @gs2, i32 0, i32 2)) to i64) }
+// CHECK: @gs2 = global %struct.B { i64 0, i64 0, i64 ptrtoint (ptr ptrauth (ptr @test_int, [i64 1, i64 163, i64 ptrtoint (ptr getelementptr inbounds (%struct.B, ptr @gs2, i32 0, i32 2) to i64)]) to i64) }
 
 // CHECK-LABEL: i64 @test_read_globals
 __INTPTR_TYPE__ test_read_globals() {

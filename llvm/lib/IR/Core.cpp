@@ -936,6 +936,15 @@ LLVMValueRef LLVMGetConstantPtrAuthPointer(LLVMValueRef PtrAuth) {
   return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getPointer());
 }
 
+LLVM_C_ABI unsigned LLVMGetConstantPtrAuthSchemaSize(LLVMValueRef PtrAuth) {
+  return unwrap<ConstantPtrAuth>(PtrAuth)->getSchema().size();
+}
+
+LLVM_C_ABI LLVMValueRef
+LLVMGetConstantPtrAuthSchemaOperand(LLVMValueRef PtrAuth, unsigned Idx) {
+  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema()[Idx]);
+}
+
 LLVMValueRef LLVMGetConstantPtrAuthKey(LLVMValueRef PtrAuth) {
   return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getKey());
 }
@@ -946,6 +955,11 @@ LLVMValueRef LLVMGetConstantPtrAuthDiscriminator(LLVMValueRef PtrAuth) {
 
 LLVMValueRef LLVMGetConstantPtrAuthAddrDiscriminator(LLVMValueRef PtrAuth) {
   return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getAddrDiscriminator());
+}
+
+LLVM_C_ABI LLVMValueRef
+LLVMGetConstantPtrAuthDeactivationSymbol(LLVMValueRef PtrAuth) {
+  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getDeactivationSymbol());
 }
 
 /*--.. Operations on other types ...........................................--*/
@@ -1715,13 +1729,16 @@ LLVMValueRef LLVMConstVector(LLVMValueRef *ScalarConstantVals, unsigned Size) {
       ArrayRef(unwrap<Constant>(ScalarConstantVals, Size), Size)));
 }
 
-LLVMValueRef LLVMConstantPtrAuth(LLVMValueRef Ptr, LLVMValueRef Key,
-                                 LLVMValueRef Disc, LLVMValueRef AddrDisc) {
+LLVMValueRef LLVMConstantPtrAuth(LLVMValueRef Ptr, LLVMValueRef *Schema,
+                                 unsigned SchemaSize,
+                                 LLVMValueRef DeactivationSymbol) {
+  SmallVector<Constant *> SchemaUnwrapped;
+  for (unsigned I = 0; I < SchemaSize; ++I)
+    SchemaUnwrapped.push_back(unwrap<Constant>(Schema[I]));
+
   return wrap(ConstantPtrAuth::get(
-      unwrap<Constant>(Ptr), unwrap<ConstantInt>(Key),
-      unwrap<ConstantInt>(Disc), unwrap<Constant>(AddrDisc),
-      ConstantPointerNull::get(
-          cast<PointerType>(unwrap<Constant>(AddrDisc)->getType()))));
+      unwrap<Constant>(Ptr), SchemaUnwrapped,
+      unwrap<Constant>(DeactivationSymbol)));
 }
 
 /*-- Opcode mapping */

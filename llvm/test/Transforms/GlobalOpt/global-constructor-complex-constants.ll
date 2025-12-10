@@ -15,13 +15,13 @@ define void @ctor() {
 ; CHECK-LABEL: define void @ctor() {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    [[DST:%.*]] = alloca ptr, align 8
-; CHECK-NEXT:    store ptr ptrauth (ptr @foo, i32 0), ptr [[DST]], align 8
+; CHECK-NEXT:    store ptr ptrauth (ptr @foo, [i64 0, i64 0, i64 0]), ptr [[DST]], align 8
 ; CHECK-NEXT:    call void @user(ptr [[DST]])
 ; CHECK-NEXT:    ret void
 ;
 entry:
   %dst = alloca ptr, align 8
-  store ptr ptrauth (ptr @foo, i32 0), ptr %dst, align 8
+  store ptr ptrauth (ptr @foo, [i64 0, i64 0, i64 0]), ptr %dst, align 8
   call void @user(ptr %dst)
   ret void
 }

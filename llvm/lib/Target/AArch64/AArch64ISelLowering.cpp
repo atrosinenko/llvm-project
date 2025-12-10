@@ -11346,8 +11346,8 @@ SDValue AArch64TargetLowering::LowerGlobalTLSAddress(SDValue Op,
 // checks.
 
 static SDValue LowerPtrAuthGlobalAddressStatically(
-    SDValue TGA, SDLoc DL, EVT VT, AArch64PACKey::ID KeyC,
-    SDValue Discriminator, SDValue AddrDiscriminator, SelectionDAG &DAG) {
+    SDValue TGA, SDLoc DL, EVT VT, SDValue Key, SDValue Discriminator,
+    SDValue AddrDiscriminator, SelectionDAG &DAG) {
   const auto *TGN = cast<GlobalAddressSDNode>(TGA.getNode());
   assert(TGN->getGlobal()->hasExternalWeakLinkage());
 
@@ -11359,10 +11359,10 @@ static SDValue LowerPtrAuthGlobalAddressStatically(
     report_fatal_error(
         "unsupported non-zero offset in weak ptrauth global reference");
 
-  if (!isNullConstant(AddrDiscriminator))
+  auto *AddrDiscReg = dyn_cast<RegisterSDNode>(AddrDiscriminator);
+  if (!AddrDiscReg || AddrDiscReg->getReg() != AArch64::NoRegister)
     report_fatal_error("unsupported weak addr-div ptrauth global");
 
-  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
   return SDValue(DAG.getMachineNode(AArch64::LOADauthptrstatic, DL, MVT::i64,
                                     {TGA, Key, Discriminator}),
                  0);
@@ -11371,21 +11371,13 @@ static SDValue LowerPtrAuthGlobalAddressStatically(
 SDValue
 AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
                                                  SelectionDAG &DAG) const {
+  const AArch64SelectionDAGInfo *SDI = Subtarget->getSelectionDAGInfo();
   SDValue Ptr = Op.getOperand(0);
-  uint64_t KeyC = Op.getConstantOperandVal(1);
-  SDValue AddrDiscriminator = Op.getOperand(2);
-  uint64_t DiscriminatorC = Op.getConstantOperandVal(3);
   EVT VT = Op.getValueType();
   SDLoc DL(Op);
 
-  if (KeyC > AArch64PACKey::LAST)
-    report_fatal_error("key in ptrauth global out of range [0, " +
-                       Twine((int)AArch64PACKey::LAST) + "]");
-
-  // Blend only works if the integer discriminator is 16-bit wide.
-  if (!isUInt<16>(DiscriminatorC))
-    report_fatal_error(
-        "constant discriminator in ptrauth global out of range [0, 0xffff]");
+  auto [Key, Discriminator, AddrDiscriminator] =
+      SDI->extractPtrauthBlendDiscriminators(Op.getOperand(1), &DAG);
 
   // Choosing between 3 lowering alternatives is target-specific.
   if (!Subtarget->isTargetELF() && !Subtarget->isTargetMachO())
@@ -11413,8 +11405,6 @@ AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
   assert(PtrN->getTargetFlags() == 0 &&
          "unsupported target flags on ptrauth global");
 
-  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
-  SDValue Discriminator = DAG.getTargetConstant(DiscriminatorC, DL, MVT::i64);
   SDValue TAddrDiscriminator = !isNullConstant(AddrDiscriminator)
                                    ? AddrDiscriminator
                                    : DAG.getRegister(AArch64::XZR, MVT::i64);
@@ -11438,8 +11428,7 @@ AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
 
   // extern_weak ref -> LOADauthptrstatic
   return LowerPtrAuthGlobalAddressStatically(
-      TPtr, DL, VT, (AArch64PACKey::ID)KeyC, Discriminator, AddrDiscriminator,
-      DAG);
+      TPtr, DL, VT, Key, Discriminator, AddrDiscriminator, DAG);
 }
 
 // Looks through \param Val to determine the bit that can be used to
@@ -31116,9 +31105,11 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
 }
 
 std::optional<std::string>
-AArch64TargetLowering::validatePtrAuthSchema(const CallBase &CB) const {
-  auto GetMsg = [&CB](Twine Str) -> std::string {
-    return (CB.getFunction()->getName() + ": " + Str).str();
+AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
+  auto GetMsg = [&V](Twine Str) -> std::string {
+    if (auto *CB = dyn_cast<CallBase>(&V))
+      return (CB->getFunction()->getName() + ": " + Str).str();
+    return Str.str();
   };
 
   auto ValidateSchema = [&](ArrayRef<Use> Schema, bool ExpectSingleElement) -> std::optional<std::string>{
@@ -31148,17 +31139,22 @@ AArch64TargetLowering::validatePtrAuthSchema(const CallBase &CB) const {
     return std::nullopt;
   };
 
-  for (unsigned I = 0, N = CB.getNumOperandBundles(); I < N; ++I) {
-    OperandBundleUse OB = CB.getOperandBundleAt(I);
-    if (OB.getTagID() != LLVMContext::OB_ptrauth)
-      continue;
+  if (auto *CB = dyn_cast<CallBase>(&V)) {
+    for (unsigned I = 0, N = CB->getNumOperandBundles(); I < N; ++I) {
+      OperandBundleUse OB = CB->getOperandBundleAt(I);
+      if (OB.getTagID() != LLVMContext::OB_ptrauth)
+        continue;
 
-    bool ExpectSingleElement =
-        CB.getIntrinsicID() == Intrinsic::ptrauth_strip;
-    if (auto Err = ValidateSchema(OB.Inputs, ExpectSingleElement))
-      return Err;
+      bool ExpectSingleElement =
+          CB->getIntrinsicID() == Intrinsic::ptrauth_strip;
+      if (auto Err = ValidateSchema(OB.Inputs, ExpectSingleElement))
+        return Err;
+    }
+    return std::nullopt;
   }
-  return std::nullopt;
+
+  auto &CPA = cast<ConstantPtrAuth>(V);
+  return ValidateSchema(CPA.getSchema(), /*ExpectSingleElement=*/false);
 }
 
 MachineInstr *

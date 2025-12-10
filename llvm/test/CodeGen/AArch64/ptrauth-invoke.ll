@@ -331,7 +331,7 @@ continuebb:
 ; CHECK-NEXT:  .byte 0                           {{.*}} On action: cleanup
 
 define i32 @test_invoke_ia_0_direct() #0 personality ptr @__gxx_personality_v0 {
-  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0)() [ "ptrauth"(i64 0, i64 0, i64 0) ] to label %continuebb
+  %tmp0 = invoke i32 ptrauth (ptr @baz, [i64 0, i64 0, i64 0])() [ "ptrauth"(i64 0, i64 0, i64 0) ] to label %continuebb
             unwind label %unwindbb
 
 unwindbb:
@@ -443,7 +443,7 @@ continuebb:
 ; CHECK-NEXT:  .byte 0                           {{.*}} On action: cleanup
 
 define i32 @test_invoke_ib_2_direct_mismatch() #0 personality ptr @__gxx_personality_v0 {
-  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0, i64 1234)() [ "ptrauth"(i64 1, i64 2, i64 0) ] to label %continuebb
+  %tmp0 = invoke i32 ptrauth (ptr @baz, [i64 0, i64 1234, i64 0])() [ "ptrauth"(i64 1, i64 2, i64 0) ] to label %continuebb
             unwind label %unwindbb
 
 unwindbb:

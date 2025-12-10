@@ -67,6 +67,8 @@ The signed address of a global value. Operands: address to be signed (pointer),
 key (32-bit imm), address for address discrimination (zero if not needed) and
 an extra discriminator (64-bit imm).
 
+FIXME
+
 .. code-block:: none
 
   %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64

@@ -5,7 +5,7 @@
 // clang previously emitted an incorrect discriminator for the member function
 // pointer because of a bug in the mangler.
 
-// CHECK: @_ZN17test_substitution5funcsE = global [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN17test_substitution1S1fEPvS1_, i32 0, i64 48995) to i64), i64 0 }], align 8
+// CHECK: @_ZN17test_substitution5funcsE = global [1 x { i64, i64 }] [{ i64, i64 } { i64 ptrtoint (ptr ptrauth (ptr @_ZN17test_substitution1S1fEPvS1_, [i64 0, i64 48995, i64 0]) to i64), i64 0 }], align 8
 namespace test_substitution {
 struct S { int f(void *, void *); };
 

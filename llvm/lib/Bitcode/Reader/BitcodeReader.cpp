@@ -1625,7 +1625,8 @@ Expected<Value *> BitcodeReader::materializeValue(unsigned StartValID,
             return error(
                 "ptrauth deactivation symbol operand must be a pointer");
 
-          C = ConstantPtrAuth::get(ConstOps[0], Key, Disc, ConstOps[3],
+          // FIXME Upgrade
+          C = ConstantPtrAuth::get(ConstOps[0], {Key, Disc, ConstOps[3]},
                                    DeactivationSymbol);
           break;
         }

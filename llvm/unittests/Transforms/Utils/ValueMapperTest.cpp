@@ -440,7 +440,6 @@ TEST(ValueMapperTest, mapValueConstantTargetNoneToLayoutTypeNullValue) {
 TEST(ValueMapperTest, mapValuePtrAuth) {
   LLVMContext C;
   Type *PtrTy = PointerType::get(C, 0);
-  IntegerType *Int32Ty = Type::getInt32Ty(C);
   IntegerType *Int64Ty = Type::getInt64Ty(C);
 
   std::unique_ptr<GlobalVariable> Var0 = std::make_unique<GlobalVariable>(
@@ -456,18 +455,21 @@ TEST(ValueMapperTest, mapValuePtrAuth) {
   std::unique_ptr<GlobalVariable> DS1 = std::make_unique<GlobalVariable>(
       PtrTy, false, GlobalValue::ExternalLinkage, nullptr, "DS1");
 
-  ConstantInt *ConstKey = ConstantInt::get(Int32Ty, 1);
+  ConstantInt *ConstKey = ConstantInt::get(Int64Ty, 1);
   ConstantInt *ConstDisc = ConstantInt::get(Int64Ty, 1234);
+
+  Constant *Storage0AsInt = ConstantExpr::getPtrToInt(Storage0.get(), Int64Ty);
+  Constant *Storage1AsInt = ConstantExpr::getPtrToInt(Storage1.get(), Int64Ty);
 
   ValueToValueMapTy VM;
   VM[Var0.get()] = Var1.get();
-  VM[Storage0.get()] = Storage1.get();
+  VM[Storage0AsInt] = Storage1AsInt;
   VM[DS0.get()] = DS1.get();
 
-  ConstantPtrAuth *Value = ConstantPtrAuth::get(Var0.get(), ConstKey, ConstDisc,
-                                                Storage0.get(), DS0.get());
+  ConstantPtrAuth *Value = ConstantPtrAuth::get(
+      Var0.get(), {ConstKey, ConstDisc, Storage0AsInt}, DS0.get());
   ConstantPtrAuth *MappedValue = ConstantPtrAuth::get(
-      Var1.get(), ConstKey, ConstDisc, Storage1.get(), DS1.get());
+      Var1.get(), {ConstKey, ConstDisc, Storage1AsInt}, DS1.get());
 
   EXPECT_EQ(ValueMapper(VM).mapValue(*Value), MappedValue);
 }
