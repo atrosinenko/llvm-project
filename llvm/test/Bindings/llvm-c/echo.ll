@@ -40,8 +40,8 @@ module asm "classical GAS"
 
 @ptrauth_addr_disc = global i32 0
 @ptrauth_data = global i32 0
-@ptrauth_ptr_01 = global ptr ptrauth (ptr @ptrauth_data, i32 77, i64 1001, ptr @ptrauth_addr_disc)
-@ptrauth_ptr_02 = global ptr ptrauth (ptr @ptrauth_data, i32 11, i64 99, ptr null)
+@ptrauth_ptr_01 = global ptr ptrauth (ptr @ptrauth_data, [i64 77, i64 1001, i64 ptrtoint (ptr @ptrauth_addr_disc to i64)])
+@ptrauth_ptr_02 = global ptr ptrauth (ptr @ptrauth_data, [i64 11, i64 99, i64 0])
 
 define ptr @ifunc_resolver() {
 entry:

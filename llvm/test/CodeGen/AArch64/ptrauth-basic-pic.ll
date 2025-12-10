@@ -79,7 +79,7 @@ define ptr @resign_globalfunc() {
 ; CHECK-NEXT:    mov   x0,  x16
 ; CHECK-NEXT:    ret
 
-  ret ptr ptrauth (ptr @foo, i32 0, i64 42)
+  ret ptr ptrauth (ptr @foo, [i64 0, i64 42, i64 0])
 }
 
 define ptr @resign_globalvar() {
@@ -99,7 +99,7 @@ define ptr @resign_globalvar() {
 ; CHECK-NEXT:    mov   x0,  x16
 ; CHECK-NEXT:    ret
 
-  ret ptr ptrauth (ptr @var, i32 3, i64 43)
+  ret ptr ptrauth (ptr @var, [i64 3, i64 43, i64 0])
 }
 
 define ptr @resign_globalvar_offset() {
@@ -120,7 +120,7 @@ define ptr @resign_globalvar_offset() {
 ; CHECK-NEXT:    mov   x0,  x16
 ; CHECK-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @var, i64 16), i32 2, i64 44)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @var, i64 16), [i64 2, i64 44, i64 0])
 }
 
 !llvm.module.flags = !{!0}

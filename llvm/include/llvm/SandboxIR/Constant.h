@@ -1363,26 +1363,34 @@ class ConstantPtrAuth final : public Constant {
 
 public:
   /// Return a pointer signed with the specified parameters.
-  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantInt *Key,
-                                       ConstantInt *Disc, Constant *AddrDisc,
+  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantArray *Schema,
                                        Constant *DeactivationSymbol);
+  LLVM_ABI static ConstantPtrAuth *
+  get(Constant *Ptr, ArrayRef<Constant *> Schema, Constant *DeactivationSymbol);
+
+  // ConstantArray *getSchema() const;
+
   /// The pointer that is signed in this ptrauth signed pointer.
   LLVM_ABI Constant *getPointer() const;
 
   /// The Key ID, an i32 constant.
+  // FIXME Remove
   LLVM_ABI ConstantInt *getKey() const;
 
   /// The integer discriminator, an i64 constant, or 0.
+  // FIXME Remove
   LLVM_ABI ConstantInt *getDiscriminator() const;
 
   /// The address discriminator if any, or the null constant.
   /// If present, this must be a value equivalent to the storage location of
   /// the only global-initializer user of the ptrauth signed pointer.
+  // FIXME Remove
   LLVM_ABI Constant *getAddrDiscriminator() const;
 
   LLVM_ABI Constant *getDeactivationSymbol() const;
 
   /// Whether there is any non-null address discriminator.
+  // FIXME Remove
   bool hasAddressDiscriminator() const {
     return cast<llvm::ConstantPtrAuth>(Val)->hasAddressDiscriminator();
   }
@@ -1391,6 +1399,7 @@ public:
   /// These discriminators can't be used in real pointer-auth values; they
   /// can only be used in "prototype" values that indicate how some real
   /// schema is supposed to be produced.
+  // FIXME Rethink?
   bool hasSpecialAddressDiscriminator(uint64_t Value) const {
     return cast<llvm::ConstantPtrAuth>(Val)->hasSpecialAddressDiscriminator(
         Value);

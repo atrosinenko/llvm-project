@@ -1503,23 +1503,21 @@ void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
          "ctors/dtors are to be signed by asm printer");
 
   if (PtrauthInitFini) {
-    IntegerType *Int32Ty = IntegerType::get(C, 32);
     IntegerType *Int64Ty = IntegerType::get(C, 64);
     PointerType *PtrTy = PointerType::get(C, 0);
 
-    ConstantInt *Key = ConstantInt::get(Int32Ty, AArch64PAuth::InitFiniKey);
-    ConstantInt *IntDisc = ConstantInt::get(
-        Int64Ty, AArch64PAuth::InitFiniPointerConstantDiscriminator);
-    Constant *Null = ConstantPointerNull::get(PtrTy);
-    Constant *AddressDisc = Null;
-    if (PtrauthInitFiniAddressDisc) {
-      uint64_t Marker = ConstantPtrAuth::AddrDiscriminator_CtorsDtors;
-      AddressDisc =
-          ConstantExpr::getIntToPtr(ConstantInt::get(Int64Ty, Marker), PtrTy);
-    }
+    uint64_t IntDisc = AArch64PAuth::InitFiniPointerConstantDiscriminator;
+    uint64_t AddrDiscMarker = PtrauthInitFiniAddressDisc ? ConstantPtrAuth::AddrDiscriminator_CtorsDtors : 0;
 
-    CV = ConstantPtrAuth::get(const_cast<Constant *>(CV), Key, IntDisc,
-                              AddressDisc, /*DeactivationSymbol=*/Null);
+    SmallVector<llvm::Constant *, 3> Schema;
+    Schema.push_back(ConstantInt::get(Int64Ty, AArch64PAuth::InitFiniKey));
+    Schema.push_back(ConstantInt::get(Int64Ty, IntDisc));
+    Schema.push_back(ConstantInt::get(Int64Ty, AddrDiscMarker));
+
+    Constant *Null = ConstantPointerNull::get(PtrTy);
+
+    CV = ConstantPtrAuth::get(const_cast<Constant *>(CV), Schema,
+                              /*DeactivationSymbol=*/Null);
   }
 
   // Signed pointers will be lowered by AArch64AsmPrinter::lowerConstantPtrAuth.

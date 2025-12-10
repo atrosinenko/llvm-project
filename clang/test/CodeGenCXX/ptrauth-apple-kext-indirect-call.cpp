@@ -1,6 +1,6 @@
 // RUN: %clang_cc1 -triple arm64-apple-ios -fptrauth-calls -fapple-kext -emit-llvm -o - %s | FileCheck %s
 
-// CHECK: @_ZTV5TemplIiE = internal constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_ZTI5TemplIiE, ptr ptrauth (ptr @_ZN5TemplIiE1fEv, i32 0, i64 22189, ptr getelementptr inbounds (i8, ptr @_ZTV5TemplIiE, i64 16)), ptr ptrauth (ptr @_ZN5TemplIiE1gEv, i32 0, i64 9912, ptr getelementptr inbounds (i8, ptr @_ZTV5TemplIiE, i64 24)), ptr null] }, align 8
+// CHECK: @_ZTV5TemplIiE = internal constant { [5 x ptr] } { [5 x ptr] [ptr null, ptr @_ZTI5TemplIiE, ptr ptrauth (ptr @_ZN5TemplIiE1fEv, [i64 0, i64 22189, i64 ptrtoint (ptr getelementptr inbounds (i8, ptr @_ZTV5TemplIiE, i64 16) to i64)]), ptr ptrauth (ptr @_ZN5TemplIiE1gEv, [i64 0, i64 9912, i64 ptrtoint (ptr getelementptr inbounds (i8, ptr @_ZTV5TemplIiE, i64 24) to i64)]), ptr null] }, align 8
 
 struct Base {
   virtual void abc(void) const;

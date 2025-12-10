@@ -552,7 +552,7 @@ define i32 @test_direct_call() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 0, i64 42, i64 0) ]
+  %tmp0 = call i32 ptrauth(ptr @f, [i64 0, i64 42, i64 0])() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -562,7 +562,7 @@ define i32 @test_direct_tailcall(ptr %arg0) #0 {
 ;
 ; ELF-LABEL: test_direct_tailcall:
 ; ELF-NEXT:   b f
-  %tmp0 = tail call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 0, i64 42, i64 0) ]
+  %tmp0 = tail call i32 ptrauth(ptr @f, [i64 0, i64 42, i64 0])() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -590,7 +590,7 @@ define i32 @test_direct_call_mismatch() #0 {
 ; ELF-NEXT:   blrab x8, x17
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 0, i64 42)() [ "ptrauth"(i64 1, i64 42, i64 0) ]
+  %tmp0 = call i32 ptrauth(ptr @f, [i64 0, i64 42, i64 0])() [ "ptrauth"(i64 1, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -606,7 +606,7 @@ define i32 @test_direct_call_addr() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr @f.ref.ib.0.addr)() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr @f.ref.ib.0.addr to i64)) ]
+  %tmp0 = call i32 ptrauth(ptr @f, [i64 1, i64 0, i64 ptrtoint (ptr @f.ref.ib.0.addr to i64)])() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr @f.ref.ib.0.addr to i64)) ]
   ret i32 %tmp0
 }
 
@@ -622,7 +622,7 @@ define i32 @test_direct_call_addr_blend() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 42, ptr @f.ref.ib.42.addr)() [ "ptrauth"(i64 1, i64 42, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64)) ]
+  %tmp1 = call i32 ptrauth(ptr @f, [i64 1, i64 42, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64)])() [ "ptrauth"(i64 1, i64 42, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64)) ]
   ret i32 %tmp1
 }
 
@@ -638,7 +638,7 @@ define i32 @test_direct_call_addr_gep_different_index_types() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp0 = call i32 ptrauth(ptr @f, i32 1, i64 0, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i64 0, i32 0))() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i32 0, i32 0) to i64)) ]
+  %tmp0 = call i32 ptrauth(ptr @f, [i64 1, i64 0, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i64 0, i32 0) to i64)])() [ "ptrauth"(i64 1, i64 0, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.0.addr, i32 0, i32 0) to i64)) ]
   ret i32 %tmp0
 }
 
@@ -654,7 +654,7 @@ define i32 @test_direct_call_addr_blend_gep_different_index_types() #0 {
 ; ELF-NEXT:   bl f
 ; ELF-NEXT:   ldr x30, [sp], #16
 ; ELF-NEXT:   ret
-  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 123, ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i64 0, i32 0))() [ "ptrauth"(i64 1, i64 123, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i32 0, i32 0) to i64)) ]
+  %tmp1 = call i32 ptrauth(ptr @f, [i64 1, i64 123, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i64 0, i32 0) to i64)])() [ "ptrauth"(i64 1, i64 123, i64 ptrtoint (ptr getelementptr ({ ptr }, ptr @f_struct.ref.ib.123.addr, i32 0, i32 0) to i64)) ]
   ret i32 %tmp1
 }
 

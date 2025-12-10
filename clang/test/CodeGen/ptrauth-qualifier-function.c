@@ -88,8 +88,8 @@ void test_assign_from_qualified() {
 void test_const_ptr_function_call(void) {
   f_const_ptr(1);
 
-  // TYPE: call void ptrauth (ptr @f, i32 0, i64 2712)(i32 noundef 1) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 1) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  // TYPE: call void ptrauth (ptr @f, [i64 0, i64 2712, i64 0])(i32 noundef 1) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
+  // ZERO: call void ptrauth (ptr @f, [i64 0, i64 0, i64 0])(i32 noundef 1) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 }
 
 #ifdef __cplusplus

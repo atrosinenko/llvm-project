@@ -1375,7 +1375,7 @@ define void @foo() {
 TEST_F(SandboxIRTest, ConstantPtrAuth) {
   parseIR(C, R"IR(
 define ptr @foo() {
-  ret ptr ptrauth (ptr @foo, i32 2, i64 1234)
+  ret ptr ptrauth (ptr @foo, [i64 2, i64 1234, i64 0])
 }
 )IR");
   Function &LLVMF = *M->getFunction("foo");
@@ -1392,8 +1392,10 @@ define ptr @foo() {
   auto *PtrAuth = cast<sandboxir::ConstantPtrAuth>(Ret->getReturnValue());
   // Check get(), getKey(), getDiscriminator(), getAddrDiscriminator().
   auto *NewPtrAuth = sandboxir::ConstantPtrAuth::get(
-      &F, PtrAuth->getKey(), PtrAuth->getDiscriminator(),
-      PtrAuth->getAddrDiscriminator(), PtrAuth->getDeactivationSymbol());
+      &F,
+      {PtrAuth->getKey(), PtrAuth->getDiscriminator(),
+       PtrAuth->getAddrDiscriminator()},
+      PtrAuth->getDeactivationSymbol());
   EXPECT_EQ(NewPtrAuth, PtrAuth);
   // Check hasAddressDiscriminator().
   EXPECT_EQ(PtrAuth->hasAddressDiscriminator(),

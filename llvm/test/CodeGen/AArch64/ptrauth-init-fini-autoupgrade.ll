@@ -1,11 +1,14 @@
 ; RUN: rm -rf %t && split-file %s %t && cd %t
 
+; Note: textual representation of ptrauth constants was manually upgraded to
+; target-neutral form.
+
 ;--- const.ll
 
 ; RUN: opt -S < const.ll | FileCheck %s --check-prefix=CONST
 
-@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo1, i32 0, i64 55764), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo2, i32 0, i64 55764), ptr null }]
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764), ptr null }]
+@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo1, [i64 0, i64 55764, i64 0]), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo2, [i64 0, i64 55764, i64 0]), ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, [i64 0, i64 55764, i64 0]), ptr null }]
 
 define void @foo1() {
   ret void
@@ -29,8 +32,8 @@ define void @bar() {
 
 ; RUN: opt -S < blended.ll | FileCheck %s --check-prefix=BLENDED
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
-@llvm.global_dtors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar1, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar2, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 1]), ptr null }]
+@llvm.global_dtors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar1, [i64 0, i64 55764, i64 1]), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar2, [i64 0, i64 55764, i64 1]), ptr null }]
 
 define void @foo() {
   ret void
@@ -56,7 +59,7 @@ define void @bar2() {
 
 ; ERR1: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764, ptr inttoptr (i64 2 to ptr)), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 2]), ptr null }]
 
 define void @foo() {
   ret void
@@ -69,7 +72,7 @@ define void @foo() {
 ; ERR2: signing of ctors/dtors should be requested via module flags
 
 @g = external global ptr
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764, ptr @g), ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, [i64 0, i64 55764, i64 ptrtoint (ptr @g to i64)]), ptr null }]
 
 define void @bar() {
   ret void
@@ -81,7 +84,7 @@ define void @bar() {
 
 ; DISAGREEMENT1: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }, { i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
+@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 0]), ptr null }, { i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
 
 define void @foo() {
   ret void
@@ -97,7 +100,7 @@ define void @bar() {
 
 ; DISAGREEMENT2: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
+@llvm.global_ctors = appending global [2 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 0]), ptr null }, { i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, [i64 0, i64 55764, i64 1]), ptr null }]
 
 define void @foo() {
   ret void
@@ -113,8 +116,8 @@ define void @bar() {
 
 ; DISAGREEMENT3: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }]
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 0]), ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, [i64 0, i64 55764, i64 1]), ptr null }]
 
 define void @foo() {
   ret void
@@ -130,7 +133,7 @@ define void @bar() {
 
 ; EXISTING-FLAGS-1: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 0]), ptr null }]
 
 define void @foo() {
   ret void
@@ -149,7 +152,7 @@ define void @bar() {
 
 ; EXISTING-FLAGS-2: signing of ctors/dtors should be requested via module flags
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 0]), ptr null }]
 
 define void @foo() {
   ret void

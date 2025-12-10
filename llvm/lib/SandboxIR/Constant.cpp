@@ -415,13 +415,23 @@ PointerType *NoCFIValue::getType() const {
   return cast<PointerType>(Ctx.getType(cast<llvm::NoCFIValue>(Val)->getType()));
 }
 
-ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr, ConstantInt *Key,
-                                      ConstantInt *Disc, Constant *AddrDisc,
+ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr, ConstantArray *Schema,
                                       Constant *DeactivationSymbol) {
   auto *LLVMC = llvm::ConstantPtrAuth::get(
-      cast<llvm::Constant>(Ptr->Val), cast<llvm::ConstantInt>(Key->Val),
-      cast<llvm::ConstantInt>(Disc->Val), cast<llvm::Constant>(AddrDisc->Val),
+      cast<llvm::Constant>(Ptr->Val), cast<llvm::ConstantArray>(Schema->Val),
       cast<llvm::Constant>(DeactivationSymbol->Val));
+  return cast<ConstantPtrAuth>(Ptr->getContext().getOrCreateConstant(LLVMC));
+}
+
+ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr,
+                                      ArrayRef<Constant *> Schema,
+                                      Constant *DeactivationSymbol) {
+  SmallVector<llvm::Constant *> LLVMSchema;
+  for (Constant *C : Schema)
+    LLVMSchema.push_back(cast<llvm::Constant>(C->Val));
+  auto *LLVMC =
+      llvm::ConstantPtrAuth::get(cast<llvm::Constant>(Ptr->Val), LLVMSchema,
+                                 cast<llvm::Constant>(DeactivationSymbol->Val));
   return cast<ConstantPtrAuth>(Ptr->getContext().getOrCreateConstant(LLVMC));
 }
 
@@ -429,6 +439,11 @@ Constant *ConstantPtrAuth::getPointer() const {
   return Ctx.getOrCreateConstant(
       cast<llvm::ConstantPtrAuth>(Val)->getPointer());
 }
+
+// ConstantArray *ConstantPtrAuth::getSchema() const {
+  // return cast<ConstantArray>(
+      // Ctx.getOrCreateConstant(cast<llvm::ConstantPtrAuth>(Val)->getSchema()));
+// }
 
 ConstantInt *ConstantPtrAuth::getKey() const {
   return cast<ConstantInt>(

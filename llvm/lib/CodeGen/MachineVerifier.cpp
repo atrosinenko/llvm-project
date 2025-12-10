@@ -2334,6 +2334,7 @@ void MachineVerifier::verifyPreISelGenericInstruction(const MachineInstr *MI) {
              MI);
     break;
   }
+  // TODO
   default:
     break;
   }

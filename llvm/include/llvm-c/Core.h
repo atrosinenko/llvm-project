@@ -1874,10 +1874,16 @@ LLVM_C_ABI unsigned LLVMGetVectorSize(LLVMTypeRef VectorTy);
  */
 LLVM_C_ABI LLVMValueRef LLVMGetConstantPtrAuthPointer(LLVMValueRef PtrAuth);
 
+LLVM_C_ABI unsigned LLVMGetConstantPtrAuthSchemaSize(LLVMValueRef PtrAuth);
+
+LLVM_C_ABI LLVMValueRef
+LLVMGetConstantPtrAuthSchemaOperand(LLVMValueRef PtrAuth, unsigned Idx);
+
 /**
  * Get the key value for the associated ConstantPtrAuth constant.
  *
  * @see llvm::ConstantPtrAuth::getKey
+ * @deprecated
  */
 LLVM_C_ABI LLVMValueRef LLVMGetConstantPtrAuthKey(LLVMValueRef PtrAuth);
 
@@ -1885,6 +1891,7 @@ LLVM_C_ABI LLVMValueRef LLVMGetConstantPtrAuthKey(LLVMValueRef PtrAuth);
  * Get the discriminator value for the associated ConstantPtrAuth constant.
  *
  * @see llvm::ConstantPtrAuth::getDiscriminator
+ * @deprecated
  */
 LLVM_C_ABI LLVMValueRef
 LLVMGetConstantPtrAuthDiscriminator(LLVMValueRef PtrAuth);
@@ -1894,9 +1901,13 @@ LLVMGetConstantPtrAuthDiscriminator(LLVMValueRef PtrAuth);
  * constant.
  *
  * @see llvm::ConstantPtrAuth::getAddrDiscriminator
+ * @deprecated
  */
 LLVM_C_ABI LLVMValueRef
 LLVMGetConstantPtrAuthAddrDiscriminator(LLVMValueRef PtrAuth);
+
+LLVM_C_ABI LLVMValueRef
+LLVMGetConstantPtrAuthDeactivationSymbol(LLVMValueRef PtrAuth);
 
 /**
  * @}
@@ -2728,10 +2739,12 @@ LLVM_C_ABI LLVMValueRef LLVMConstVector(LLVMValueRef *ScalarConstantVals,
  * Create a ConstantPtrAuth constant with the given values.
  *
  * @see llvm::ConstantPtrAuth::get()
+ * FIXME Compatibility?
  */
-LLVM_C_ABI LLVMValueRef LLVMConstantPtrAuth(LLVMValueRef Ptr, LLVMValueRef Key,
-                                            LLVMValueRef Disc,
-                                            LLVMValueRef AddrDisc);
+LLVM_C_ABI LLVMValueRef LLVMConstantPtrAuth(LLVMValueRef Ptr,
+                                            LLVMValueRef *Schema,
+                                            unsigned SchemaSize,
+                                            LLVMValueRef DeactivationSymbol);
 
 /**
  * @}

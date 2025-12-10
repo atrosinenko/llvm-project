@@ -11,10 +11,10 @@ class Foo {
 };
 
 // CHECK-LABEL: define{{.*}} void @_Z1fv()
-// CHECK:  call void @__cxa_throw(ptr %{{.*}}, ptr @_ZTI3Foo, ptr ptrauth (ptr @_ZN3FooD1Ev, i32 0))
+// CHECK:  call void @__cxa_throw(ptr %{{.*}}, ptr @_ZTI3Foo, ptr ptrauth (ptr @_ZN3FooD1Ev, [i64 0, i64 0, i64 0]))
 
 // CHECKDISC-LABEL: define{{.*}} void @_Z1fv()
-// CHECKDISC:  call void @__cxa_throw(ptr %{{.*}}, ptr @_ZTI3Foo, ptr ptrauth (ptr @_ZN3FooD1Ev, i32 0, i64 10942))
+// CHECKDISC:  call void @__cxa_throw(ptr %{{.*}}, ptr @_ZTI3Foo, ptr ptrauth (ptr @_ZN3FooD1Ev, [i64 0, i64 10942, i64 0]))
 
 void f() {
   throw Foo();

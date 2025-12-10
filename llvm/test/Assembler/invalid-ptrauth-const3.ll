@@ -2,5 +2,5 @@
 
 @var = global i32 0
 
-; CHECK: error: constant ptrauth address discriminator must be a pointer
-@auth_var = global ptr ptrauth (ptr @var, i32 2, i64 65535, i8 0)
+; CHECK: error: schema of ptrauth constant must be a tuple of i64
+@auth_var = global ptr ptrauth (ptr @var, [i64 0, i64 0, ptr null])

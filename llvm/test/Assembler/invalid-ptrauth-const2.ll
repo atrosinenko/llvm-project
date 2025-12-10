@@ -2,5 +2,5 @@
 
 @var = global i32 0
 
-; CHECK: error: constant ptrauth key must be i32 constant
-@auth_var = global ptr ptrauth (ptr @var, i32 ptrtoint (ptr @var to i32))
+; CHECK: error: schema of ptrauth constant must be a tuple of i64
+@auth_var = global ptr ptrauth (ptr @var, [i32 0, i64 0, i64 0])
