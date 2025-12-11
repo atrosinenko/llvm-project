@@ -480,7 +480,7 @@ public:
   }
 
   std::optional<std::string>
-  validatePtrAuthBundles(const CallBase &CB) const override;
+  validatePtrAuthSchema(const CallBase &CB) const override;
 
   bool supportKCFIBundles() const override { return true; }
 

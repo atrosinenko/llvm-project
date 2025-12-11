@@ -96,9 +96,9 @@ define i64 @test(ptr %fptr) {
 ;--- unsupported-target-intrinsic.ll
 ; RUN: not llc -mtriple x86_64 < %t/unsupported-target-intrinsic.ll 2>&1 | FileCheck --check-prefix=UNSUPPORTED-TARGET-INTRINSIC %s
 
-; UNSUPPORTED-TARGET-INTRINSIC:      Ptrauth bundle violates target-specific constraints:
+; UNSUPPORTED-TARGET-INTRINSIC:      Ptrauth schema violates target-specific constraints:
 ; UNSUPPORTED-TARGET-INTRINSIC-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
-; UNSUPPORTED-TARGET-INTRINSIC-NEXT: LLVM ERROR: Invalid ptrauth bundle: This target doesn't support calls with ptrauth operand bundles
+; UNSUPPORTED-TARGET-INTRINSIC-NEXT: LLVM ERROR: Invalid ptrauth schema: this target does not support pointer authentication
 
 define i64 @test(i64 %p) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
@@ -108,9 +108,9 @@ define i64 @test(i64 %p) {
 ;--- unsupported-target-indirect-call.ll
 ; RUN: not llc -mtriple x86_64 < %t/unsupported-target-indirect-call.ll 2>&1 | FileCheck --check-prefix=UNSUPPORTED-TARGET-INDIRECT-CALL %s
 
-; UNSUPPORTED-TARGET-INDIRECT-CALL:      Ptrauth bundle violates target-specific constraints:
+; UNSUPPORTED-TARGET-INDIRECT-CALL:      Ptrauth schema violates target-specific constraints:
 ; UNSUPPORTED-TARGET-INDIRECT-CALL-NEXT: %res = call i64 %fptr() [ "ptrauth"(i64 0) ]
-; UNSUPPORTED-TARGET-INDIRECT-CALL-NEXT: LLVM ERROR: Invalid ptrauth bundle: This target doesn't support calls with ptrauth operand bundles
+; UNSUPPORTED-TARGET-INDIRECT-CALL-NEXT: LLVM ERROR: Invalid ptrauth schema: this target does not support pointer authentication
 
 define i64 @test(ptr %fptr) {
   %res = call i64 %fptr() [ "ptrauth"(i64 0) ]
@@ -122,9 +122,9 @@ define i64 @test(ptr %fptr) {
 
 ; Single-operand bundles are used on AArch64, but not by this intrinsic.
 
-; WRONG-NOT-3-OPS:      Ptrauth bundle violates target-specific constraints:
+; WRONG-NOT-3-OPS:      Ptrauth schema violates target-specific constraints:
 ; WRONG-NOT-3-OPS-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
-; WRONG-NOT-3-OPS-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Three-element ptrauth bundle expected
+; WRONG-NOT-3-OPS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: three-element ptrauth bundle expected
 
 define i64 @test(i64 %p) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
@@ -136,9 +136,9 @@ define i64 @test(i64 %p) {
 
 ; Three-operand bundles are used on AArch64, but not by this intrinsic.
 
-; WRONG-NOT-1-OPS:      Ptrauth bundle violates target-specific constraints:
+; WRONG-NOT-1-OPS:      Ptrauth schema violates target-specific constraints:
 ; WRONG-NOT-1-OPS-NEXT: %res = call i64 @llvm.ptrauth.strip(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
-; WRONG-NOT-1-OPS-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Single-element ptrauth bundle expected
+; WRONG-NOT-1-OPS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: single-element ptrauth bundle expected
 
 define i64 @test(i64 %p) {
   %res = call i64 @llvm.ptrauth.strip(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
@@ -150,9 +150,9 @@ define i64 @test(i64 %p) {
 
 ; Four-operand bundles are never used on AArch64.
 
-; WRONG-NUM-OPERANDS:      Ptrauth bundle violates target-specific constraints:
+; WRONG-NUM-OPERANDS:      Ptrauth schema violates target-specific constraints:
 ; WRONG-NUM-OPERANDS-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
-; WRONG-NUM-OPERANDS-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Three-element ptrauth bundle expected
+; WRONG-NUM-OPERANDS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: three-element ptrauth bundle expected
 
 define i64 @test(i64 %p, i64 %arg) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
@@ -162,9 +162,9 @@ define i64 @test(i64 %p, i64 %arg) {
 ;--- wrong-key-not-const.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-key-not-const.ll 2>&1 | FileCheck --check-prefix=WRONG-KEY-NOT-CONST %s
 
-; WRONG-KEY-NOT-CONST:      Ptrauth bundle violates target-specific constraints:
+; WRONG-KEY-NOT-CONST:      Ptrauth schema violates target-specific constraints:
 ; WRONG-KEY-NOT-CONST-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
-; WRONG-KEY-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Key must be constant in ptrauth bundle on AArch64
+; WRONG-KEY-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
 define i64 @test(i64 %p, i64 %arg) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
@@ -174,9 +174,9 @@ define i64 @test(i64 %p, i64 %arg) {
 ;--- wrong-imm-modifier-not-const.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-imm-modifier-not-const.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-NOT-CONST %s
 
-; WRONG-IMM-MODIFIER-NOT-CONST:      Ptrauth bundle violates target-specific constraints:
+; WRONG-IMM-MODIFIER-NOT-CONST:      Ptrauth schema violates target-specific constraints:
 ; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
-; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Constant modifier must be 16-bit unsigned constant in ptrauth bundle on AArch64
+; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
 define i64 @test(i64 %p, i64 %arg) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
@@ -186,9 +186,9 @@ define i64 @test(i64 %p, i64 %arg) {
 ;--- wrong-imm-modifier-negative.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-imm-modifier-negative.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-NEGATIVE %s
 
-; WRONG-IMM-MODIFIER-NEGATIVE:      Ptrauth bundle violates target-specific constraints:
+; WRONG-IMM-MODIFIER-NEGATIVE:      Ptrauth schema violates target-specific constraints:
 ; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
-; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Constant modifier must be 16-bit unsigned constant in ptrauth bundle on AArch64
+; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
 define i64 @test(i64 %p) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
@@ -198,9 +198,9 @@ define i64 @test(i64 %p) {
 ;--- wrong-imm-modifier-too-wide.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-imm-modifier-too-wide.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-TOO-WIDE %s
 
-; WRONG-IMM-MODIFIER-TOO-WIDE:      Ptrauth bundle violates target-specific constraints:
+; WRONG-IMM-MODIFIER-TOO-WIDE:      Ptrauth schema violates target-specific constraints:
 ; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
-; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Constant modifier must be 16-bit unsigned constant in ptrauth bundle on AArch64
+; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
 define i64 @test(i64 %p) {
   %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
@@ -212,9 +212,9 @@ define i64 @test(i64 %p) {
 
 ; If the intrinsic accepts two bundles, both should be checked.
 
-; WRONG-FIRST-BUNDLE:      Ptrauth bundle violates target-specific constraints:
+; WRONG-FIRST-BUNDLE:      Ptrauth schema violates target-specific constraints:
 ; WRONG-FIRST-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
-; WRONG-FIRST-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Key must be constant in ptrauth bundle on AArch64
+; WRONG-FIRST-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
 define i64 @test(i64 %p, i64 %arg) {
   %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
@@ -224,9 +224,9 @@ define i64 @test(i64 %p, i64 %arg) {
 ;--- wrong-second-bundle.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-second-bundle.ll 2>&1 | FileCheck --check-prefix=WRONG-SECOND-BUNDLE %s
 
-; WRONG-SECOND-BUNDLE:      Ptrauth bundle violates target-specific constraints:
+; WRONG-SECOND-BUNDLE:      Ptrauth schema violates target-specific constraints:
 ; WRONG-SECOND-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]
-; WRONG-SECOND-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth bundle: test: Key must be constant in ptrauth bundle on AArch64
+; WRONG-SECOND-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
 define i64 @test(i64 %p, i64 %arg) {
   %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]

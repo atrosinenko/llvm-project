@@ -6626,7 +6626,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
   const TargetLowering &TLI = DAG.getTargetLoweringInfo();
   SDLoc SDL = getCurSDLoc();
 
-  TLI.reportFatalErrorOnInvalidPtrAuthBundles(I);
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(I);
 
   auto CreatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = I.getOperandBundleAt(Index);
@@ -9930,7 +9930,7 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
 
   assert(!isa<IntrinsicInst>(CB) && "Should be handled by visitIntrinsicCall");
 
-  TLI.reportFatalErrorOnInvalidPtrAuthBundles(CB);
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
   SmallVector<Value *> BundleOperands(PAB->Inputs.begin(), PAB->Inputs.end());
 
