@@ -3027,10 +3027,9 @@ void ModuleBitcodeWriter::writeConstants(unsigned FirstVal, unsigned LastVal,
     } else if (const auto *CPA = dyn_cast<ConstantPtrAuth>(C)) {
       Code = bitc::CST_CODE_PTRAUTH3;
       Record.push_back(VE.getValueID(CPA->getPointer()));
-      Record.push_back(VE.getValueID(CPA->getKey()));
-      Record.push_back(VE.getValueID(CPA->getDiscriminator()));
-      Record.push_back(VE.getValueID(CPA->getAddrDiscriminator()));
       Record.push_back(VE.getValueID(CPA->getDeactivationSymbol()));
+      for (const Use &U : CPA->getSchema())
+        Record.push_back(VE.getValueID(cast<Constant>(U)));
     } else {
 #ifndef NDEBUG
       C->dump();

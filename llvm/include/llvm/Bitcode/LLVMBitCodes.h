@@ -437,9 +437,8 @@ enum ConstantsCodes {
                                       //                 asmstr,conststr]
   CST_CODE_CE_GEP_WITH_INRANGE = 31,  // [opty, flags, range, n x operands]
   CST_CODE_CE_GEP = 32,               // [opty, flags, n x operands]
-  // FIXME Deprecate
-  CST_CODE_PTRAUTH = 33,              // [ptr, key, disc, addrdisc]
-  CST_CODE_PTRAUTH2 = 34,             // [ptr, key, disc, addrdisc,
+  CST_CODE_PTRAUTH_OLD = 33,          // [ptr, key, disc, addrdisc]
+  CST_CODE_PTRAUTH_OLD2 = 34,         // [ptr, key, disc, addrdisc,
                                       //  deactivation_symbol]
   CST_CODE_PTRAUTH3 = 35,             // [ptr, n x i64, deactivation_symbol]
 };
