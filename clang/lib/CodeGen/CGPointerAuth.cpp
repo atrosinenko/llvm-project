@@ -380,7 +380,11 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
                                         llvm::Constant *StorageAddress,
                                         llvm::ConstantInt *OtherDiscriminator) {
   llvm::Constant *AddressDiscriminator;
-  if (StorageAddress) {
+  if (isa_and_nonnull<llvm::ConstantInt>(StorageAddress)) {
+    assert(cast<llvm::ConstantInt>(StorageAddress)->getZExtValue() ==
+           llvm::ConstantPtrAuth::AddrDiscriminator_CtorsDtors);
+    AddressDiscriminator = StorageAddress;
+  } else if (StorageAddress) {
     assert(StorageAddress->getType() == DefaultPtrTy);
     AddressDiscriminator = llvm::ConstantExpr::getPtrToInt(StorageAddress,
                                                            Int64Ty);

@@ -81,7 +81,7 @@ define void @bar() {
 ; RUN: not --crash llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - err1.ll 2>&1 | \
 ; RUN:   FileCheck %s --check-prefix=ERR1
 
-; ERR1: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'ptr inttoptr (i64 1 to ptr)' is allowed
+; ERR1: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'i64 1' is allowed
 
 @llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, [i64 0, i64 55764, i64 2]), ptr null }]
 
@@ -94,7 +94,7 @@ define void @foo() {
 ; RUN: not --crash llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - err2.ll 2>&1 | \
 ; RUN:   FileCheck %s --check-prefix=ERR2
 
-; ERR2: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'ptr inttoptr (i64 1 to ptr)' is allowed
+; ERR2: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'i64 1' is allowed
 
 @g = external global ptr
 @llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, [i64 0, i64 55764, i64 ptrtoint (ptr @g to i64)]), ptr null }]
