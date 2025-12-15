@@ -1787,7 +1787,7 @@ void AArch64DAGToDAGISel::SelectPtrauthResignWithPC(SDNode *N) {
   SDValue AUTSchema = N->getOperand(1);
   SDValue PACSchema = N->getOperand(2);
 
-  assert(AUTSchema->getOpcode() == ISD::PtrAuthBundle &&
+  assert(AUTSchema->getOpcode() == ISD::PtrAuthSchema &&
          AUTSchema->getNumOperands() == 3);
   unsigned AUTKeyC = cast<ConstantSDNode>(AUTSchema->getOperand(0))->getZExtValue();
   SDValue AUTKey = CurDAG->getTargetConstant(AUTKeyC, DL, MVT::i64);

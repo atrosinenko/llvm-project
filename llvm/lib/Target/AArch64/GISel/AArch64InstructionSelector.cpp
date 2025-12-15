@@ -2689,7 +2689,7 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
 
     assert(MRI.getType(AUTSchema).isToken());
     const MachineInstr *AUTBundle = MRI.getVRegDef(AUTSchema);
-    assert(AUTBundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+    assert(AUTBundle->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
 
     uint64_t AUTKey = getIConstantVRegVal(AUTBundle->getOperand(1).getReg(), MRI)->getZExtValue();
     Register AUTDisc = AUTBundle->getOperand(2).getReg();

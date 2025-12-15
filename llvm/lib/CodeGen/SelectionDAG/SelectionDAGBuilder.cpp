@@ -1892,7 +1892,7 @@ SDValue SelectionDAGBuilder::getValueImpl(const Value *V) {
         Ops.push_back(getValue(Operand));
 
       SDValue Bundle =
-          DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+          DAG.getNode(ISD::PtrAuthSchema, getCurSDLoc(), MVT::Other, Ops);
 
       return DAG.getNode(ISD::PtrAuthGlobalAddress, getCurSDLoc(), VT,
                          getValue(CPA->getPointer()), Bundle);
@@ -6760,7 +6760,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
     for (const Use &Operand : Bundle.Inputs)
       Ops.push_back(getValue(Operand));
 
-    return DAG.getNode(ISD::PtrAuthBundle, SDL, MVT::Other, Ops);
+    return DAG.getNode(ISD::PtrAuthSchema, SDL, MVT::Other, Ops);
   };
   auto CreateDeactivationSymbol = [&]() -> std::optional<SDValue> {
     auto Bundle = I.getOperandBundle(LLVMContext::OB_deactivation_symbol);
@@ -10044,12 +10044,10 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
 
   TLI.reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
-  SmallVector<Value *> BundleOperands(PAB->Inputs.begin(), PAB->Inputs.end());
-
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
   if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
-    if (CalleeCPA->isKnownCompatibleWith(BundleOperands, DAG.getDataLayout()))
+    if (CalleeCPA->isKnownCompatibleWith(PAB->Inputs, DAG.getDataLayout()))
       return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
                          CB.isMustTailCall(), EHPadBB);
 
@@ -10059,8 +10057,8 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   // Otherwise, do an authenticated indirect call.
 
   TargetLowering::PtrAuthInfo PAI;
-  for (const Value *Operand : BundleOperands)
-    PAI.Operands.push_back(getValue(Operand));
+  for (const Use &U : PAB->Inputs)
+    PAI.Operands.push_back(getValue(U.get()));
 
   LowerCallTo(CB, getValue(CalleeV), CB.isTailCall(), CB.isMustTailCall(),
               EHPadBB, &PAI);
