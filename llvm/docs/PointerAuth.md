@@ -258,14 +258,14 @@ The latter are represented using a
 which describes an authenticated relocation producing a signed pointer.
 
 ```llvm
-ptrauth (ptr CST, i32 KEY, i64 DISC, ptr ADDRDISC)
+ptrauth (ptr CST, [i64 op1, ..., i64 opN])
 ```
 
 is equivalent to:
 
 ```llvm
-  %disc = call i64 @llvm.ptrauth.blend(i64 ptrtoint(ptr ADDRDISC to i64), i64 DISC)
-  %signedval = call i64 @llvm.ptrauth.sign(ptr CST, i32 KEY, i64 %disc)
+  %signedval = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 op1, ..., i64 opN) ]
+  %result = inttoptr i64 %signedval to ptr
 ```
 
 
