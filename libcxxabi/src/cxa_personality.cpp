@@ -603,12 +603,12 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
   // We manually re-sign the IP as the __ptrauth qualifiers cannot
   // express the required relationship with the destination address
   unw_word_t newIP /* opaque __ptrauth(ptrauth_key_return_address, stackPointer, 0) */ =
-      (unw_word_t)ptrauth_auth_and_resign(*(void* const*)&results.landingPad,
-                                          __ptrauth_scan_results_landingpad_key,
-                                          ptrauth_blend_discriminator(&results.landingPad,
-                                  __ptrauth_scan_results_landingpad_disc),
-                                          ptrauth_key_return_address,
-                                          stackPointer);
+      (unw_word_t)ptrauth_auth_and_resign(
+          *(void* const*)&results.landingPad,
+          __ptrauth_scan_results_landingpad_key,
+          ptrauth_blend_discriminator(&results.landingPad,
+                                      __ptrauth_scan_results_landingpad_disc),
+          ptrauth_key_return_address, stackPointer);
   _Unwind_SetIP(context, newIP);
 #else
   _Unwind_SetIP(context, results.landingPad);
@@ -969,12 +969,14 @@ static inline void set_landing_pad(scan_results& results,
                                    const __cxa_catch_temp_type& source) {
 #if __has_feature(ptrauth_calls)
   uintptr_t reauthenticatedLandingPad =
-      (uintptr_t)ptrauth_auth_and_resign(*reinterpret_cast<void* const*>(&source),
-                                         __ptrauth_cxxabi_catch_temp_key,
-                                         ptrauth_blend_discriminator(&source, __ptrauth_cxxabi_catch_temp_disc),
-                                         __ptrauth_scan_results_landingpad_key,
-                                         ptrauth_blend_discriminator(&results.landingPad,
-                                  __ptrauth_scan_results_landingpad_disc));
+      (uintptr_t)ptrauth_auth_and_resign(
+          *reinterpret_cast<void* const*>(&source),
+          __ptrauth_cxxabi_catch_temp_key,
+          ptrauth_blend_discriminator(&source,
+                                      __ptrauth_cxxabi_catch_temp_disc),
+          __ptrauth_scan_results_landingpad_key,
+          ptrauth_blend_discriminator(&results.landingPad,
+                                      __ptrauth_scan_results_landingpad_disc));
   memmove(reinterpret_cast<void *>(&results.landingPad),
           reinterpret_cast<void *>(&reauthenticatedLandingPad),
           sizeof(reauthenticatedLandingPad));
@@ -987,12 +989,13 @@ static inline void get_landing_pad(__cxa_catch_temp_type &dest,
                                    const scan_results &results) {
 #if __has_feature(ptrauth_calls)
   uintptr_t reauthenticatedPointer =
-      (uintptr_t)ptrauth_auth_and_resign(*reinterpret_cast<void* const*>(&results.landingPad),
-                                         __ptrauth_scan_results_landingpad_key,
-                                         ptrauth_blend_discriminator(&results.landingPad,
-                                  __ptrauth_scan_results_landingpad_disc),
-                                         __ptrauth_cxxabi_catch_temp_key,
-                                         ptrauth_blend_discriminator(&dest, __ptrauth_cxxabi_catch_temp_disc));
+      (uintptr_t)ptrauth_auth_and_resign(
+          *reinterpret_cast<void* const*>(&results.landingPad),
+          __ptrauth_scan_results_landingpad_key,
+          ptrauth_blend_discriminator(&results.landingPad,
+                                      __ptrauth_scan_results_landingpad_disc),
+          __ptrauth_cxxabi_catch_temp_key,
+          ptrauth_blend_discriminator(&dest, __ptrauth_cxxabi_catch_temp_disc));
   memmove(reinterpret_cast<void *>(&dest),
           reinterpret_cast<void *>(&reauthenticatedPointer),
           sizeof(reauthenticatedPointer));

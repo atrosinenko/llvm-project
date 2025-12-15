@@ -143,7 +143,7 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
   case ISD::GlobalAddress:              return "GlobalAddress";
   case ISD::GlobalTLSAddress:           return "GlobalTLSAddress";
   case ISD::PtrAuthGlobalAddress:       return "PtrAuthGlobalAddress";
-  case ISD::PtrAuthBundle:              return "PtrAuthBundle";
+  case ISD::PtrAuthSchema:              return "PtrAuthSchema";
   case ISD::PtrAuthAuth:                return "PtrAuthAuth";
   case ISD::PtrAuthSign:                return "PtrAuthSign";
   case ISD::PtrAuthResign:              return "PtrAuthResign";

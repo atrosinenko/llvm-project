@@ -328,14 +328,14 @@ HANDLE_TARGET_OPCODE(G_FRAME_INDEX)
 /// Generic reference to global value.
 HANDLE_TARGET_OPCODE(G_GLOBAL_VALUE)
 
-/// Generic ptrauth-signed reference to global value.
-HANDLE_TARGET_OPCODE(G_PTRAUTH_GLOBAL_VALUE)
-
-/// A temporary instruction representing the operands of "ptrauth" bundle in
-/// the original LLVM IR.
+/// A temporary instruction representing the operands of a "ptrauth" bundle
+/// or the schema part of a `ptrauth` constant in the original LLVM IR.
 /// It has target-dependent number of i64 operands and produces a token value
 /// passed as input operand to one of G_PTRAUTH_* instructions.
-HANDLE_TARGET_OPCODE(G_PTRAUTH_BUNDLE)
+HANDLE_TARGET_OPCODE(G_PTRAUTH_SCHEMA)
+
+/// Generic ptrauth-signed reference to global value.
+HANDLE_TARGET_OPCODE(G_PTRAUTH_GLOBAL_VALUE)
 
 /// Various PtrAuth operations.
 HANDLE_TARGET_OPCODE(G_PTRAUTH_AUTH)

@@ -2142,11 +2142,13 @@ bool ConstantPtrAuth::hasSpecialAddressDiscriminator(uint64_t Value) const {
   return IntVal->getValue() == Value;
 }
 
-bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
-                                            const DataLayout &DL) const {
+template<typename T>
+static bool isConstantPtrAuthCompatibleWithSchema(const ConstantPtrAuth &CPA,
+                                                  ArrayRef<T> OtherSchema,
+                                                  const DataLayout &DL) {
   // This function may only be validly called to analyze a ptrauth operation
   // with no deactivation symbol, so if we have one it isn't compatible.
-  if (!getDeactivationSymbol()->isNullValue())
+  if (!CPA.getDeactivationSymbol()->isNullValue())
     return false;
 
   auto CompatibleOperands = [&DL](Value *This, Value *Other) {
@@ -2177,15 +2179,25 @@ bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
   };
 
 
-  if (getSchema().size() != BundleOperands.size())
+  if (CPA.getSchema().size() != OtherSchema.size())
     return false;
 
-  for (unsigned I = 0, N = getSchema().size(); I < N; ++I) {
-    if (!CompatibleOperands(getSchema()[I], BundleOperands[I]))
+  for (unsigned I = 0, N = CPA.getSchema().size(); I < N; ++I) {
+    if (!CompatibleOperands(CPA.getSchema()[I], OtherSchema[I]))
       return false;
   }
 
   return true;
+}
+
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> Schema,
+                                            const DataLayout &DL) const {
+  return isConstantPtrAuthCompatibleWithSchema(*this, Schema, DL);
+}
+
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> Schema,
+                                            const DataLayout &DL) const {
+  return isConstantPtrAuthCompatibleWithSchema(*this, Schema, DL);
 }
 
 //---- ConstantExpr::get() implementations.
