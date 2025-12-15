@@ -114,11 +114,11 @@
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
 #
-# DEBUG-NEXT: G_PTRAUTH_GLOBAL_VALUE (opcode {{[0-9]+}}): 1 type index, 1 imm index
+# DEBUG-NEXT: G_PTRAUTH_SCHEMA (opcode {{[0-9]+}}): 1 type index, 1 imm index
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
 #
-# DEBUG-NEXT: G_PTRAUTH_BUNDLE (opcode {{[0-9]+}}): 1 type index, 1 imm index
+# DEBUG-NEXT: G_PTRAUTH_GLOBAL_VALUE (opcode {{[0-9]+}}): 1 type index, 1 imm index
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
 #

@@ -230,7 +230,7 @@ def : GINodeEquiv<G_STRICT_FMA, strict_fma>;
 def : GINodeEquiv<G_STRICT_FSQRT, strict_fsqrt>;
 def : GINodeEquiv<G_STRICT_FLDEXP, strict_fldexp>;
 
-def : GINodeEquiv<G_PTRAUTH_BUNDLE, ptrauth_bundle>;
+def : GINodeEquiv<G_PTRAUTH_SCHEMA, ptrauth_schema>;
 def : GINodeEquiv<G_PTRAUTH_AUTH,   ptrauth_auth>;
 def : GINodeEquiv<G_PTRAUTH_SIGN,   ptrauth_sign>;
 def : GINodeEquiv<G_PTRAUTH_RESIGN, ptrauth_resign>;

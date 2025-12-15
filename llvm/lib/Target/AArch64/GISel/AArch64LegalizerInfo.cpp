@@ -1086,7 +1086,7 @@ AArch64LegalizerInfo::AArch64LegalizerInfo(const AArch64Subtarget &ST)
   getActionDefinitionsBuilder(G_PTRAUTH_GLOBAL_VALUE)
       .legalForTypeWithAnyImm({p0});
 
-  getActionDefinitionsBuilder(G_PTRAUTH_BUNDLE).legalForTypeWithAnyImm({s64});
+  getActionDefinitionsBuilder(G_PTRAUTH_SCHEMA).legalForTypeWithAnyImm({s64});
   getActionDefinitionsBuilder(G_PTRAUTH_AUTH).legalForTypeWithAnyImm({s64});
   getActionDefinitionsBuilder(G_PTRAUTH_SIGN).legalForTypeWithAnyImm({s64});
   getActionDefinitionsBuilder(G_PTRAUTH_RESIGN).legalForTypeWithAnyImm({s64});

@@ -1216,9 +1216,6 @@ class ConstantPtrAuth final : public Constant {
 
 public:
   /// Return a pointer signed with the specified parameters.
-  // LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantArray *Schema,
-                                       // Constant *DeactivationSymbol);
-
   LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr,
                                        ArrayRef<Constant *> SchemaArgs,
                                        Constant *DeactivationSymbol);
@@ -1287,8 +1284,9 @@ public:
   /// blended) discriminator \p Discriminator is known to be compatible with
   /// this ptrauth signed pointer.
   //  FIXME: LLVM_ABI
-  bool isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
+  bool isKnownCompatibleWith(ArrayRef<Value *> Schema,
                              const DataLayout &DL) const;
+  bool isKnownCompatibleWith(ArrayRef<Use> Schema, const DataLayout &DL) const;
 
   /// Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Value *V) {

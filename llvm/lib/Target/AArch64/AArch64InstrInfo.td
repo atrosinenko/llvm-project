@@ -2103,12 +2103,12 @@ let Predicates = [HasPAuth] in {
   defm AUT : SignAuth<0b001, 0b011, "aut", null_frag>;
 
   def XPACI : ClearAuth<0, "xpaci">;
-  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_bundle (i64 0))), (XPACI GPR64:$Rd)>;
-  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_bundle (i64 1))), (XPACI GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 0))), (XPACI GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 1))), (XPACI GPR64:$Rd)>;
 
   def XPACD : ClearAuth<1, "xpacd">;
-  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_bundle (i64 2))), (XPACD GPR64:$Rd)>;
-  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_bundle (i64 3))), (XPACD GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 2))), (XPACD GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 3))), (XPACD GPR64:$Rd)>;
 
   def PACGA : SignAuthTwoOperand<0b1100, "pacga", int_ptrauth_sign_generic>;
 
@@ -2247,11 +2247,11 @@ let Predicates = [HasPAuth] in {
     let supportsDeactivationSymbol = true;
   }
 
-  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_bundle (i64 imm:$Key),
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_schema (i64 imm:$Key),
                                                       (i64 imm:$Disc),
                                                       (i64 0))),
             (PAC GPR64:$Val, imm:$Key, imm:$Disc, zero_reg)>;
-  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_bundle (i64 imm:$Key),
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_schema (i64 imm:$Key),
                                                       (i64 imm:$Disc),
                                                       GPR64noip:$AddrDisc)),
             (PAC GPR64:$Val, imm:$Key, imm:$Disc, GPR64noip:$AddrDisc)>;

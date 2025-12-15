@@ -119,7 +119,7 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register BundleToken,
                                                      MachineRegisterInfo &MRI) {
   assert(MRI.getType(BundleToken).isToken());
   const MachineInstr *Bundle = MRI.getVRegDef(BundleToken);
-  assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+  assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
   SmallVector<Register> Ops;
   for (auto &Op : Bundle->uses())
     Ops.push_back(Op.getReg());

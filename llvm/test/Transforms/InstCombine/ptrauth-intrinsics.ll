@@ -43,6 +43,14 @@ define i64 @test_ptrauth_nop_constant_addrdisc() {
   ret i64 %authed
 }
 
+define i64 @test_ptrauth_nop_constant_long_bundle() {
+; CHECK-LABEL: @test_ptrauth_nop_constant_long_bundle(
+; CHECK-NEXT:    ret i64 ptrtoint (ptr @foo to i64)
+;
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, [i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)) ]
+  ret i64 %authed
+}
+
 define i64 @test_ptrauth_nop_mismatch(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_mismatch(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
@@ -79,6 +87,33 @@ define i64 @test_ptrauth_nop_long_bundle_ops_mismatch(ptr %p) {
   %tmp0 = ptrtoint ptr %p to i64
   %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0) ]
   %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 123) ]
+  ret i64 %authed
+}
+
+define i64 @test_ptrauth_nop_constant_long_bundle_mismatch_ints() {
+; CHECK-LABEL: @test_ptrauth_nop_constant_long_bundle_mismatch_ints(
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, [i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64), i64 42]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64), i64 1) ]
+; CHECK-NEXT:    ret i64 [[AUTHED]]
+;
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, [i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64), i64 42]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64), i64 1) ]
+  ret i64 %authed
+}
+
+define i64 @test_ptrauth_nop_constant_long_bundle_mismatch_ptrs() {
+; CHECK-LABEL: @test_ptrauth_nop_constant_long_bundle_mismatch_ptrs(
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, [i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @foo to i64)]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)) ]
+; CHECK-NEXT:    ret i64 [[AUTHED]]
+;
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, [i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @foo to i64)]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)) ]
+  ret i64 %authed
+}
+
+define i64 @test_ptrauth_nop_constant_long_bundle_mismatch_int_vs_ptr() {
+; CHECK-LABEL: @test_ptrauth_nop_constant_long_bundle_mismatch_int_vs_ptr(
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, [i64 1, i64 1234, i64 0, i64 42]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)) ]
+; CHECK-NEXT:    ret i64 [[AUTHED]]
+;
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, [i64 1, i64 1234, i64 0, i64 42]) to i64)) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 ptrtoint (ptr @bar to i64)) ]
   ret i64 %authed
 }
 

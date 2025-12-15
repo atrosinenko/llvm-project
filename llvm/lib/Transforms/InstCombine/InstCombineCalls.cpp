@@ -3334,15 +3334,13 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       // ptrauth constants are equivalent to a call to @llvm.ptrauth.sign for
       // our purposes, so check for that too.
       const auto *CPA = dyn_cast<ConstantPtrAuth>(PtrToInt->getOperand(0));
-      SmallVector<Value *> Operands;
-      llvm::append_range(Operands, ThisAutSchema.Inputs);
-      if (!CPA || DS || !CPA->isKnownCompatibleWith(Operands, DL))
+      if (!CPA || DS || !CPA->isKnownCompatibleWith(ThisAutSchema.Inputs, DL))
         break;
 
       if (NeedSign) {
         auto ThisSignSchema =
             *II->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 1);
-        // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
+        // resign(ptrauth(p, schema0), schema0, schema1) -> ptrauth(p, schema1)
         auto IsConstant = [](Value *V) { return isa<Constant>(V); };
         if (llvm::all_of(ThisSignSchema.Inputs, IsConstant)) {
           auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
@@ -3357,23 +3355,24 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         }
       }
 
-      // auth(ptrauth(p,k,d),k,d) -> p
+      // auth(ptrauth(p,schema1),schema1) -> p
       BasePtr = Builder.CreatePtrToInt(CPA->getPointer(), II->getType());
     } else
       break;
 
     unsigned NewIntrin;
     if (NewAutSchema && NeedSign) {
-      // resign(0,1) + resign(1,2) = resign(0, 2)
+      // resign(schema0, schema1) + resign(schema1, schema2) =
+      //     resign(schema0, schema2)
       NewIntrin = Intrinsic::ptrauth_resign;
     } else if (NewAutSchema) {
-      // resign(0,1) + auth(1) = auth(0)
+      // resign(schema0, schema1) + auth(schema1) = auth(schema0)
       NewIntrin = Intrinsic::ptrauth_auth;
     } else if (NeedSign) {
-      // sign(0) + resign(0, 1) = sign(1)
+      // sign(schema0) + resign(schema0, schema1) = sign(schema1)
       NewIntrin = Intrinsic::ptrauth_sign;
     } else {
-      // sign(0) + auth(0) = nop
+      // sign(schema0) + auth(schema0) = nop
       replaceInstUsesWith(*II, BasePtr);
       return eraseInstFromFunction(*II);
     }
@@ -4650,11 +4649,8 @@ Instruction *InstCombinerImpl::foldPtrAuthConstantCallee(CallBase &Call) {
   if (!PAB)
     return nullptr;
 
-  SmallVector<Value *> Operands;
-  llvm::append_range(Operands, PAB->Inputs);
-
   // If the bundle doesn't match, this is probably going to fail to auth.
-  if (!CPA->isKnownCompatibleWith(Operands, DL))
+  if (!CPA->isKnownCompatibleWith(PAB->Inputs, DL))
     return nullptr;
 
   // If the bundle matches the constant, proceed in making this a direct call.

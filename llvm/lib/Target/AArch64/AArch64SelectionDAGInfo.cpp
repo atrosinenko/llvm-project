@@ -403,7 +403,7 @@ AArch64SelectionDAGInfo::extractPtrauthBlendDiscriminators(
 std::tuple<SDValue, SDValue, SDValue>
 AArch64SelectionDAGInfo::extractPtrauthBlendDiscriminators(
     SDValue Bundle, SelectionDAG *DAG) const {
-  assert(Bundle->getOpcode() == ISD::PtrAuthBundle);
+  assert(Bundle->getOpcode() == ISD::PtrAuthSchema);
   SDLoc DL(Bundle);
   SmallVector<SDValue, 3> Operands(Bundle->ops());
 

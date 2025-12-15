@@ -2245,7 +2245,7 @@ bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
       SchemaOps.push_back(getOrCreateVReg(*Operand));
 
     Register Res = MRI->createGenericVirtualRegister(LLT::token());
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE, {Res}, SchemaOps);
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {Res}, SchemaOps);
 
     return Res;
   };
@@ -2839,19 +2839,16 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
 
     TLI->reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
-    SmallVector<Value *> BundleOperands(Bundle->Inputs.begin(),
-                                        Bundle->Inputs.end());
-
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(BundleOperands, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(Bundle->Inputs, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
       PAI = CallLowering::PtrAuthInfo();
-      for (const Value *V : BundleOperands)
-        PAI->Operands.push_back(getOrCreateVReg(*V));
+      for (const Use &U : Bundle->Inputs)
+        PAI->Operands.push_back(getOrCreateVReg(*U.get()));
     }
   }
 
@@ -3923,7 +3920,7 @@ bool IRTranslator::translate(const Constant &C, Register Reg) {
       SchemaOps.push_back(getOrCreateVReg(*Operand));
 
     Register SchemaReg = MRI->createGenericVirtualRegister(LLT::token());
-    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE, {SchemaReg},
+    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {SchemaReg},
                              SchemaOps);
 
     EntryBuilder->buildConstantPtrAuth(Reg, Addr, SchemaReg);
