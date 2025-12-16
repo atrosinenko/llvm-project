@@ -2693,6 +2693,14 @@ const MCExpr *
 AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
   MCContext &Ctx = OutContext;
 
+  if (auto Error = AArch64TargetLowering::validateSinglePtrAuthSchema(
+          CPA.getSchema(), /*ExpectSingleElement=*/false)) {
+    errs() << "Ptrauth schema violates target-specific constraints:\n";
+    CPA.print(errs());
+    errs() << "\n";
+    reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
+  }
+
   // Figure out the base symbol and the addend, if any.
   APInt Offset(64, 0);
   const Value *BaseGV = CPA.getPointer()->stripAndAccumulateConstantOffsets(
@@ -2721,29 +2729,14 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
     DSExpr = MCSymbolRefExpr::create(getSymbol(DS), Ctx);
   }
 
-  uint64_t KeyID = CPA.getKey()->getZExtValue();
-  // We later rely on valid KeyID value in AArch64PACKeyIDToString call from
-  // AArch64AuthMCExpr::printImpl, so fail fast.
-  if (KeyID > AArch64PACKey::LAST) {
-    CPA.getContext().emitError("AArch64 PAC Key ID '" + Twine(KeyID) +
-                               "' out of range [0, " +
-                               Twine((unsigned)AArch64PACKey::LAST) + "]");
-    KeyID = 0;
-  }
-
-  uint64_t Disc = CPA.getDiscriminator()->getZExtValue();
+  uint64_t KeyID = cast<ConstantInt>(CPA.getSchema()[0])->getZExtValue();
+  uint64_t Disc = cast<ConstantInt>(CPA.getSchema()[1])->getZExtValue();
 
   // Check if we can represent this with an IRELATIVE and emit it if so.
   if (auto *IFuncSym = emitPAuthRelocationAsIRelative(
           Sym, Disc, AArch64PACKey::ID(KeyID), CPA.hasAddressDiscriminator(),
           BaseGVB && BaseGVB->isDSOLocal(), DSExpr))
     return IFuncSym;
-
-  if (!isUInt<16>(Disc)) {
-    CPA.getContext().emitError("AArch64 PAC Discriminator '" + Twine(Disc) +
-                               "' out of range [0, 0xFFFF]");
-    Disc = 0;
-  }
 
   if (DSExpr)
     report_fatal_error("deactivation symbols unsupported in constant "
