@@ -73,7 +73,7 @@ public:
                                     SelectionDAG *DAG) const;
 
   std::tuple<SDValue, SDValue, SDValue>
-  extractPtrauthBlendDiscriminators(SDValue Bundle, SelectionDAG *DAG) const;
+  extractPtrauthBlendDiscriminators(SDValue Schema, SelectionDAG *DAG) const;
 };
 } // namespace llvm
 
