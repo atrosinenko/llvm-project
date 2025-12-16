@@ -955,7 +955,7 @@ def sponentry : SDNode<
 
 // Pointer Authentication operations.
 
-def SDTPtrAuthSchema : SDTypeProfile<1, -1, [
+def SDTPtrAuthSchemaDef : SDTypeProfile<1, -1, [
   SDTCisVT<0, untyped>
 ]>;
 def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
@@ -968,7 +968,7 @@ def SDTPtrAuthResignLoadRelative : SDTypeProfile<1, 4, [    // resign_load_relat
   SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>, SDTCisVT<4, i64>
 ]>;
 
-def ptrauth_schema : SDNode<"ISD::PtrAuthSchema", SDTPtrAuthSchema, []>;
+def ptrauth_schema : SDNode<"ISD::PtrAuthSchema", SDTPtrAuthSchemaDef, []>;
 def ptrauth_auth   : SDNode<"ISD::PtrAuthAuth",   SDTPtrAuthOneSchema, []>;
 def ptrauth_sign   : SDNode<"ISD::PtrAuthSign",   SDTPtrAuthOneSchema, []>;
 def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip",  SDTPtrAuthOneSchema, []>;

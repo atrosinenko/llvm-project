@@ -1366,10 +1366,11 @@ public:
   LLVM_ABI static ConstantPtrAuth *
   get(Constant *Ptr, ArrayRef<Constant *> Schema, Constant *DeactivationSymbol);
 
-  const_op_range getSchema() const;
-
   /// The pointer that is signed in this ptrauth signed pointer.
   LLVM_ABI Constant *getPointer() const;
+
+  /// The signing schema (the particular semantic is target-specific).
+  const_op_range getSchema() const;
 
   LLVM_ABI Constant *getDeactivationSymbol() const;
 

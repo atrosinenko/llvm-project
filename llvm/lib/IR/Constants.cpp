@@ -2231,16 +2231,6 @@ Value *NoCFIValue::handleOperandChangeImpl(Value *From, Value *To) {
 //---- ConstantPtrAuth::get() implementations.
 //
 
-#if 0
-ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr, Constant *Schema,
-                                      Constant *DeactivationSymbol) {
-  Constant *ArgVec[] = {Ptr, Schema, DeactivationSymbol};
-  ConstantPtrAuthKeyType MapKey(ArgVec);
-  LLVMContextImpl *pImpl = Ptr->getContext().pImpl;
-  return pImpl->ConstantPtrAuths.getOrCreate(Ptr->getType(), MapKey);
-}
-#endif
-
 ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr,
                                       ArrayRef<Constant *> SchemaArgs,
                                       Constant *DeactivationSymbol) {
@@ -2251,8 +2241,8 @@ ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr,
 
 ConstantPtrAuth *ConstantPtrAuth::getWithSameSchema(Constant *Pointer) const {
   SmallVector<Constant *> Schema;
-  for (Value *V : getSchema())
-    Schema.push_back(cast<Constant>(V));
+  for (const Use &U : getSchema())
+    Schema.push_back(cast<Constant>(U.get()));
   return get(Pointer, Schema, getDeactivationSymbol());
 }
 

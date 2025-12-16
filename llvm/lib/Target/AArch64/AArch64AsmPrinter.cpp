@@ -2454,6 +2454,7 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
 
   if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
     // Have to emit separate auth and branch instructions for D-key.
+    assert(AArch64::X16 != AddrDisc);
     emitMovXReg(AArch64::X16, BrTarget);
     emitAUT(Key, AArch64::X16, DiscReg);
 

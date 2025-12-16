@@ -115,13 +115,13 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(
 }
 
 std::tuple<uint64_t, uint64_t, Register>
-AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register BundleToken,
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register SchemaToken,
                                                      MachineRegisterInfo &MRI) {
-  assert(MRI.getType(BundleToken).isToken());
-  const MachineInstr *Bundle = MRI.getVRegDef(BundleToken);
-  assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
+  assert(MRI.getType(SchemaToken).isToken());
+  const MachineInstr *Schema = MRI.getVRegDef(SchemaToken);
+  assert(Schema->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
   SmallVector<Register> Ops;
-  for (auto &Op : Bundle->uses())
+  for (auto &Op : Schema->uses())
     Ops.push_back(Op.getReg());
   return extractPtrauthBlendDiscriminators(Ops, MRI);
 }

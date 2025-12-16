@@ -31501,7 +31501,7 @@ validateSinglePtrAuthSchema(ArrayRef<Use> Schema, bool ExpectSingleElement,
 
   // The first operand is always the key ID.
   auto *Key = dyn_cast<ConstantInt>(Schema[0]);
-  if (!Key || Key->getZExtValue() > AArch64PACKey::LAST)
+  if (!Key || Key->getZExtValue() > (unsigned long)AArch64PACKey::LAST)
     return ("key must be constant in range [0, " +
             Twine((int)AArch64PACKey::LAST) + "]")
         .str();

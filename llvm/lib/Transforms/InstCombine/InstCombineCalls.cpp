@@ -3345,8 +3345,8 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         if (llvm::all_of(ThisSignSchema.Inputs, IsConstant)) {
           auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
           SmallVector<Constant *> Ops;
-          for (Value *V : ThisSignSchema.Inputs)
-            Ops.push_back(cast<Constant>(V));
+          for (const Use &U : ThisSignSchema.Inputs)
+            Ops.push_back(cast<Constant>(U.get()));
           auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), Ops,
                                               /*DeactivationSymbol=*/Null);
           replaceInstUsesWith(

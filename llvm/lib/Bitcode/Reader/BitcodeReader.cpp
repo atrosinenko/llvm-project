@@ -3902,7 +3902,7 @@ Error BitcodeReader::parseConstants() {
         return error("Invalid ptrauth record");
       // Ptr, DeactivationSymbol, SchemaArg0 [, SchemaArg1, ...]
 
-      SmallVector<unsigned, 16> Operands;
+      SmallVector<unsigned, 4> Operands;
       llvm::append_range(Operands, Record);
 
       V = BitcodeConstant::create(
