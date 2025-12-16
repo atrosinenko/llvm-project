@@ -61,7 +61,7 @@ std::tuple<uint64_t, uint64_t, Register>
 extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
                                   MachineRegisterInfo &MRI);
 std::tuple<uint64_t, uint64_t, Register>
-extractPtrauthBlendDiscriminators(Register BundleToken,
+extractPtrauthBlendDiscriminators(Register SchemaToken,
                                   MachineRegisterInfo &MRI);
 
 /// Find the AArch64 condition codes necessary to represent \p P for a scalar
