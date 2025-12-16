@@ -31487,43 +31487,47 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
   return !VT.isFixedLengthVector();
 }
 
-std::optional<std::string>
-AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
-  auto GetMsg = [&V](Twine Str) -> std::string {
-    if (auto *CB = dyn_cast<CallBase>(&V))
-      return (CB->getFunction()->getName() + ": " + Str).str();
-    return Str.str();
-  };
+static std::optional<std::string>
+validateSinglePtrAuthSchema(ArrayRef<Use> Schema, bool ExpectSingleElement,
+                            bool CheckIntDisc) {
+  unsigned NumOperands = Schema.size();
+  if (ExpectSingleElement) {
+    if (NumOperands != 1)
+      return "single-element ptrauth schema expected";
+  } else {
+    if (NumOperands != 3)
+      return "three-element ptrauth schema expected";
+  }
 
-  auto ValidateSchema =
-      [&](ArrayRef<Use> Schema,
-          bool ExpectSingleElement) -> std::optional<std::string> {
-    unsigned NumOperands = Schema.size();
-    if (ExpectSingleElement) {
-      if (NumOperands != 1)
-        return GetMsg("single-element ptrauth bundle expected");
-    } else {
-      if (NumOperands != 3)
-        return GetMsg("three-element ptrauth bundle expected");
-    }
+  // The first operand is always the key ID.
+  auto *Key = dyn_cast<ConstantInt>(Schema[0]);
+  if (!Key || Key->getZExtValue() > AArch64PACKey::LAST)
+    return ("key must be constant in range [0, " +
+            Twine((int)AArch64PACKey::LAST) + "]")
+        .str();
 
-    // The first operand is always the key ID.
-    auto *Key = dyn_cast<ConstantInt>(Schema[0]);
-    if (!Key || Key->getZExtValue() > AArch64PACKey::LAST)
-      return GetMsg("key must be constant in range [0, " +
-                    Twine((int)AArch64PACKey::LAST) + "]");
+  // Done validating single-operand schemas.
+  if (NumOperands == 1)
+    return std::nullopt;
 
-    // Done validating single-operand bundles.
-    if (NumOperands == 1)
-      return std::nullopt;
-
+  if (CheckIntDisc) {
     auto *IntDisc = dyn_cast<ConstantInt>(Schema[1]);
     if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
-      return GetMsg("constant modifier must be 16-bit unsigned constant");
+      return "constant modifier must be 16-bit unsigned constant";
+  }
 
-    return std::nullopt;
-  };
+  return std::nullopt;
+}
 
+std::optional<std::string>
+AArch64TargetLowering::validateConstantPtrAuthSchema(ArrayRef<Use> Schema,
+                                                     bool CheckIntDisc) {
+  return validateSinglePtrAuthSchema(Schema, /*ExpectSingleElement=*/false,
+                                     CheckIntDisc);
+}
+
+std::optional<std::string>
+AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
   if (auto *CB = dyn_cast<CallBase>(&V)) {
     for (unsigned I = 0, N = CB->getNumOperandBundles(); I < N; ++I) {
       OperandBundleUse OB = CB->getOperandBundleAt(I);
@@ -31532,14 +31536,18 @@ AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
 
       bool ExpectSingleElement =
           CB->getIntrinsicID() == Intrinsic::ptrauth_strip;
-      if (auto Err = ValidateSchema(OB.Inputs, ExpectSingleElement))
-        return Err;
+      if (auto Error =
+              validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement,
+                                          /*CheckIntDisc=*/true))
+        return (CB->getFunction()->getName() + ": " + *Error).str();
     }
     return std::nullopt;
   }
 
   auto &CPA = cast<ConstantPtrAuth>(V);
-  return ValidateSchema(CPA.getSchema(), /*ExpectSingleElement=*/false);
+  return validateSinglePtrAuthSchema(CPA.getSchema(),
+                                     /*ExpectSingleElement=*/false,
+                                     /*CheckIntDisc=*/true);
 }
 
 MachineInstr *

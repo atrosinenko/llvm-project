@@ -479,6 +479,12 @@ public:
     return true;
   }
 
+  // FIXME This static function is defined not to duplicate code between
+  //       AArch64AsmParser (to validate global ptrauth constants) and
+  //       AArch64TargetLowering (to validate everything else).
+  static std::optional<std::string>
+  validateConstantPtrAuthSchema(ArrayRef<Use> Schema, bool CheckIntDisc);
+
   std::optional<std::string>
   validatePtrAuthSchema(const Value &V) const override;
 
