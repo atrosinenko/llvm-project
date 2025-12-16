@@ -5777,7 +5777,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
 
       const CallExpr *MaybeBlend = dyn_cast<CallExpr>(DiscrExpr);
       if (MaybeBlend && MaybeBlend->getBuiltinCallee() ==
-                        Builtin::BI__builtin_ptrauth_blend_discriminator) {
+                            Builtin::BI__builtin_ptrauth_blend_discriminator) {
         // Assign modifiers according to blend arguments.
         IntDiscr = ConvertToInt64(EmitScalarExpr(MaybeBlend->getArg(1)));
         AddrDiscr = ConvertToInt64(EmitScalarExpr(MaybeBlend->getArg(0)));

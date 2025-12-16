@@ -535,8 +535,7 @@ struct ConstantPtrAuthKeyType {
   }
 
   bool operator==(const ConstantPtrAuth *C) const {
-    if (Ptr != C->getPointer() ||
-        Schema.size() != C->getSchema().size() ||
+    if (Ptr != C->getPointer() || Schema.size() != C->getSchema().size() ||
         DeactivationSymbol != C->getDeactivationSymbol())
       return false;
     for (auto [A, B] : llvm::zip_equal(Schema, C->getSchema()))
@@ -545,14 +544,17 @@ struct ConstantPtrAuthKeyType {
     return true;
   }
 
-  unsigned getHash() const { return hash_combine(Ptr, hash_combine_range(Schema), DeactivationSymbol); }
+  unsigned getHash() const {
+    return hash_combine(Ptr, hash_combine_range(Schema), DeactivationSymbol);
+  }
 
   using TypeClass = ConstantInfo<ConstantPtrAuth>::TypeClass;
 
   ConstantPtrAuth *create(TypeClass *Ty) const {
     unsigned NumVals = Schema.size() + 2;
     User::IntrusiveOperandsAllocMarker AllocMarker{NumVals};
-    return new (AllocMarker) ConstantPtrAuth(Ptr, Schema, DeactivationSymbol, AllocMarker);
+    return new (AllocMarker)
+        ConstantPtrAuth(Ptr, Schema, DeactivationSymbol, AllocMarker);
   }
 };
 

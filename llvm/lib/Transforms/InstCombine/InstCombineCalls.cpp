@@ -3343,8 +3343,8 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
           auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), Ops,
                                               /*DeactivationSymbol=*/Null);
           replaceInstUsesWith(
-                *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
-            return eraseInstFromFunction(*II);
+              *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
+          return eraseInstFromFunction(*II);
         }
       }
 

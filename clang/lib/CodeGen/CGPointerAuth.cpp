@@ -82,8 +82,8 @@ CGPointerAuthInfo CodeGenModule::getFunctionPointerAuthInfo(QualType T) {
 
   unsigned IntDiscriminator = 0;
   if (T->isFunctionType())
-    IntDiscriminator = getPointerAuthOtherDiscriminator(Schema, GlobalDecl(),
-                                                        T);
+    IntDiscriminator =
+        getPointerAuthOtherDiscriminator(Schema, GlobalDecl(), T);
 
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            /*IsaPointer=*/false, /*AuthenticatesNull=*/false,
@@ -109,10 +109,9 @@ CGPointerAuthInfo CodeGenFunction::EmitPointerAuthInfo(
     AddrDiscriminator = Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
   }
 
-  return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
-                           Schema.isIsaPointer(),
-                           Schema.authenticatesNullValues(), IntDiscriminator,
-                           AddrDiscriminator);
+  return CGPointerAuthInfo(
+      Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
+      Schema.authenticatesNullValues(), IntDiscriminator, AddrDiscriminator);
 }
 
 CGPointerAuthInfo
@@ -367,8 +366,9 @@ void CodeGenFunction::EmitPointerAuthCopy(PointerAuthQualifier Qual, QualType T,
   Builder.CreateStore(Value, DestAddress);
 }
 
-llvm::Constant *CodeGenModule::getConstantSignedPointer(
-    llvm::Constant *Pointer, CGPointerAuthInfo Info) {
+llvm::Constant *
+CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer,
+                                        CGPointerAuthInfo Info) {
   auto *AddrDisc =
       dyn_cast_or_null<llvm::Constant>(Info.getAddrDiscriminator());
   auto *IntDisc = llvm::ConstantInt::get(Int64Ty, Info.getIntDiscriminator());
@@ -386,8 +386,8 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
     AddressDiscriminator = StorageAddress;
   } else if (StorageAddress) {
     assert(StorageAddress->getType() == DefaultPtrTy);
-    AddressDiscriminator = llvm::ConstantExpr::getPtrToInt(StorageAddress,
-                                                           Int64Ty);
+    AddressDiscriminator =
+        llvm::ConstantExpr::getPtrToInt(StorageAddress, Int64Ty);
   } else {
     AddressDiscriminator = llvm::ConstantInt::get(Int64Ty, 0);
   }
@@ -607,11 +607,10 @@ CodeGenModule::getVTablePointerAuthInfo(CodeGenFunction *CGF,
     AddrDiscriminator = CGF->Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
   }
 
-  return CGPointerAuthInfo(Authentication->getKey(),
-                           PointerAuthenticationMode::SignAndAuth,
-                           /* IsIsaPointer */ false,
-                           /* AuthenticatesNullValues */ false, IntDiscriminator,
-                           AddrDiscriminator);
+  return CGPointerAuthInfo(
+      Authentication->getKey(), PointerAuthenticationMode::SignAndAuth,
+      /* IsIsaPointer */ false,
+      /* AuthenticatesNullValues */ false, IntDiscriminator, AddrDiscriminator);
 }
 
 llvm::Value *CodeGenFunction::authPointerToPointerCast(llvm::Value *ResultPtr,

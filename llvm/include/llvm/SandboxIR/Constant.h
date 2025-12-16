@@ -1362,9 +1362,8 @@ class ConstantPtrAuth final : public Constant {
 
 public:
   /// Return a pointer signed with the specified parameters.
-  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr,
-                                       ArrayRef<Constant *> Schema,
-                                       Constant *DeactivationSymbol);
+  LLVM_ABI static ConstantPtrAuth *
+  get(Constant *Ptr, ArrayRef<Constant *> Schema, Constant *DeactivationSymbol);
 
   /// The pointer that is signed in this ptrauth signed pointer.
   LLVM_ABI Constant *getPointer() const;
@@ -1382,8 +1381,8 @@ public:
     SmallVector<llvm::Value *> Operands;
     for (auto *V : BundleOperands)
       Operands.push_back(V->Val);
-    return cast<llvm::ConstantPtrAuth>(Val)->isKnownCompatibleWith(
-        Operands, DL);
+    return cast<llvm::ConstantPtrAuth>(Val)->isKnownCompatibleWith(Operands,
+                                                                   DL);
   }
 
   /// Produce a new ptrauth expression signing the given value using

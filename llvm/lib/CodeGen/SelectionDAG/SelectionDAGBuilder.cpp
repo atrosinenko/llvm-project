@@ -1876,8 +1876,8 @@ SDValue SelectionDAGBuilder::getValueImpl(const Value *V) {
       for (const Use &Operand : CPA->getSchema())
         Ops.push_back(getValue(Operand));
 
-      SDValue Schema = DAG.getNode(ISD::PtrAuthSchema, getCurSDLoc(),
-                                   MVT::Other, Ops);
+      SDValue Schema =
+          DAG.getNode(ISD::PtrAuthSchema, getCurSDLoc(), MVT::Other, Ops);
 
       return DAG.getNode(ISD::PtrAuthGlobalAddress, getCurSDLoc(), VT,
                          getValue(CPA->getPointer()), Schema);

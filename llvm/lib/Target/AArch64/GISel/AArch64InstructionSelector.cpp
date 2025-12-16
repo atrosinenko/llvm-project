@@ -6801,8 +6801,7 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
   Register Schema = I.getOperand(2).getReg();
   int64_t Offset = 0;
 
-  auto [Key, Disc, AddrDisc] =
-      extractPtrauthBlendDiscriminators(Schema, MRI);
+  auto [Key, Disc, AddrDisc] = extractPtrauthBlendDiscriminators(Schema, MRI);
 
   // Choosing between 3 lowering alternatives is target-specific.
   if (!STI.isTargetELF() && !STI.isTargetMachO())
@@ -6863,7 +6862,8 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
     MIB.buildInstr(NeedsGOTLoad ? AArch64::LOADgotPAC : AArch64::MOVaddrPAC)
         .addGlobalAddress(GV, Offset)
         .addImm(Key)
-        .addReg(HasAddrDisc ? AddrDisc : AArch64::XZR) // FIXME Use NoRegister instead?
+        .addReg(HasAddrDisc ? AddrDisc
+                            : AArch64::XZR) // FIXME Use NoRegister instead?
         .addImm(Disc)
         .constrainAllUses(TII, TRI, RBI);
     MIB.buildCopy(DefReg, Register(AArch64::X16));

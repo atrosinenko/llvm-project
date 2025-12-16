@@ -4947,12 +4947,13 @@ static Value *upgradeConvertIntrinsicCall(StringRef Name, CallBase *CI,
   return nullptr;
 }
 
-static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs) {
+static CallBase *setOperandBundles(CallBase *CI,
+                                   ArrayRef<OperandBundleDef> OBs) {
   IRBuilder<> Builder(CI);
   Value *Callee = CI->getCalledOperand();
   SmallVector<Value *> Args(CI->arg_begin(), CI->arg_end());
-  CallBase *NewCI = Builder.CreateCall(CI->getFunctionType(), Callee,
-                                       Args, OBs);
+  CallBase *NewCI =
+      Builder.CreateCall(CI->getFunctionType(), Callee, Args, OBs);
   NewCI->takeName(CI);
   CI->replaceAllUsesWith(NewCI);
   CI->eraseFromParent();
@@ -5037,7 +5038,7 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
       reportFatalUsageError("Cannot upgrade: expected constant ptrauth key ID");
     OBs.emplace_back(createUpgradedPtrAuthBundle(Key, Disc));
 
-    CI->setArgOperand(KeyIndex,  Zero32);
+    CI->setArgOperand(KeyIndex, Zero32);
     CI->setArgOperand(DiscIndex, Zero64);
   };
 

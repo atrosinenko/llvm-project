@@ -29,8 +29,7 @@ public:
         IntDiscriminator(0), AddrDiscriminator(nullptr) {}
   CGPointerAuthInfo(unsigned Key, PointerAuthenticationMode AuthenticationMode,
                     bool IsIsaPointer, bool AuthenticatesNullValues,
-                    unsigned IntDiscriminator,
-                    llvm::Value *AddrDiscriminator)
+                    unsigned IntDiscriminator, llvm::Value *AddrDiscriminator)
       : AuthenticationMode(AuthenticationMode), IsIsaPointer(IsIsaPointer),
         AuthenticatesNullValues(AuthenticatesNullValues), Key(Key),
         IntDiscriminator(IntDiscriminator),

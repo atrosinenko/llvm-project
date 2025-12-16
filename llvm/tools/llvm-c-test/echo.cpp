@@ -407,8 +407,8 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
       Schema.push_back(clone_constant(Op, M));
     }
 
-    LLVMValueRef DeactivationSymbol = clone_constant(
-        LLVMGetConstantPtrAuthDeactivationSymbol(Cst), M);
+    LLVMValueRef DeactivationSymbol =
+        clone_constant(LLVMGetConstantPtrAuthDeactivationSymbol(Cst), M);
 
     return LLVMConstantPtrAuth(Ptr, Schema.data(), Schema.size(),
                                DeactivationSymbol);

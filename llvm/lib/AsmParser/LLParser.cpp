@@ -3516,8 +3516,8 @@ bool LLParser::parseOptionalOperandBundles(
   return false;
 }
 
-static void upgradeOperandBundles(
-    SmallVectorImpl<OperandBundleDef> &BundleList) {
+static void
+upgradeOperandBundles(SmallVectorImpl<OperandBundleDef> &BundleList) {
   // AutoUpgrader.h exposes an API that accepts std::vector<OperandBundleDef>.
   // Skip meaningless allocations if no bundles were parsed.
   // FIXME Is it possible to change UpgradeOperandBundles function to accept
@@ -3525,7 +3525,8 @@ static void upgradeOperandBundles(
   if (BundleList.empty())
     return;
 
-  std::vector<OperandBundleDef> BundleVector(BundleList.begin(), BundleList.end());
+  std::vector<OperandBundleDef> BundleVector(BundleList.begin(),
+                                             BundleList.end());
   UpgradeOperandBundles(BundleVector);
   BundleList.assign(BundleVector.begin(), BundleVector.end());
 }
@@ -4481,11 +4482,13 @@ bool LLParser::parseValID(ValID &ID, PerFunctionState *PFS, Type *ExpectedTy) {
       return true;
 
     if (!Ptr->getType()->isPointerTy())
-      return error(ID.Loc, "base pointer of ptrauth constant must be a pointer");
+      return error(ID.Loc,
+                   "base pointer of ptrauth constant must be a pointer");
 
     for (Constant *Op : Schema) {
       if (!Op->getType()->isIntegerTy(64))
-        return error(ID.Loc, "schema of ptrauth constant must be a tuple of i64");
+        return error(ID.Loc,
+                     "schema of ptrauth constant must be a tuple of i64");
     }
 
     if (!DeactivationSymbol)

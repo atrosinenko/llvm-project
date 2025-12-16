@@ -1742,9 +1742,8 @@ LLVMValueRef LLVMConstantPtrAuth(LLVMValueRef Ptr, LLVMValueRef *Schema,
   for (unsigned I = 0; I < SchemaSize; ++I)
     SchemaUnwrapped.push_back(unwrap<Constant>(Schema[I]));
 
-  return wrap(ConstantPtrAuth::get(
-      unwrap<Constant>(Ptr), SchemaUnwrapped,
-      unwrap<Constant>(DeactivationSymbol)));
+  return wrap(ConstantPtrAuth::get(unwrap<Constant>(Ptr), SchemaUnwrapped,
+                                   unwrap<Constant>(DeactivationSymbol)));
 }
 
 /*-- Opcode mapping */

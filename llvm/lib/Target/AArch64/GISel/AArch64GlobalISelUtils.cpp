@@ -111,7 +111,7 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(
   if (AddrDiscVal && AddrDiscVal->isZero())
     AddrDisc = AArch64::NoRegister;
 
-  return { KeyVal, ConstDiscVal, AddrDisc };
+  return {KeyVal, ConstDiscVal, AddrDisc};
 }
 
 std::tuple<uint64_t, uint64_t, Register>

@@ -421,9 +421,9 @@ MachineInstrBuilder MachineIRBuilder::buildFConstant(const DstOp &Res,
   return buildFConstant(Res, *CFP);
 }
 
-MachineInstrBuilder
-MachineIRBuilder::buildConstantPtrAuth(const DstOp &Res,
-                                       Register Ptr, Register Schema) {
+MachineInstrBuilder MachineIRBuilder::buildConstantPtrAuth(const DstOp &Res,
+                                                           Register Ptr,
+                                                           Register Schema) {
   auto MIB = buildInstr(TargetOpcode::G_PTRAUTH_GLOBAL_VALUE);
   Res.addDefToMIB(*getMRI(), MIB);
   MIB.addUse(Ptr);

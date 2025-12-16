@@ -1637,8 +1637,7 @@ Expected<Value *> BitcodeReader::materializeValue(unsigned StartValID,
           }
 
           if (!Ptr->getType()->isPointerTy())
-            return error(
-                "ptrauth signed operand must be a pointer");
+            return error("ptrauth signed operand must be a pointer");
 
           for (Constant *C : Schema)
             if (!C->getType()->isIntegerTy(64))
@@ -3861,10 +3860,11 @@ Error BitcodeReader::parseConstants() {
       if (Record.size() < 4)
         return error("Invalid ptrauth record");
       // Ptr, Key, Disc, AddrDisc
-      V = BitcodeConstant::create(Alloc, CurTy,
-                                  {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD},
-                                  {(unsigned)Record[0], (unsigned)Record[1],
-                                   (unsigned)Record[2], (unsigned)Record[3]});
+      V = BitcodeConstant::create(
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD},
+          {(unsigned)Record[0], (unsigned)Record[1], (unsigned)Record[2],
+           (unsigned)Record[3]});
       break;
     }
     case bitc::CST_CODE_PTRAUTH_OLD2: {
@@ -3872,7 +3872,8 @@ Error BitcodeReader::parseConstants() {
         return error("Invalid ptrauth record");
       // Ptr, Key, Disc, AddrDisc, DeactivationSymbol
       V = BitcodeConstant::create(
-          Alloc, CurTy, {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD2},
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD2},
           {(unsigned)Record[0], (unsigned)Record[1], (unsigned)Record[2],
            (unsigned)Record[3], (unsigned)Record[4]});
       break;
@@ -3886,7 +3887,9 @@ Error BitcodeReader::parseConstants() {
       llvm::append_range(Operands, Record);
 
       V = BitcodeConstant::create(
-          Alloc, CurTy, {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH3}, Operands);
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH3},
+          Operands);
       break;
     }
     }

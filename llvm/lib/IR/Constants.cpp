@@ -2124,7 +2124,7 @@ Value *ConstantPtrAuth::handleOperandChangeImpl(Value *From, Value *ToV) {
       Values, this, From, To, NumUpdated, OperandNo);
 }
 
-template<typename T>
+template <typename T>
 static bool isConstantPtrAuthCompatibleWithSchema(const ConstantPtrAuth &CPA,
                                                   ArrayRef<T> OtherSchema,
                                                   const DataLayout &DL) {
@@ -2159,7 +2159,6 @@ static bool isConstantPtrAuthCompatibleWithSchema(const ConstantPtrAuth &CPA,
 
     return Base1 == Base2 && Off1 == Off2;
   };
-
 
   if (CPA.getSchema().size() != OtherSchema.size())
     return false;

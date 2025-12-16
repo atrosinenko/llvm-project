@@ -417,9 +417,9 @@ ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr,
   SmallVector<llvm::Constant *> LLVMSchema;
   for (Constant *C : Schema)
     LLVMSchema.push_back(cast<llvm::Constant>(C->Val));
-  auto *LLVMC = llvm::ConstantPtrAuth::get(
-      cast<llvm::Constant>(Ptr->Val), LLVMSchema,
-      cast<llvm::Constant>(DeactivationSymbol->Val));
+  auto *LLVMC =
+      llvm::ConstantPtrAuth::get(cast<llvm::Constant>(Ptr->Val), LLVMSchema,
+                                 cast<llvm::Constant>(DeactivationSymbol->Val));
   return cast<ConstantPtrAuth>(Ptr->getContext().getOrCreateConstant(LLVMC));
 }
 

@@ -11345,9 +11345,11 @@ SDValue AArch64TargetLowering::LowerGlobalTLSAddress(SDValue Op,
 // Thus, it's only used for ptrauth references to extern_weak to avoid null
 // checks.
 
-static SDValue LowerPtrAuthGlobalAddressStatically(
-    SDValue TGA, SDLoc DL, EVT VT, SDValue Key, SDValue Discriminator,
-    SDValue AddrDiscriminator, SelectionDAG &DAG) {
+static SDValue LowerPtrAuthGlobalAddressStatically(SDValue TGA, SDLoc DL,
+                                                   EVT VT, SDValue Key,
+                                                   SDValue Discriminator,
+                                                   SDValue AddrDiscriminator,
+                                                   SelectionDAG &DAG) {
   const auto *TGN = cast<GlobalAddressSDNode>(TGA.getNode());
   assert(TGN->getGlobal()->hasExternalWeakLinkage());
 
@@ -11427,8 +11429,8 @@ AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
         0);
 
   // extern_weak ref -> LOADauthptrstatic
-  return LowerPtrAuthGlobalAddressStatically(
-      TPtr, DL, VT, Key, Discriminator, AddrDiscriminator, DAG);
+  return LowerPtrAuthGlobalAddressStatically(TPtr, DL, VT, Key, Discriminator,
+                                             AddrDiscriminator, DAG);
 }
 
 // Looks through \param Val to determine the bit that can be used to
@@ -31120,7 +31122,8 @@ AArch64TargetLowering::validateSinglePtrAuthSchema(ArrayRef<Use> Schema,
   auto *Key = dyn_cast<ConstantInt>(Schema[0]);
   if (!Key || Key->getZExtValue() > (unsigned long)AArch64PACKey::LAST)
     return ("key must be constant in range [0, " +
-                  Twine((int)AArch64PACKey::LAST) + "]").str();
+            Twine((int)AArch64PACKey::LAST) + "]")
+        .str();
 
   // Done validating single-operand schemas.
   if (NumOperands == 1)
@@ -31143,14 +31146,16 @@ AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
 
       bool ExpectSingleElement =
           CB->getIntrinsicID() == Intrinsic::ptrauth_strip;
-      if (auto Error = validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement))
+      if (auto Error =
+              validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement))
         return (CB->getFunction()->getName() + ": " + *Error).str();
     }
     return std::nullopt;
   }
 
   auto &CPA = cast<ConstantPtrAuth>(V);
-  return validateSinglePtrAuthSchema(CPA.getSchema(), /*ExpectSingleElement=*/false);
+  return validateSinglePtrAuthSchema(CPA.getSchema(),
+                                     /*ExpectSingleElement=*/false);
 }
 
 MachineInstr *

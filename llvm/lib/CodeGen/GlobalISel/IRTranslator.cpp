@@ -3886,7 +3886,8 @@ bool IRTranslator::translate(const Constant &C, Register Reg) {
       SchemaOps.push_back(getOrCreateVReg(*Operand));
 
     Register SchemaReg = MRI->createGenericVirtualRegister(LLT::token());
-    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {SchemaReg}, SchemaOps);
+    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {SchemaReg},
+                             SchemaOps);
 
     EntryBuilder->buildConstantPtrAuth(Reg, Addr, SchemaReg);
   } else if (auto CAZ = dyn_cast<ConstantAggregateZero>(&C)) {

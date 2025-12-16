@@ -3430,8 +3430,8 @@ llvm::Value *CodeGenFunction::emitStrip(const CGPointerAuthInfo &PointerAuth,
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
   llvm::OperandBundleDef OB("ptrauth", ArrayRef<llvm::Value *>({Key}));
-  Pointer = EmitRuntimeCall(
-      StripIntrinsic, {Builder.CreatePtrToInt(Pointer, IntPtrTy)}, {OB});
+  Pointer = EmitRuntimeCall(StripIntrinsic,
+                            {Builder.CreatePtrToInt(Pointer, IntPtrTy)}, {OB});
   return Builder.CreateIntToPtr(Pointer, OrigType);
 }
 
