@@ -7198,13 +7198,24 @@ static bool upgradePtrauthInitFiniArrays(Module &M) {
     constexpr unsigned ExpectedAddressMarker = 1;
 
     auto *CPA = dyn_cast<ConstantPtrAuth>(CV);
-    if (!CPA || !CPA->getDiscriminator()->equalsInt(ExpectedConstDisc))
+    if (!CPA || CPA->getSchema().size() != 3)
+      return nullptr;
+
+    // FIXME Check key?
+
+    // FIXME Describe schema via `ConstantInt`s?
+
+    ArrayRef<Use> Schema = CPA->getSchema();
+    ConstantInt *ConstDisc = dyn_cast<ConstantInt>(Schema[1].get());
+    ConstantInt *AddrDisc = dyn_cast<ConstantInt>(Schema[2].get());
+
+    if (!ConstDisc || !ConstDisc->equalsInt(ExpectedConstDisc))
       return nullptr; // Nothing to upgrade or unknown pattern found.
 
     bool HasAddressDisc;
-    if (!CPA->hasAddressDiscriminator())
+    if (AddrDisc && AddrDisc->equalsInt(0))
       HasAddressDisc = false;
-    else if (CPA->hasSpecialAddressDiscriminator(ExpectedAddressMarker))
+    else if (AddrDisc && AddrDisc->equalsInt(ExpectedAddressMarker))
       HasAddressDisc = true;
     else
       return nullptr; // Unknown pattern.

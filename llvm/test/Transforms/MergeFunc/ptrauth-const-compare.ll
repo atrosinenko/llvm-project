@@ -109,6 +109,30 @@ entry:
   ret i32 4
 }
 
+; different schema size (non-AArch64)
+
+define i32 @f_schema_size2() {
+; CHECK-LABEL: define i32 @f_schema_size2() {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0]))
+; CHECK-NEXT:    ret i32 5
+;
+entry:
+  call void @callee(ptr ptrauth (ptr @baz, [i64 0, i64 0]))
+  ret i32 5
+}
+
+define i32 @g_schema_size3() {
+; CHECK-LABEL: define i32 @g_schema_size3() {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    call void @callee(ptr ptrauth (ptr @baz, [i64 1, i64 0, i64 0]))
+; CHECK-NEXT:    ret i32 5
+;
+entry:
+  call void @callee(ptr ptrauth (ptr @baz, [i64 1, i64 0, i64 0]))
+  ret i32 5
+}
+
 ; positive test: identical ptrauth operands, should be merged
 
 define void @merge_ptrauth_a() {
