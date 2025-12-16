@@ -1234,34 +1234,6 @@ public:
     return ArrayRef<Use>(op_begin() + 2, op_end());
   }
 
-  /// The Key ID, an i32 constant.
-  ConstantInt *getKey() const {
-    // FIXME remove this
-    return cast<ConstantInt>(getSchema()[0]);
-  }
-
-  /// The integer discriminator, an i64 constant, or 0.
-  ConstantInt *getDiscriminator() const {
-    // FIXME remove this
-    return cast<ConstantInt>(getSchema()[1]);
-  }
-
-  /// The address discriminator if any, or the null constant.
-  /// If present, this must be a value equivalent to the storage location of
-  /// the only global-initializer user of the ptrauth signed pointer.
-  // FIXME Remove
-  Constant *getAddrDiscriminator() const {
-    // FIXME remove this
-    return cast<Constant>(getSchema()[2]);
-  }
-
-  /// Whether there is any non-null address discriminator.
-  // FIXME Remove
-  bool hasAddressDiscriminator() const {
-    // FIXME remove this
-    return !isa<ConstantPointerNull>(getAddrDiscriminator());
-  }
-
   Constant *getDeactivationSymbol() const {
     return cast<Constant>(Op<1>().get());
   }
@@ -1272,13 +1244,6 @@ public:
   /// (see Verifier::visitGlobalVariable) and we can't emit getelementptr
   /// expressions referencing these special arrays.
   enum { AddrDiscriminator_CtorsDtors = 1 };
-
-  /// Whether the address uses a special address discriminator.
-  /// These discriminators can't be used in real pointer-auth values; they
-  /// can only be used in "prototype" values that indicate how some real
-  /// schema is supposed to be produced.
-  // FIXME Rethink?
-  LLVM_ABI bool hasSpecialAddressDiscriminator(uint64_t Value) const;
 
   /// Check whether an authentication operation with key \p Key and (possibly
   /// blended) discriminator \p Discriminator is known to be compatible with

@@ -1459,12 +1459,27 @@ void AArch64AsmPrinter::emitFunctionEntryLabel() {
   }
 }
 
+static bool hasAddressDiscriminator(const ConstantPtrAuth &CPA) {
+  if (CPA.getSchema().size() != 3)
+    return false;
+  return !cast<Constant>(CPA.getSchema()[2])->isNullValue();
+}
+
+static bool hasSpecialAddressDiscriminator(const ConstantPtrAuth &CPA,
+                                           uint64_t Value) {
+  if (CPA.getSchema().size() != 3)
+    return false;
+
+  auto *IntVal = dyn_cast<ConstantInt>(CPA.getSchema()[2]);
+  return IntVal && IntVal->getZExtValue() == Value;
+}
+
 void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
                                        const Constant *CV) {
   if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV))
-    if (CPA->hasAddressDiscriminator() &&
-        !CPA->hasSpecialAddressDiscriminator(
-            ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
+    if (hasAddressDiscriminator(*CPA) &&
+        !hasSpecialAddressDiscriminator(
+            *CPA, ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
       report_fatal_error(
           "unexpected address discrimination value for ctors/dtors entry, only "
           "'i64 1' is allowed");
@@ -2738,7 +2753,7 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
 
   // Check if we can represent this with an IRELATIVE and emit it if so.
   if (auto *IFuncSym = emitPAuthRelocationAsIRelative(
-          Sym, Disc, AArch64PACKey::ID(KeyID), CPA.hasAddressDiscriminator(),
+          Sym, Disc, AArch64PACKey::ID(KeyID), hasAddressDiscriminator(CPA),
           BaseGVB && BaseGVB->isDSOLocal(), DSExpr))
     return IFuncSym;
 
@@ -2750,7 +2765,7 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
 
   // Finally build the complete @AUTH expr.
   return AArch64AuthMCExpr::create(Sym, Disc, AArch64PACKey::ID(KeyID),
-                                   CPA.hasAddressDiscriminator(), Ctx);
+                                   hasAddressDiscriminator(CPA), Ctx);
 }
 
 void AArch64AsmPrinter::LowerLOADauthptrstatic(const MachineInstr &MI) {

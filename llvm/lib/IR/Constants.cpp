@@ -2301,14 +2301,6 @@ Value *ConstantPtrAuth::handleOperandChangeImpl(Value *From, Value *ToV) {
       Values, this, From, To, NumUpdated, OperandNo);
 }
 
-bool ConstantPtrAuth::hasSpecialAddressDiscriminator(uint64_t Value) const {
-  const auto *IntVal = dyn_cast<ConstantInt>(getAddrDiscriminator());
-  if (!IntVal)
-    return false;
-
-  return IntVal->getValue() == Value;
-}
-
 template <typename T>
 static bool isConstantPtrAuthCompatibleWithSchema(const ConstantPtrAuth &CPA,
                                                   ArrayRef<T> OtherSchema,

@@ -1379,9 +1379,6 @@ define ptr @foo() {
 }
 )IR");
   Function &LLVMF = *M->getFunction("foo");
-  auto *LLVMBB = &*LLVMF.begin();
-  auto *LLVMRet = cast<llvm::ReturnInst>(&*LLVMBB->begin());
-  auto *LLVMPtrAuth = cast<llvm::ConstantPtrAuth>(LLVMRet->getReturnValue());
   sandboxir::Context Ctx(C);
 
   auto &F = *Ctx.createFunction(&LLVMF);
@@ -1391,24 +1388,21 @@ define ptr @foo() {
   // Check classof(), creation.
   auto *PtrAuth = cast<sandboxir::ConstantPtrAuth>(Ret->getReturnValue());
   // Check get(), getKey(), getDiscriminator(), getAddrDiscriminator().
-  auto *NewPtrAuth = sandboxir::ConstantPtrAuth::get(
-      &F,
-      {PtrAuth->getKey(), PtrAuth->getDiscriminator(),
-       PtrAuth->getAddrDiscriminator()},
-      PtrAuth->getDeactivationSymbol());
-  EXPECT_EQ(NewPtrAuth, PtrAuth);
-  // Check hasAddressDiscriminator().
-  EXPECT_EQ(PtrAuth->hasAddressDiscriminator(),
-            LLVMPtrAuth->hasAddressDiscriminator());
-  // Check hasSpecialAddressDiscriminator().
-  EXPECT_EQ(PtrAuth->hasSpecialAddressDiscriminator(0u),
-            LLVMPtrAuth->hasSpecialAddressDiscriminator(0u));
+  {
+    SmallVector<sandboxir::Constant *> NewSchema;
+    for (const sandboxir::Use U : PtrAuth->getSchema())
+      NewSchema.push_back(cast<sandboxir::Constant>(U.get()));
+    auto *NewPtrAuth = sandboxir::ConstantPtrAuth::get(
+        &F, NewSchema, PtrAuth->getDeactivationSymbol());
+    EXPECT_EQ(NewPtrAuth, PtrAuth);
+  }
   // Check isKnownCompatibleWith().
   const DataLayout &DL = M->getDataLayout();
-  EXPECT_TRUE(PtrAuth->isKnownCompatibleWith({PtrAuth->getKey(),
-                                              PtrAuth->getDiscriminator(),
-                                              PtrAuth->getAddrDiscriminator()},
-                                             DL));
+  {
+    SmallVector<sandboxir::Value *> Schema;
+    llvm::append_range(Schema, PtrAuth->getSchema());
+    EXPECT_TRUE(PtrAuth->isKnownCompatibleWith(Schema, DL));
+  }
   // Check getWithSameSchema().
   EXPECT_EQ(PtrAuth->getWithSameSchema(&F), PtrAuth);
 }

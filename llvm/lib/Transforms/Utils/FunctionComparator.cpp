@@ -524,13 +524,13 @@ int FunctionComparator::cmpConstants(const Constant *L,
     const ConstantPtrAuth *RPA = cast<ConstantPtrAuth>(R);
     if (int Res = cmpConstants(LPA->getPointer(), RPA->getPointer()))
       return Res;
-    if (int Res = cmpConstants(LPA->getKey(), RPA->getKey()))
+    if (int Res = cmpNumbers(LPA->getSchema().size(), RPA->getSchema().size()))
       return Res;
-    if (int Res =
-            cmpConstants(LPA->getDiscriminator(), RPA->getDiscriminator()))
-      return Res;
-    return cmpConstants(LPA->getAddrDiscriminator(),
-                        RPA->getAddrDiscriminator());
+    for (unsigned I = 0, N = LPA->getSchema().size(); I < N; ++I) {
+      if (int Res = cmpValues(LPA->getSchema()[I], RPA->getSchema()[I]))
+        return Res;
+    }
+    return 0;
   }
   default: // Unknown constant, abort.
     LLVM_DEBUG(dbgs() << "Looking at valueID " << L->getValueID() << "\n");

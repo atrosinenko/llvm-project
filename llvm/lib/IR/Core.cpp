@@ -958,15 +958,21 @@ LLVMGetConstantPtrAuthSchemaOperand(LLVMValueRef PtrAuth, unsigned Idx) {
 }
 
 LLVMValueRef LLVMGetConstantPtrAuthKey(LLVMValueRef PtrAuth) {
-  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getKey());
+  assert(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema().size() == 3 &&
+         "Expected AArch64-style schema");
+  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema()[0]);
 }
 
 LLVMValueRef LLVMGetConstantPtrAuthDiscriminator(LLVMValueRef PtrAuth) {
-  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getDiscriminator());
+  assert(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema().size() == 3 &&
+         "Expected AArch64-style schema");
+  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema()[1]);
 }
 
 LLVMValueRef LLVMGetConstantPtrAuthAddrDiscriminator(LLVMValueRef PtrAuth) {
-  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getAddrDiscriminator());
+  assert(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema().size() == 3 &&
+         "Expected AArch64-style schema");
+  return wrap(unwrap<ConstantPtrAuth>(PtrAuth)->getSchema()[2]);
 }
 
 LLVM_C_ABI LLVMValueRef

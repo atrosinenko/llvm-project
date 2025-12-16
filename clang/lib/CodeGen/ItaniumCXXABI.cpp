@@ -931,12 +931,18 @@ static llvm::Constant *pointerAuthResignConstant(
   if (!CPA)
     return nullptr;
 
-  assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey());
-  assert(CPA->getDiscriminator()->getZExtValue() ==
-         CurAuthInfo.getIntDiscriminator());
+  // FIXME Refactor and get rid of these assertions.
+#ifndef NDEBUG
+  auto *Key = cast<llvm::ConstantInt>(CPA->getSchema()[0]);
+  auto *IntDiscriminator = cast<llvm::ConstantInt>(CPA->getSchema()[1]);
+  auto *AddrDiscriminator = cast<llvm::Constant>(CPA->getSchema()[2]);
+  assert(CPA->getSchema().size() == 3);
+  assert(Key->getZExtValue() == CurAuthInfo.getKey());
+  assert(IntDiscriminator->getZExtValue() == CurAuthInfo.getIntDiscriminator());
   assert(!CurAuthInfo.getAddrDiscriminator() &&
          !NewAuthInfo.getAddrDiscriminator() &&
-         CPA->getAddrDiscriminator()->isNullValue());
+         AddrDiscriminator->isNullValue());
+#endif
 
   return CGM.getConstantSignedPointer(CPA->getPointer(), NewAuthInfo);
 }
