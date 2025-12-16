@@ -165,8 +165,9 @@
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
 
-; CHECK-ERR-KEY: error: AArch64 PAC Key ID '4' out of range [0, 3]
-
+; CHECK-ERR-KEY:      Ptrauth schema violates target-specific constraints:
+; CHECK-ERR-KEY-NEXT: ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
+; CHECK-ERR-KEY-NEXT: LLVM ERROR: Invalid ptrauth schema: key must be constant in range [0, 3]
 
 @g = external global i32
 @g.ref.4.0 = constant ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
@@ -185,7 +186,9 @@
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
 
-; CHECK-ERR-DISC: error: AArch64 PAC Discriminator '65536' out of range [0, 0xFFFF]
+; CHECK-ERR-DISC:      Ptrauth schema violates target-specific constraints:
+; CHECK-ERR-DISC-NEXT: ptr ptrauth (ptr @g, [i64 0, i64 65536, i64 0])
+; CHECK-ERR-DISC-NEXT: LLVM ERROR: Invalid ptrauth schema: constant modifier must be 16-bit unsigned constant
 
 @g = external global i32
 @g.ref.ia.65536 = constant ptr ptrauth (ptr @g, [i64 0, i64 65536, i64 0])
