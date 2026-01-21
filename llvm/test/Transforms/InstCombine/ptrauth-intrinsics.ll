@@ -246,13 +246,13 @@ define i64 @test_ptrauth_nop_ds2(ptr %p) {
 define i64 @test_ptrauth_nop_ds3(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_ds3(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds2) ]
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds2) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds) ]
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds2) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds2) ]
   ret i64 %authed
 }
 
@@ -262,8 +262,8 @@ define i64 @test_ptrauth_nop_ds4(ptr %p) {
 ; CHECK-NEXT:    ret i64 [[TMP0]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds) ]
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
   ret i64 %authed
 }
 
@@ -279,11 +279,11 @@ define i64 @test_ptrauth_nop_ds_constant() {
 define i64 @test_ptrauth_auth_call_no_args() {
 ; CHECK-LABEL: @test_ptrauth_auth_call_no_args(
 ; CHECK-NEXT:    [[CALL:%.*]] = call i64 @foo()
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CALL]]) [ "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CALL]]) [ "ptrauth"(i64 1, i64 1234, i64 0) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %call = call i64 @foo()
-  %authed = call i64 @llvm.ptrauth.auth(i64 %call) [ "ptrauth"(i64 1, i64 1234) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %call) [ "ptrauth"(i64 1, i64 1234, i64 0) ]
   ret i64 %authed
 }
 
