@@ -2375,6 +2375,24 @@ public:
                                          AtomicOrdering Ord) const;
   /// @}
 
+  //===--------------------------------------------------------------------===//
+  /// \name Protected Field Pointer lowering.
+  /// @{
+
+  virtual Value *emitPointerSign(IRBuilderBase &Builder, Value *Val,
+                                 Value *Discriminator,
+                                 Value *DeactivationSymbol) const {
+    llvm_unreachable("PFP is not supported on this target");
+  }
+
+  virtual Value *emitPointerAuth(IRBuilderBase &Builder, Value *Val,
+                                 Value *Discriminator,
+                                 Value *DeactivationSymbol) const {
+    llvm_unreachable("PFP is not supported on this target");
+  }
+
+  /// @}
+
   // Emits code that executes when the comparison result in the ll/sc
   // expansion of a cmpxchg instruction is such that the store-conditional will
   // not execute.  This makes it possible to balance out the load-linked with

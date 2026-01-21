@@ -78,7 +78,7 @@
 ; CHECK-NEXT: b __emupac_pacda
 ; CHECK-NEXT: .section .data.rel.ro
 ; CHECK-NEXT: .xword %funcinit([[FUNC]])
-@disc65536 = constant ptr ptrauth (ptr @dsolocal, i32 2, i64 65536, ptr @disc), align 8
+@disc65536 = constant ptr ptrauth (ptr @dsolocal, [i64 2, i64 65536, i64 ptrtoint (ptr @disc to i64)]), align 8
 
 @global = external global i8
 

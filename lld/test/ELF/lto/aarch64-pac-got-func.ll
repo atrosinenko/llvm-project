@@ -48,10 +48,10 @@ declare void @func_undef()
 
 define void @bar() #0 align 1024 {
 entry:
-  store ptr ptrauth (ptr @func, i32 0), ptr @g1
-  store ptr ptrauth (ptr @func_undef, i32 0), ptr @g2
-  store ptr ptrauth (ptr @var, i32 0), ptr @g3
-  store ptr ptrauth (ptr @var_undef, i32 0), ptr @g4
+  store ptr ptrauth (ptr @func, [i64 0, i64 0, i64 0]), ptr @g1
+  store ptr ptrauth (ptr @func_undef, [i64 0, i64 0, i64 0]), ptr @g2
+  store ptr ptrauth (ptr @var, [i64 0, i64 0, i64 0]), ptr @g3
+  store ptr ptrauth (ptr @var_undef, [i64 0, i64 0, i64 0]), ptr @g4
   ret void
 }
 

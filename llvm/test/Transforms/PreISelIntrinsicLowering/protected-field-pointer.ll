@@ -33,7 +33,7 @@ define ptr @load_hw(ptr %ptrptr) {
 ; PAUTH-SAME: ptr [[PTRPTR:%.*]]) #[[ATTR0:[0-9]+]] {
 ; PAUTH-NEXT:    [[PTR:%.*]] = load ptr, ptr [[PTRPTR]], align 8
 ; PAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[PTR]] to i64
-; PAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]], i32 2, i64 1) [ "deactivation-symbol"(ptr @ds1) ]
+; PAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 1, i64 0), "deactivation-symbol"(ptr @ds1) ]
 ; PAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
 ; PAUTH-NEXT:    ret ptr [[TMP3]]
 ;
@@ -54,7 +54,7 @@ define void @store_hw(ptr %ptrptr, ptr %ptr) {
 ; PAUTH-LABEL: define void @store_hw(
 ; PAUTH-SAME: ptr [[PTRPTR:%.*]], ptr [[PTR:%.*]]) #[[ATTR0]] {
 ; PAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[PTR]] to i64
-; PAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP1]], i32 2, i64 2) [ "deactivation-symbol"(ptr @ds2) ]
+; PAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 2, i64 0), "deactivation-symbol"(ptr @ds2) ]
 ; PAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
 ; PAUTH-NEXT:    store ptr [[TMP3]], ptr [[PTRPTR]], align 8
 ; PAUTH-NEXT:    ret void
@@ -102,10 +102,8 @@ define ptr @escape(ptr %ptrptr) {
 declare ptr @llvm.protected.field.ptr.p0(ptr, i64, i1 immarg)
 ;.
 ; NOPAUTH: attributes #[[ATTR0:[0-9]+]] = { nocallback nofree nosync nounwind willreturn memory(none) }
-; NOPAUTH: attributes #[[ATTR1:[0-9]+]] = { nounwind memory(none) }
 ;.
 ; PAUTH: attributes #[[ATTR0]] = { "target-features"="+pauth" }
 ; PAUTH: attributes #[[ATTR1:[0-9]+]] = { nocallback nofree nosync nounwind willreturn memory(none) "target-features"="+pauth" }
 ; PAUTH: attributes #[[ATTR2:[0-9]+]] = { nocallback nofree nosync nounwind willreturn memory(none) }
-; PAUTH: attributes #[[ATTR3:[0-9]+]] = { nounwind memory(none) }
 ;.

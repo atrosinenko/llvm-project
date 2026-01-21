@@ -143,7 +143,7 @@ define ptr @test() {
 ; invoked on AArch64.
 
 ;--- unsupported-global-constant.ll
-; RUN: not llc -mtriple x86_64 < %t/unsupported-global-constant.ll 2>&1 | FileCheck --check-prefix=UNSUPPORTED-GLOBAL-CONSTANT %s
+; RUN: not --crash llc -mtriple x86_64 < %t/unsupported-global-constant.ll 2>&1 | FileCheck --check-prefix=UNSUPPORTED-GLOBAL-CONSTANT %s
 
 ; UNSUPPORTED-GLOBAL-CONSTANT: LLVM ERROR: ptrauth constant lowering not implemented
 

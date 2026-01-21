@@ -2709,13 +2709,17 @@ const MCExpr *
 AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
   MCContext &Ctx = OutContext;
 
-  if (auto Error = AArch64TargetLowering::validateSinglePtrAuthSchema(
-          CPA.getSchema(), /*ExpectSingleElement=*/false)) {
-    errs() << "Ptrauth schema violates target-specific constraints:\n";
-    CPA.print(errs());
-    errs() << "\n";
-    reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
-  }
+  auto CheckShema = [](const ConstantPtrAuth &CPA, bool CheckIntDisc) {
+    if (auto Error = AArch64TargetLowering::validateConstantPtrAuthSchema(
+            CPA.getSchema(), CheckIntDisc)) {
+      errs() << "Ptrauth schema violates target-specific constraints:\n";
+      CPA.print(errs());
+      errs() << "\n";
+      reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
+    }
+  };
+
+  CheckShema(CPA, /*CheckIntDisc=*/false);
 
   // Figure out the base symbol and the addend, if any.
   APInt Offset(64, 0);
@@ -2753,6 +2757,8 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
           Sym, Disc, AArch64PACKey::ID(KeyID), hasAddressDiscriminator(CPA),
           BaseGVB && BaseGVB->isDSOLocal(), DSExpr))
     return IFuncSym;
+
+  CheckShema(CPA, /*CheckIntDisc=*/true);
 
   if (DSExpr)
     report_fatal_error("deactivation symbols unsupported in constant "

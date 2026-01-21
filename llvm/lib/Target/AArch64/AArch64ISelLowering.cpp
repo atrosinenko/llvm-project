@@ -30827,6 +30827,57 @@ Value *AArch64TargetLowering::emitLoadLinked(IRBuilderBase &Builder,
   return Builder.CreateBitCast(Trunc, ValueTy);
 }
 
+static Value *emitPointerAuthOrSignCommon(IRBuilderBase &B, Value *Val,
+                                          Value *Disc, Value *DS,
+                                          Intrinsic::ID IntrId,
+                                          const char *EmupacName) {
+  Function *F = B.GetInsertBlock()->getParent();
+  Module *M = F->getParent();
+  Attribute FSAttr = F->getFnAttribute("target-features");
+
+  auto *ValInt = B.CreatePtrToInt(Val, B.getInt64Ty());
+  OperandBundleDef DSBundle("deactivation-symbol", DS);
+
+  if (FSAttr.isValid() && FSAttr.getValueAsString().contains("+pauth")) {
+    Value *Zero = B.getInt64(0);
+
+    SmallVector<Value *, 3> SchemaOps;
+    SchemaOps.push_back(B.getInt64(AArch64PACKey::DA));
+    if (isa<Constant>(Disc))
+      SchemaOps.append({Disc, Zero});
+    else
+      SchemaOps.append({Zero, Disc});
+
+    OperandBundleDef PtrAuthBundle("ptrauth", SchemaOps);
+    Function *SignIntr = Intrinsic::getOrInsertDeclaration(M, IntrId, {});
+    Value *Call = B.CreateCall(SignIntr, {ValInt}, {PtrAuthBundle, DSBundle});
+    return B.CreateIntToPtr(Call, B.getPtrTy());
+  }
+
+  auto *EmupacFnTy = FunctionType::get(B.getInt64Ty(),
+                                       {B.getInt64Ty(), B.getInt64Ty()}, false);
+
+  FunctionCallee EmupacFn = M->getOrInsertFunction(EmupacName, EmupacFnTy);
+  Value *Call = B.CreateCall(EmupacFn, {ValInt, Disc}, DSBundle);
+  return B.CreateIntToPtr(Call, B.getPtrTy());
+}
+
+Value *AArch64TargetLowering::emitPointerSign(IRBuilderBase &Builder,
+                                              Value *Val, Value *Discriminator,
+                                              Value *DeactivationSymbol) const {
+  return emitPointerAuthOrSignCommon(Builder, Val, Discriminator,
+                                     DeactivationSymbol,
+                                     Intrinsic::ptrauth_sign, "__emupac_pacda");
+}
+
+Value *AArch64TargetLowering::emitPointerAuth(IRBuilderBase &Builder,
+                                              Value *Val, Value *Discriminator,
+                                              Value *DeactivationSymbol) const {
+  return emitPointerAuthOrSignCommon(Builder, Val, Discriminator,
+                                     DeactivationSymbol,
+                                     Intrinsic::ptrauth_auth, "__emupac_autda");
+}
+
 void AArch64TargetLowering::emitAtomicCmpXchgNoStoreLLBalance(
     IRBuilderBase &Builder) const {
   Builder.CreateIntrinsic(Intrinsic::aarch64_clrex, {});
@@ -31106,9 +31157,9 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
   return !VT.isFixedLengthVector();
 }
 
-std::optional<std::string>
-AArch64TargetLowering::validateSinglePtrAuthSchema(ArrayRef<Use> Schema,
-                                                   bool ExpectSingleElement) {
+static std::optional<std::string>
+validateSinglePtrAuthSchema(ArrayRef<Use> Schema, bool ExpectSingleElement,
+                            bool CheckIntDisc) {
   unsigned NumOperands = Schema.size();
   if (ExpectSingleElement) {
     if (NumOperands != 1)
@@ -31129,11 +31180,20 @@ AArch64TargetLowering::validateSinglePtrAuthSchema(ArrayRef<Use> Schema,
   if (NumOperands == 1)
     return std::nullopt;
 
-  auto *IntDisc = dyn_cast<ConstantInt>(Schema[1]);
-  if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
-    return "constant modifier must be 16-bit unsigned constant";
+  if (CheckIntDisc) {
+    auto *IntDisc = dyn_cast<ConstantInt>(Schema[1]);
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return "constant modifier must be 16-bit unsigned constant";
+  }
 
   return std::nullopt;
+}
+
+std::optional<std::string>
+AArch64TargetLowering::validateConstantPtrAuthSchema(ArrayRef<Use> Schema,
+                                                     bool CheckIntDisc) {
+  return validateSinglePtrAuthSchema(Schema, /*ExpectSingleElement=*/false,
+                                     CheckIntDisc);
 }
 
 std::optional<std::string>
@@ -31147,7 +31207,8 @@ AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
       bool ExpectSingleElement =
           CB->getIntrinsicID() == Intrinsic::ptrauth_strip;
       if (auto Error =
-              validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement))
+              validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement,
+                                          /*CheckIntDisc=*/true))
         return (CB->getFunction()->getName() + ": " + *Error).str();
     }
     return std::nullopt;
@@ -31155,7 +31216,8 @@ AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
 
   auto &CPA = cast<ConstantPtrAuth>(V);
   return validateSinglePtrAuthSchema(CPA.getSchema(),
-                                     /*ExpectSingleElement=*/false);
+                                     /*ExpectSingleElement=*/false,
+                                     /*CheckIntDisc=*/true);
 }
 
 MachineInstr *

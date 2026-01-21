@@ -44,10 +44,10 @@
 @ConstExtern = external global i64
 @Const       = constant i64 37
 
-@PtrAuthExtern = constant ptr ptrauth (ptr @ConstExtern, i32 2)
-@PtrAuth       = constant ptr ptrauth (ptr @Const,  i32 2)
+@PtrAuthExtern = constant ptr ptrauth (ptr @ConstExtern, [i64 2, i64 0, i64 0])
+@PtrAuth       = constant ptr ptrauth (ptr @Const, [i64 2, i64 0, i64 0])
 
-@PtrAuthExternNested1 = constant { ptr } { ptr ptrauth (ptr @ConstExtern, i32 2) }
+@PtrAuthExternNested1 = constant { ptr } { ptr ptrauth (ptr @ConstExtern, [i64 2, i64 0, i64 0]) }
 @PtrAuthExternNested2 = constant { ptr } { ptr @PtrAuthExtern }
-@PtrAuthNested1       = constant { ptr } { ptr ptrauth (ptr @Const, i32 2) }
+@PtrAuthNested1       = constant { ptr } { ptr ptrauth (ptr @Const, [i64 2, i64 0, i64 0]) }
 @PtrAuthNested2       = constant { ptr } { ptr @PtrAuth }
