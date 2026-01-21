@@ -13,12 +13,12 @@ define i64 @sign1(i64 %p) {
 ;
 ; PAUTH1-LABEL: define i64 @sign1(
 ; PAUTH1-SAME: i64 [[P:%.*]]) #[[ATTR0:[0-9]+]] {
-; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1) ]
+; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1, i64 0) ]
 ; PAUTH1-NEXT:    ret i64 [[SIGNED]]
 ;
 ; PAUTH2-LABEL: define i64 @sign1(
 ; PAUTH2-SAME: i64 [[P:%.*]]) {
-; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1) ]
+; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1, i64 0) ]
 ; PAUTH2-NEXT:    ret i64 [[SIGNED]]
 ;
   %signed = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 2, i64 1) ]
@@ -32,12 +32,12 @@ define i64 @sign2(i64 %p) {
 ;
 ; PAUTH1-LABEL: define i64 @sign2(
 ; PAUTH1-SAME: i64 [[P:%.*]]) #[[ATTR0]] {
-; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1), "deactivation-symbol"(ptr @ds) ]
+; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1, i64 0), "deactivation-symbol"(ptr @ds) ]
 ; PAUTH1-NEXT:    ret i64 [[SIGNED]]
 ;
 ; PAUTH2-LABEL: define i64 @sign2(
 ; PAUTH2-SAME: i64 [[P:%.*]]) {
-; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1), "deactivation-symbol"(ptr @ds) ]
+; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 2, i64 1, i64 0), "deactivation-symbol"(ptr @ds) ]
 ; PAUTH2-NEXT:    ret i64 [[SIGNED]]
 ;
   %signed = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 2, i64 1), "deactivation-symbol"(ptr @ds) ]
@@ -46,17 +46,17 @@ define i64 @sign2(i64 %p) {
 define i64 @sign3(i64 %p) {
 ; NOPAUTH-LABEL: define i64 @sign3(
 ; NOPAUTH-SAME: i64 [[P:%.*]]) {
-; NOPAUTH-NEXT:    [[TMP1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1), "deactivation-symbol"(ptr @ds) ]
+; NOPAUTH-NEXT:    [[TMP1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1, i64 0), "deactivation-symbol"(ptr @ds) ]
 ; NOPAUTH-NEXT:    ret i64 [[TMP1]]
 ;
 ; PAUTH1-LABEL: define i64 @sign3(
 ; PAUTH1-SAME: i64 [[P:%.*]]) #[[ATTR0]] {
-; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1), "deactivation-symbol"(ptr @ds) ]
+; PAUTH1-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1, i64 0), "deactivation-symbol"(ptr @ds) ]
 ; PAUTH1-NEXT:    ret i64 [[SIGNED]]
 ;
 ; PAUTH2-LABEL: define i64 @sign3(
 ; PAUTH2-SAME: i64 [[P:%.*]]) {
-; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1), "deactivation-symbol"(ptr @ds) ]
+; PAUTH2-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 0, i64 1, i64 0), "deactivation-symbol"(ptr @ds) ]
 ; PAUTH2-NEXT:    ret i64 [[SIGNED]]
 ;
   %signed = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 0, i64 1), "deactivation-symbol"(ptr @ds) ]
