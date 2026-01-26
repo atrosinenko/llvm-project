@@ -100,6 +100,12 @@ static cl::opt<bool> AuthTrapsOnFailure(
     cl::desc("Assume authentication instructions always trap on failure"),
     cl::cat(opts::BinaryAnalysisCategory));
 
+static cl::opt<bool> HackishExceptionHandling(
+    "hackish-exception-handling",
+    cl::desc("Try to estimate dataflow analysis coverage with landing pads "
+             "being accounted for"),
+    cl::cat(opts::BinaryAnalysisCategory));
+
 [[maybe_unused]] static void traceInst(const BinaryContext &BC, StringRef Label,
                                        const MCInst &MI) {
   dbgs() << "  " << Label << ": ";
@@ -621,6 +627,13 @@ public:
   }
 };
 
+static bool isEHEntry(const BinaryBasicBlock &BB) {
+  if (!HackishExceptionHandling)
+    return false;
+
+  return BB.isLandingPad();
+}
+
 class DataflowSrcSafetyAnalysis
     : public SrcSafetyAnalysis,
       public DataflowAnalysis<DataflowSrcSafetyAnalysis, SrcState,
@@ -675,6 +688,10 @@ protected:
   SrcState getStartingStateAtBB(const BinaryBasicBlock &BB) {
     if (BB.isEntryPoint())
       return createEntryState();
+
+    // What is the correct state here: all unsafe?
+    if (isEHEntry(BB))
+      return SrcState(NumRegs, RegsToTrack.getNumRegisters());
 
     // If a basic block without any predecessors is found in an optimized code,
     // this likely means that some CFG edges were not detected. Pessimistically
@@ -1595,7 +1612,7 @@ void FunctionAnalysisContext::findUnsafeUses(
       if (!FirstInst)
         continue;
 
-      bool IsDirectlyUnreachable = BB.pred_empty() && !BB.isEntryPoint();
+      bool IsDirectlyUnreachable = BB.pred_empty() && !BB.isEntryPoint() && !isEHEntry(BB);
       bool HasNoStateComputed = Analysis->getStateBefore(*FirstInst).empty();
       if (!IsDirectlyUnreachable && !HasNoStateComputed)
         continue;
