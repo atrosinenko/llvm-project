@@ -106,6 +106,12 @@ static cl::opt<bool> HackishExceptionHandling(
              "being accounted for"),
     cl::cat(opts::BinaryAnalysisCategory));
 
+static cl::opt<bool> HackishJumpTables(
+    "hackish-jump-tables",
+    cl::desc("Try to estimate the results that would be computed with "
+             "correctly parsed jump tables"),
+    cl::cat(opts::BinaryAnalysisCategory));
+
 [[maybe_unused]] static void traceInst(const BinaryContext &BC, StringRef Label,
                                        const MCInst &MI) {
   dbgs() << "  " << Label << ": ";
@@ -643,11 +649,13 @@ class DataflowSrcSafetyAnalysis
   friend DFParent;
 
   using SrcSafetyAnalysis::BC;
-  using SrcSafetyAnalysis::computeNext;
 
   // Pessimistic initial state for basic blocks without any predecessors
   // (not needed for most functions, thus initialized lazily).
   SrcState PessimisticState;
+
+  SmallVector<MCInst *> JumpTableOrigins;
+  SmallPtrSet<MCInst *, 32> PossibleJumpTableTargets;
 
 public:
   DataflowSrcSafetyAnalysis(BinaryFunction &BF,
@@ -678,8 +686,33 @@ public:
                "Dataflow analysis expects the checker not to cross BBs");
         CheckerSequenceInfo[&LastInst] = *CheckerInfo;
       }
+      if (HackishJumpTables) {
+        MCInst *FirstInst = BB.getFirstNonPseudoInstr();
+        MCInst *LastInst = BB.getLastNonPseudoInstr();
+
+        if (LastInst && BC.MIB->isIndirectBranch(*LastInst) &&
+            BC.MIB->isSafeJumpTableBranchForPtrAuth(MCInstReference(BB, *LastInst)))
+          JumpTableOrigins.push_back(LastInst);
+
+        if (BB.pred_empty() && !BB.isEntryPoint() && !isEHEntry(BB))
+          PossibleJumpTableTargets.insert(FirstInst);
+      }
     }
+
+    if (JumpTableOrigins.empty())
+      PossibleJumpTableTargets.clear();
+
     DFParent::run();
+  }
+
+  SrcState computeNext(const MCInst &Point, const SrcState &Cur) {
+    if (!PossibleJumpTableTargets.contains(&Point))
+      return SrcSafetyAnalysis::computeNext(Point, Cur);
+
+    SrcState State;
+    for (auto *BrInst : JumpTableOrigins)
+      doConfluence(State, *getStateAt(BrInst));
+    return State;
   }
 
 protected:

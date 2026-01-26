@@ -35,6 +35,7 @@ HELP-NEXT:  BinaryAnalysis options:
 HELP-EMPTY:
 HELP-NEXT:   --auth-traps-on-failure - Assume authentication instructions always trap on failure
 HELP-NEXT:   --hackish-exception-handling - Try to estimate dataflow analysis coverage with landing pads being accounted for
+HELP-NEXT:   --hackish-jump-tables        - Try to estimate the results that would be computed with correctly parsed jump tables
 HELP-NEXT:   --scanners=<value> - which gadget scanners to run
 HELP-NEXT:   =pacret - pac-ret: return address protection (subset of "pauth")
 HELP-NEXT:   =pauth - All Pointer Authentication scanners
