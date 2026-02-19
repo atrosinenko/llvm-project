@@ -2051,7 +2051,7 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
     personality = _addressSpace.getP(personalityPointer);
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     // The GOT for the personality function was signed address authenticated.
-    // Resign it as a regular function pointer.
+    // Resign it according to __ptrauth qualifier of unw_proc_info_t::handler.
     const auto discriminator = ptrauth_blend_discriminator(
         &_info.handler, __ptrauth_unwind_upi_handler_disc);
     void *signedPtr = ptrauth_auth_and_resign(
