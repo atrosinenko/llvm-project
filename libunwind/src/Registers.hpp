@@ -1924,10 +1924,17 @@ public:
                                   link_reg_t *referenceAuthedLinkRegister) {
     // If we are in an arm64/arm64e frame, then the PC should have been signed
     // with the SP
-    *referenceAuthedLinkRegister =
-      (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
-                                  ptrauth_key_return_address,
-                                  _registers.__sp);
+    const auto discriminator = ptrauth_blend_discriminator(
+        &referenceAuthedLinkRegister,
+        __ptrauth_unwind_registers_arm64_link_reg_disc);
+    reg_t resigned =
+        (reg_t)ptrauth_auth_and_resign((void *)inplaceAuthedLinkRegister,
+                                       ptrauth_key_return_address,
+                                       _registers.__sp,
+                                       ptrauth_key_return_address,
+                                       discriminator);
+    memcpy((void *)referenceAuthedLinkRegister, (void *)&resigned,
+           sizeof(resigned));
   }
 #endif
 
