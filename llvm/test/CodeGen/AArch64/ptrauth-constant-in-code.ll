@@ -159,7 +159,7 @@ define void @store_signed_arg(ptr %dest, ptr %p) {
 ; ISEL-MIR-NEXT:    %2:gpr64noip = MOVKXi %0, 1234, 48
 ; ISEL-MIR-NEXT:    %3:gpr64common = ADDXri %1, 8, 0
 ; ISEL-MIR-NEXT:    %5:gpr64noip = COPY %0
-; ISEL-MIR-NEXT:    %4:gpr64 = PAC %3, 2, 1234, killed %5, implicit-def dead $x16, implicit-def dead $x17
+; ISEL-MIR-NEXT:    %4:gpr64 = PAC %3, 2, 1234, %5, implicit-def dead $x16, implicit-def dead $x17
 ; ISEL-MIR-NEXT:    STRXui killed %4, %0, 0 :: (store (s64) into %ir.dest)
 ; ISEL-MIR-NEXT:    RET_ReallyLR
 ;

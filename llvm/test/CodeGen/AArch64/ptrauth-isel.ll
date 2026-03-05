@@ -176,7 +176,7 @@ define i64 @blend_and_auth_same_bb(i64 %addr) {
   ; DAGISEL-DARWIN-NEXT:   [[MOVKXi:%[0-9]+]]:gpr64noip = MOVKXi [[LDRXui]], 42, 48
   ; DAGISEL-DARWIN-NEXT:   $x16 = COPY [[COPY]]
   ; DAGISEL-DARWIN-NEXT:   [[COPY1:%[0-9]+]]:gpr64noip = COPY [[LDRXui]]
-  ; DAGISEL-DARWIN-NEXT:   AUTx16x17 2, 42, killed [[COPY1]], implicit-def $x16, implicit-def dead $x17, implicit-def dead $nzcv, implicit $x16
+  ; DAGISEL-DARWIN-NEXT:   AUTx16x17 2, 42, [[COPY1]], implicit-def $x16, implicit-def dead $x17, implicit-def dead $nzcv, implicit $x16
   ; DAGISEL-DARWIN-NEXT:   [[COPY2:%[0-9]+]]:gpr64all = COPY $x16
   ; DAGISEL-DARWIN-NEXT:   $x0 = COPY [[COPY2]]
   ; DAGISEL-DARWIN-NEXT:   RET_ReallyLR implicit $x0
@@ -275,7 +275,7 @@ define i64 @blend_and_resign_same_bb(i64 %addr) {
   ; DAGISEL-NEXT:   $x16 = COPY [[COPY]]
   ; DAGISEL-NEXT:   [[COPY1:%[0-9]+]]:gpr64noip = COPY [[LDRXui]]
   ; DAGISEL-NEXT:   [[COPY2:%[0-9]+]]:gpr64noip = COPY [[LDRXui]]
-  ; DAGISEL-NEXT:   AUTPAC 2, 42, killed [[COPY1]], 3, 123, killed [[COPY2]], implicit-def $x16, implicit-def dead $x17, implicit-def dead $nzcv, implicit $x16
+  ; DAGISEL-NEXT:   AUTPAC 2, 42, [[COPY1]], 3, 123, [[COPY2]], implicit-def $x16, implicit-def dead $x17, implicit-def dead $nzcv, implicit $x16
   ; DAGISEL-NEXT:   [[COPY3:%[0-9]+]]:gpr64all = COPY $x16
   ; DAGISEL-NEXT:   $x0 = COPY [[COPY3]]
   ; DAGISEL-NEXT:   RET_ReallyLR implicit $x0

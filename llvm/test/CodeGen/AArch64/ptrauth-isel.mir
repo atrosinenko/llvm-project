@@ -234,7 +234,7 @@ body:             |
     ; CHECK-NEXT: LIFETIME_START %stack.0.local_var
     ; CHECK-NEXT: [[ADDXri:%[0-9]+]]:gpr64common_and_gpr64noip = ADDXri %stack.0.local_var, 0, 0
     ; CHECK-NEXT: [[COPY1:%[0-9]+]]:gpr64noip = COPY [[ADDXri]]
-    ; CHECK-NEXT: [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 0, killed [[COPY1]], implicit-def dead $x16, implicit-def dead $x17
+    ; CHECK-NEXT: [[PAC:%[0-9]+]]:gpr64 = PAC [[COPY]], 2, 0, [[COPY1]], implicit-def dead $x16, implicit-def dead $x17
     ; CHECK-NEXT: LIFETIME_END %stack.0.local_var
     ; CHECK-NEXT: $x0 = COPY [[PAC]]
     ; CHECK-NEXT: RET_ReallyLR implicit $x0
