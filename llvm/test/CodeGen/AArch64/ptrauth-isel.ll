@@ -532,7 +532,8 @@ define i64 @autxmxn_earlyclobbered_scratch(i64 %addr, i64 %disc) {
   ; DAGISEL-GNU-NEXT: {{  $}}
   ; DAGISEL-GNU-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x1
   ; DAGISEL-GNU-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x0
-  ; DAGISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY1]], 2, 0, [[COPY]], implicit-def dead $nzcv
+  ; DAGISEL-GNU-NEXT:   [[COPY2:%[0-9]+]]:gpr64noip = COPY [[COPY]]
+  ; DAGISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY1]], 2, 0, [[COPY2]], implicit-def dead $nzcv
   ; DAGISEL-GNU-NEXT:   $x0 = COPY %2
   ; DAGISEL-GNU-NEXT:   RET_ReallyLR implicit $x0
   ;
@@ -542,7 +543,8 @@ define i64 @autxmxn_earlyclobbered_scratch(i64 %addr, i64 %disc) {
   ; GISEL-GNU-NEXT: {{  $}}
   ; GISEL-GNU-NEXT:   [[COPY:%[0-9]+]]:gpr64 = COPY $x0
   ; GISEL-GNU-NEXT:   [[COPY1:%[0-9]+]]:gpr64 = COPY $x1
-  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY1]], implicit-def dead $nzcv
+  ; GISEL-GNU-NEXT:   [[COPY2:%[0-9]+]]:gpr64noip = COPY [[COPY1]]
+  ; GISEL-GNU-NEXT:   %2:gpr64, early-clobber %3:gpr64common = AUTxMxN [[COPY]], 2, 0, [[COPY2]], implicit-def dead $nzcv
   ; GISEL-GNU-NEXT:   $x0 = COPY %2
   ; GISEL-GNU-NEXT:   RET_ReallyLR implicit $x0
 entry:

@@ -3446,6 +3446,12 @@ void AArch64TargetLowering::fixupPtrauthDiscriminator(
         IntDisc = DiscMI->getOperand(1).getImm();
       }
       break;
+    case AArch64::COPY:
+      if (DiscMI->getOperand(1).getReg() == AArch64::XZR) {
+        AddrDisc = AArch64::NoRegister;
+        IntDisc = 0;
+      }
+      break;
     }
   }
 
@@ -3582,6 +3588,7 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
                               &AArch64::GPR64noipRegClass);
     return BB;
   case AArch64::AUTPAC:
+  case AArch64::AUTRELLOADPAC:
     fixupPtrauthDiscriminator(MI, BB, MI.getOperand(1), MI.getOperand(2),
                               &AArch64::GPR64noipRegClass);
     fixupPtrauthDiscriminator(MI, BB, MI.getOperand(4), MI.getOperand(5),

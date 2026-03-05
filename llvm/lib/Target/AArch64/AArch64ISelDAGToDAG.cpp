@@ -1578,8 +1578,8 @@ void AArch64DAGToDAGISel::SelectPtrauthResign(SDNode *N) {
                                                    MVT::i64, MVT::Other, Ops);
     ReplaceNode(N, AUTRELLOADPAC);
   } else {
-    SDValue Ops[] = {AUTKey,       AUTConstDisc, AUTAddrDisc,        PACKey,
-                     PACConstDisc, PACAddrDisc,  X16Copy.getValue(1)};
+    SDValue Ops[] = {
+      AUTKey, Zero, AUTDisc, PACKey, Zero, PACDisc, X16Copy.getValue(1)};
 
     SDNode *AUTPAC = CurDAG->getMachineNode(AArch64::AUTPAC, DL, MVT::i64, Ops);
     ReplaceNode(N, AUTPAC);

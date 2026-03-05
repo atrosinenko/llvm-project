@@ -2295,6 +2295,7 @@ let Predicates = [HasPAuth] in {
     let Size = 84;
     let Defs = [X16, X17, NZCV];
     let Uses = [X16];
+    let usesCustomInserter = 1;
   }
 
   // Materialize a signed global address, with adrp+add and PAC.

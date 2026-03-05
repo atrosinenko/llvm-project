@@ -6601,25 +6601,15 @@ bool AArch64InstructionSelector::selectIntrinsicWithSideEffects(
     Register PACDisc = I.getOperand(6).getReg();
     int64_t Addend = I.getOperand(7).getImm();
 
-    Register AUTAddrDisc = AUTDisc;
-    uint16_t AUTConstDiscC = 0;
-    std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators(AUTDisc, MRI);
-
-    Register PACAddrDisc = PACDisc;
-    uint16_t PACConstDiscC = 0;
-    std::tie(PACConstDiscC, PACAddrDisc) =
-        extractPtrauthBlendDiscriminators(PACDisc, MRI);
-
     MIB.buildCopy({AArch64::X16}, {ValReg});
 
     MIB.buildInstr(AArch64::AUTRELLOADPAC)
         .addImm(AUTKey)
-        .addImm(AUTConstDiscC)
-        .addUse(AUTAddrDisc)
+        .addImm(0)
+        .addUse(AUTDisc)
         .addImm(PACKey)
-        .addImm(PACConstDiscC)
-        .addUse(PACAddrDisc)
+        .addImm(0)
+        .addUse(PACDisc)
         .addImm(Addend)
         .constrainAllUses(TII, TRI, RBI);
     MIB.buildCopy({DstReg}, Register(AArch64::X16));
