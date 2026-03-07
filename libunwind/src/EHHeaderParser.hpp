@@ -29,7 +29,7 @@ public:
 
   /// Information encoded in the EH frame header.
   struct EHHeaderInfo {
-    pint_t eh_frame_ptr;
+    pint_t __ptrauth_unwind_uis_dwarf_section eh_frame_ptr;
     size_t fde_count;
     pint_t table;
     uint8_t table_enc;
