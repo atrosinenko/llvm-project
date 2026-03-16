@@ -77,6 +77,49 @@ define void @test_ptrauth_resign(i64 %p, i64 %addr) {
   ret void
 }
 
+define void @test_ptrauth_resign_load_relative(i64 %p, i64 %addr) {
+; CHECK-LABEL: @test_ptrauth_resign_load_relative(
+; CHECK-NEXT:    [[IMM_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P:%.*]], i64 42) [ "ptrauth"(i64 1, i64 42, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[ZERO_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[ADDR_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[BLENDED_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[IMM_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[IMM_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[IMM_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 5678, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[ZERO_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[ADDR_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR]]), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[BLENDED_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[BLENDED_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[BLENDED_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 111, i64 [[ADDR]]), "ptrauth"(i64 2, i64 222, i64 [[ADDR]]) ]
+; CHECK-NEXT:    ret void
+;
+  %imm.imm.discr     = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 42,    i32 2, i64 123, i64 42)
+
+  %tmp1 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
+  %zero.imm.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 0,     i32 2, i64 123, i64 42)
+  %addr.imm.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %addr, i32 2, i64 123, i64 42)
+  %blended.imm.discr = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %tmp1, i32 2, i64 123, i64 42)
+
+  %tmp2 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 5678)
+  %imm.zero.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 123, i32 2, i64 0    , i64 42)
+  %imm.addr.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 123, i32 2, i64 %addr, i64 42)
+  %imm.blended.discr = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 123, i32 2, i64 %tmp2, i64 42)
+
+  %tmp3 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 4321)
+  %zero.blended.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 0,     i32 2, i64 %tmp3, i64 42)
+  %addr.blended.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %addr, i32 2, i64 %tmp3, i64 42)
+
+  %tmp4 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 8765)
+  %blended.zero.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %tmp4, i32 2, i64 0    , i64 42)
+  %blended.addr.discr    = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %tmp4, i32 2, i64 %addr, i64 42)
+
+  %tmp5 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 111)
+  %tmp6 = call i64 @llvm.ptrauth.blend(i64 %addr, i64 222)
+  %blended.blended.discr = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 %tmp5,  i32 2, i64 %tmp6, i64 42)
+
+  ret void
+}
+
 define void @test_ptrauth_strip(i64 %p) {
 ; CHECK-LABEL: @test_ptrauth_strip(
 ; CHECK-NEXT:    [[RES:%.*]] = call i64 @llvm.ptrauth.strip(i64 [[P:%.*]]) [ "ptrauth"(i64 1) ]

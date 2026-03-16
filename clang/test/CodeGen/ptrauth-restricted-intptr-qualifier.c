@@ -69,7 +69,7 @@ __INTPTR_TYPE__ test_read_globals() {
   // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[ADDR]]) [ "ptrauth"(i64 1, i64 783, i64 0) ]
   result += gs2.f0 + gs2.f1 + gs2.f2;
   // CHECK: [[ADDR:%.*]] = load i64, ptr @gs2
-  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[ADDR]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @gs2 to i64), i64 1276) ]
+  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[ADDR]]) [ "ptrauth"(i64 1, i64 1276, i64 ptrtoint (ptr @gs2 to i64)) ]
   // CHECK: [[ADDR:%.*]] = load i64, ptr getelementptr inbounds nuw (i8, ptr @gs2, i64 8)
   // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[ADDR]]) [ "ptrauth"(i64 1, i64 23674, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @gs2, i64 8) to i64)) ]
   // CHECK: [[ADDR:%.*]] = load i64, ptr getelementptr inbounds nuw (i8, ptr @gs2, i64 16)

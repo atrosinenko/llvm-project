@@ -19,7 +19,7 @@ void B::VF() {}
 
 void FUNC(B* p) {
 // CHECK: [[T1:%.*]] = load ptr, ptr getelementptr inbounds nuw (i8, ptr @_ZTV1A, i64 16)
-// CHECK-NEXT:  [[T2:%.*]] = call noundef ptr [[T1]](ptr noundef {{.*}}) [ "ptrauth"(i32 0, i64 12401, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV1A, i64 16) to i64)) ]
+// CHECK-NEXT:  [[T2:%.*]] = call noundef ptr [[T1]](ptr noundef {{.*}}) [ "ptrauth"(i64 0, i64 12401, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV1A, i64 16) to i64)) ]
   const char* c = p->A::abc();
 }
 
@@ -34,7 +34,7 @@ struct Derived : public Base {
 
 void FUNC1(Derived* p) {
 // CHECK: [[U1:%.*]] = load ptr, ptr getelementptr inbounds nuw (i8, ptr @_ZTV4Base, i64 16)
-// CHECK-NEXT:  [[U2:%.*]] = call noundef ptr [[U1]](ptr noundef {{.*}}) [ "ptrauth"(i32 0, i64 64320, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV4Base, i64 16) to i64)) ]
+// CHECK-NEXT:  [[U2:%.*]] = call noundef ptr [[U1]](ptr noundef {{.*}}) [ "ptrauth"(i64 0, i64 64320, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV4Base, i64 16) to i64)) ]
   char* c = p->Base::abc();
 }
 
@@ -50,7 +50,7 @@ char* Derived2::efg(void) const { return 0; }
 
 void FUNC2(Derived2* p) {
 // CHECK: [[V1:%.*]] = load ptr, ptr getelementptr inbounds nuw (i8, ptr @_ZTV8Derived2, i64 24)
-// CHECK-NEXT:  [[V2:%.*]] = call noundef ptr [[V1]](ptr noundef {{.*}}) [ "ptrauth"(i32 0, i64 36603, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV8Derived2, i64 24) to i64)) ]
+// CHECK-NEXT:  [[V2:%.*]] = call noundef ptr [[V1]](ptr noundef {{.*}}) [ "ptrauth"(i64 0, i64 36603, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV8Derived2, i64 24) to i64)) ]
   char* c = p->Derived2::efg();
 }
 
@@ -71,7 +71,7 @@ char* D2::abc(void) const { return 0; }
 
 void FUNC3(Sub* p) {
 // CHECK: [[W1:%.*]] = load ptr, ptr getelementptr inbounds nuw (i8, ptr @_ZTV2D2, i64 24)
-// CHECK-NEXT:  [[W2:%.*]] = call noundef ptr [[W1]](ptr noundef {{.*}}) [ "ptrauth"(i32 0, i64 20222, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV2D2, i64 24) to i64)) ]
+// CHECK-NEXT:  [[W2:%.*]] = call noundef ptr [[W1]](ptr noundef {{.*}}) [ "ptrauth"(i64 0, i64 20222, i64 ptrtoint (ptr getelementptr inbounds nuw (i8, ptr @_ZTV2D2, i64 24) to i64)) ]
   char* c = p->D2::abc();
 }
 

@@ -1720,6 +1720,11 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
         return true;
       }
 
+      // The upgraded form of ptrauth.resign.load.relative uses two arguments.
+      if (Name.starts_with("resign.load.relative") &&
+          F->getFunctionType()->getNumParams() == 2)
+        break;
+
       // All other @llvm.ptrauth.* are upgraded to single-argument intrinsics
       // with signing schemas passed via separate call operand bundles.
       if (F->getFunctionType()->getNumParams() == 1)
@@ -1731,6 +1736,7 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
       ID = StringSwitch<Intrinsic::ID>(Name)
                .StartsWith("auth", Intrinsic::ptrauth_auth)
                .StartsWith("sign", Intrinsic::ptrauth_sign)
+               .StartsWith("resign.load.relative", Intrinsic::ptrauth_resign_load_relative)
                .StartsWith("resign", Intrinsic::ptrauth_resign)
                .StartsWith("strip", Intrinsic::ptrauth_strip)
                .Default(Intrinsic::not_intrinsic);
@@ -4990,11 +4996,13 @@ static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
 }
 
 // Transitions a ptrauth intrinsic call site to a half-upgraded state:
-// 1) call %0(a, b, c, d, e) -> call %0(a, 0, 0, 0, 0) [ "ptrauth"(...),
+// 1) call %0(a, b, c, d, e, f) -> call %0(a, 0, 0, 0, 0, f) [ "ptrauth"(...),
+//                                                             "ptrauth"(...) ]
+// 2) call %0(a, b, c, d, e) -> call %0(a, 0, 0, 0, 0) [ "ptrauth"(...),
 //                                                       "ptrauth"(...) ]
-// 2) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(...) ]
-// 3) call %0(a, b)          -> call %0(a, 0)    [ "ptrauth"(b) ]
-// 4) any call site with operand bundles attached - kept intact
+// 3) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(...) ]
+// 4) call %0(a, b)          -> call %0(a, 0)    [ "ptrauth"(b) ]
+// 5) any call site with operand bundles attached - kept intact
 //
 // Upgrading ptrauth intrinsics requires inspecting their discriminator
 // operand(s), which can be computed by a separate call to blend().
@@ -5008,10 +5016,11 @@ static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
 //
 // Thankfully, the transformations to be applied to any *supported* call site
 // can be chosen depending merely on the number of arguments and operand
-// bundles: in the example above, 1) corresponds to resign() call, 2) to auth()
-// and sign(), 3) to strip() and 4) naturally captures the only original use
-// case of "ptrauth" bundles (indirect authenticated calls) as well as any
-// @llvm.ptrauth.* intrinsics which were lazily processed already.
+// bundles: in the example above, 1) corresponds to resign_load_relative() call,
+// 2) to resign(), 3) to auth() and sign(), 4) to strip() and 5) naturally
+// captures the only original use case of "ptrauth" bundles (indirect
+// authenticated calls) as well as any @llvm.ptrauth.* intrinsics which were
+// lazily processed already.
 //
 // Note: the half-upgraded call formally uses the same called function
 //       and the same function signature as the original one.
@@ -5068,6 +5077,14 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
     // resign(value, old_key, old_disc, new_key, new_disc) ->
     //     resign(value, 0, 0, 0, 0) [ "ptrauth"(<old_schema>),
     //                                 "ptrauth"(<new_schema>) ]
+    UpgradeToBundle(1, 2);
+    UpgradeToBundle(3, 4);
+    break;
+  case 6:
+    // resign_load_relative(value, old_key, old_disc, new_key, new_disc,
+    //                      addend) ->
+    //     resign_load_relative(value, 0, 0, 0, 0, addend)
+    //         [ "ptrauth"(<old_schema>), "ptrauth"(<new_schema>) ]
     UpgradeToBundle(1, 2);
     UpgradeToBundle(3, 4);
     break;
@@ -5895,14 +5912,25 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
   }
   case Intrinsic::ptrauth_auth:
   case Intrinsic::ptrauth_sign:
+  case Intrinsic::ptrauth_resign_load_relative:
   case Intrinsic::ptrauth_resign:
   case Intrinsic::ptrauth_strip:
     CI = upgradeToPtrAuthBundles(CI);
     Builder.SetInsertPoint(CI);
 
-    Value *Args[] = {CI->getArgOperand(0)};
     SmallVector<OperandBundleDef, 2> OBs;
     CI->getOperandBundlesAsDefs(OBs);
+
+    SmallVector<Value *, 2> Args;
+
+    // TODO Gracefully handle upgradable functions that are not correct
+    //      according to their old signatures.
+    if (NewFn->getIntrinsicID() == Intrinsic::ptrauth_resign_load_relative) {
+      Args.push_back(CI->getArgOperand(0));
+      Args.push_back(CI->getArgOperand(5));
+    } else {
+      Args.push_back(CI->getArgOperand(0));
+    }
 
     NewCall = Builder.CreateCall(NewFn, Args, OBs);
     break;
