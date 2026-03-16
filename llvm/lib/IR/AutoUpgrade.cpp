@@ -5002,7 +5002,7 @@ static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
 //                                                       "ptrauth"(...) ]
 // 3) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(...) ]
 // 4) call %0(a, b)          -> call %0(a, 0)    [ "ptrauth"(b) ]
-// 5) any call site with operand bundles attached - kept intact
+// 5) any call site with "ptrauth" operand bundles attached - kept intact
 //
 // Upgrading ptrauth intrinsics requires inspecting their discriminator
 // operand(s), which can be computed by a separate call to blend().
@@ -5031,13 +5031,16 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   if (CI->isIndirectCall())
     return CI;
   // Skip: current version or already converted to using bundles.
-  if (CI->getNumOperandBundles())
+  if (CI->countOperandBundlesOfType("ptrauth"))
     return CI;
 
   LLVMContext &Ctx = CI->getContext();
   Value *Zero32 = ConstantInt::get(Ctx, APInt::getZero(32));
   Value *Zero64 = ConstantInt::get(Ctx, APInt::getZero(64));
-  SmallVector<OperandBundleDef, 2> OBs;
+  SmallVector<OperandBundleDef, 3> OBs;
+
+  // Copy "deactivation-symbol", if any.
+  CI->getOperandBundlesAsDefs(OBs);
 
   auto UpgradeToBundle = [&](unsigned KeyIndex, unsigned DiscIndex) {
     ConstantInt *Key = dyn_cast<ConstantInt>(CI->getArgOperand(KeyIndex));

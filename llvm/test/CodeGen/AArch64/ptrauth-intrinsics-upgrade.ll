@@ -2,6 +2,8 @@
 ; RUN: opt < %s -S | FileCheck %s
 ; RUN: llvm-as < %s | opt -S | FileCheck %s
 
+@ds = external global i8
+
 define void @test_ptrauth_sign(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_sign(
 ; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
@@ -18,6 +20,22 @@ define void @test_ptrauth_sign(i64 %p, i64 %addr) {
   ret void
 }
 
+define void @test_ptrauth_sign_ds(i64 %p, i64 %addr) {
+; CHECK-LABEL: @test_ptrauth_sign_ds(
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P:%.*]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 0, i64 0) ]
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 42, i64 0) ]
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    ret void
+;
+  %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
+  %zero.discr    = call i64 @llvm.ptrauth.sign(i64 %p, i32 1, i64 0) [ "deactivation-symbol"(ptr @ds) ]
+  %imm.discr     = call i64 @llvm.ptrauth.sign(i64 %p, i32 1, i64 42) [ "deactivation-symbol"(ptr @ds) ]
+  %addr.discr    = call i64 @llvm.ptrauth.sign(i64 %p, i32 1, i64 %addr) [ "deactivation-symbol"(ptr @ds) ]
+  %blended.discr = call i64 @llvm.ptrauth.sign(i64 %p, i32 1, i64 %tmp) [ "deactivation-symbol"(ptr @ds) ]
+  ret void
+}
+
 define void @test_ptrauth_auth(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_auth(
 ; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
@@ -31,6 +49,22 @@ define void @test_ptrauth_auth(i64 %p, i64 %addr) {
   %imm.discr     = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 42)
   %addr.discr    = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 %addr)
   %blended.discr = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 %tmp)
+  ret void
+}
+
+define void @test_ptrauth_auth_ds(i64 %p, i64 %addr) {
+; CHECK-LABEL: @test_ptrauth_auth_ds(
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 0, i64 0) ]
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 42, i64 0) ]
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    ret void
+;
+  %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
+  %zero.discr    = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 0) [ "deactivation-symbol"(ptr @ds) ]
+  %imm.discr     = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 42) [ "deactivation-symbol"(ptr @ds) ]
+  %addr.discr    = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 %addr) [ "deactivation-symbol"(ptr @ds) ]
+  %blended.discr = call i64 @llvm.ptrauth.auth(i64 %p, i32 1, i64 %tmp) [ "deactivation-symbol"(ptr @ds) ]
   ret void
 }
 
