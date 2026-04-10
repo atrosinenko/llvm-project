@@ -159,6 +159,15 @@ instrumentTargetValueImpl(uint64_t TargetValue, void *Data,
       return;
   }
 
+#if __has_feature(ptrauth_calls)
+  // The value would be written to the raw profdata as-is, whether in a signed
+  // form or not. Then, at the time of `llvm-profdata merge`, the target
+  // pointer with its PAC field not cleared would not be matched against the
+  // reference function address (see RawInstrProfReader::createSymtab)
+  // resulting in an unresolved symbol.
+  TargetValue = (uint64_t)__builtin_ptrauth_strip((void *)TargetValue, 0);
+#endif
+
   ValueProfNode **ValueCounters = (ValueProfNode **)PData->Values;
   ValueProfNode *PrevVNode = NULL;
   ValueProfNode *MinCountVNode = NULL;

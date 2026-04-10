@@ -190,6 +190,26 @@ static void createRetBitCast(CallBase &CB, Type *RetTy, CastInst **RetBitCast) {
     U->replaceUsesOfWith(&CB, Cast);
 }
 
+static CallBase &dropPtrAuthBundle(CallBase &CB) {
+  assert(CB.getCalledFunction() && "Expected direct call");
+
+  if (!CB.countOperandBundlesOfType(LLVMContext::OB_ptrauth))
+    return CB;
+
+  // There is no reason to authenticate direct call, neither it is permitted
+  // by the LLVM IR specs.
+
+  SmallVector<OperandBundleDef> OBs;
+  CB.getOperandBundlesAsDefs(OBs);
+  llvm::erase_if(OBs, [](const auto &OB) { return OB.getTag() == "ptrauth"; });
+
+  CallBase *NewCall = CallBase::Create(&CB, OBs, CB.getIterator());
+  CB.replaceAllUsesWith(NewCall);
+  CB.eraseFromParent();
+
+  return *NewCall;
+}
+
 /// Predicate and clone the given call site.
 ///
 /// This function creates an if-then-else structure at the location of the call
@@ -497,7 +517,7 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
   // If the function type of the call site matches that of the callee, no
   // additional work is required.
   if (CB.getFunctionType() == Callee->getFunctionType())
-    return CB;
+    return dropPtrAuthBundle(CB);
 
   // Save the return types of the call site and callee.
   Type *CallSiteRetTy = CB.getType();
@@ -561,7 +581,7 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
                                         AttributeSet::get(Ctx, RAttrs),
                                         NewArgAttrs));
 
-  return CB;
+  return dropPtrAuthBundle(CB);
 }
 
 CallBase &llvm::promoteCallWithIfThenElse(CallBase &CB, Function *Callee,
