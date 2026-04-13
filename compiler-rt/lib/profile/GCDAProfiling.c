@@ -59,6 +59,15 @@ enum {
   GCOV_TAG_PROGRAM_SUMMARY = 0xa3000000,
 };
 
+// FIXME Unsafe proof-of-concept
+typedef void (*callback_t)();
+#ifdef __has_feature(ptrauth_calls)
+#define CALL_UNSIGNED_CALLBACK(fn_ptr)                                         \
+    (((callback_t)__builtin_ptrauth_sign_unauthenticated((fn_ptr), 0, 0))())
+#else
+#define CALL_UNSIGNED_CALLBACK(fn_ptr) ((fn_ptr)())
+#endif
+
 /*
  * --- GCOV file format I/O primitives ---
  */
@@ -549,7 +558,7 @@ void llvm_writeout_files(void) {
 
   while (curr) {
     if (curr->id == CURRENT_ID) {
-      curr->fn();
+      CALL_UNSIGNED_CALLBACK(curr->fn);
     }
     curr = curr->next;
   }
@@ -583,7 +592,7 @@ void llvm_reset_counters(void) {
 
   while (curr) {
     if (curr->id == CURRENT_ID) {
-      curr->fn();
+      CALL_UNSIGNED_CALLBACK(curr->fn);
     }
     curr = curr->next;
   }
@@ -650,12 +659,12 @@ __llvm_profile_gcov_initialize() {
 
 void __gcov_dump(void) {
   for (struct fn_node *f = writeout_fn_list.head; f; f = f->next)
-    f->fn();
+    CALL_UNSIGNED_CALLBACK(f->fn);
 }
 
 void __gcov_reset(void) {
   for (struct fn_node *f = reset_fn_list.head; f; f = f->next)
-    f->fn();
+    CALL_UNSIGNED_CALLBACK(f->fn);
 }
 
 #endif
