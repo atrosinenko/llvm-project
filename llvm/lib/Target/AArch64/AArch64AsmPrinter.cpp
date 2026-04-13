@@ -106,6 +106,10 @@ class AArch64AsmPrinter : public AsmPrinter {
       SectionToImportedFunctionCalls;
   unsigned PAuthIFuncNextUniqueID = 1;
 
+  std::optional<
+      std::tuple<ConstantInt *, ConstantInt *, Constant *, Constant *>>
+      InitFiniSchema;
+
 public:
   static char ID;
 
@@ -393,6 +397,19 @@ void AArch64AsmPrinter::emitStartOfAsmFile(Module &M) {
 
     if (M.getModuleFlag("import-call-optimization"))
       EnableImportCallOptimization = true;
+  }
+
+  InitFiniSchema = std::nullopt;
+  if (auto *Flag = M.getModuleFlag("ptrauth-init-fini")) {
+    MDNode *Tuple = cast<MDNode>(Flag);
+    assert(Tuple->getNumOperands() == 3);
+    auto GetArg = [Tuple](unsigned Index) {
+      return cast<ConstantAsMetadata>(Tuple->getOperand(Index))->getValue();
+    };
+    Constant *DS = Constant::getNullValue(PointerType::get(M.getContext(), 0));
+    InitFiniSchema =
+        std::make_tuple(cast<ConstantInt>(GetArg(0)),
+                        cast<ConstantInt>(GetArg(1)), GetArg(2), DS);
   }
 
   if (!TT.isOSBinFormatELF())
@@ -1454,6 +1471,16 @@ void AArch64AsmPrinter::emitFunctionEntryLabel() {
 
 void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
                                        const Constant *CV) {
+  // Apply module-default signing schema.
+  //
+  // It might be worth dropping support for specifying ConstantPtrAuth
+  // explicitly, but this would require implementing auto-upgrade path.
+  if (InitFiniSchema && !isa<ConstantPtrAuth>(CV)) {
+    auto [Key, ConstDiscr, AddrDiscr, DS] = *InitFiniSchema;
+    CV = ConstantPtrAuth::get(const_cast<Constant *>(CV), Key, ConstDiscr,
+                              AddrDiscr, DS);
+  }
+
   if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV))
     if (CPA->hasAddressDiscriminator() &&
         !CPA->hasSpecialAddressDiscriminator(

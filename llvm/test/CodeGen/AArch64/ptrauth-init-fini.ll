@@ -38,6 +38,30 @@ define void @bar() {
   ret void
 }
 
+;--- module-flag-nodisc.ll
+
+; RUN: llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - module-flag-nodisc.ll | \
+; RUN:   FileCheck %s --check-prefix=ASM
+; RUN: llc -mtriple aarch64-elf -mattr=+pauth -filetype=obj -o - module-flag-nodisc.ll | \
+; RUN:   llvm-readelf -r -x .init_array -x .fini_array - | FileCheck %s --check-prefix=OBJ
+
+; Note: this test case reuses the check lines from nodisc.ll.
+
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @foo, ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
+
+define void @foo() {
+  ret void
+}
+
+define void @bar() {
+  ret void
+}
+
+!llvm.module.flags = !{!0}
+!0 = !{i32 1, !"ptrauth-init-fini", !1}
+!1 = !{i32 0, i64 55764, ptr null}
+
 ;--- disc.ll
 
 ; RUN: llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - disc.ll | \
@@ -75,6 +99,30 @@ define void @foo() {
 define void @bar() {
   ret void
 }
+
+;--- module-flag-disc.ll
+
+; RUN: llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - module-flag-disc.ll | \
+; RUN:   FileCheck %s --check-prefix=ASM-DISC
+; RUN: llc -mtriple aarch64-elf -mattr=+pauth -filetype=obj -o - module-flag-disc.ll | \
+; RUN:   llvm-readelf -r -x .init_array -x .fini_array - | FileCheck %s --check-prefix=OBJ-DISC
+
+; Note: this test case reuses the check lines from module-flag-disc.ll.
+
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @foo, ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
+
+define void @foo() {
+  ret void
+}
+
+define void @bar() {
+  ret void
+}
+
+!llvm.module.flags = !{!0}
+!0 = !{i32 1, !"ptrauth-init-fini", !1}
+!1 = !{i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)}
 
 ;--- err1.ll
 
