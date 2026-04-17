@@ -27,8 +27,8 @@
 ;;                              ^^^^ 0xD9D4: constant discriminator = 55764
 ;;                                    ^^ 0x80: bits 61..60 key = IA; bit 63 addr disc = false
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764), ptr null }]
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @foo, ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
 
 define void @foo() {
   ret void
@@ -37,6 +37,9 @@ define void @foo() {
 define void @bar() {
   ret void
 }
+
+!llvm.module.flags = !{!0}
+!0 = !{i32 1, !"ptrauth-init-fini", i32 1}
 
 ;--- disc.ll
 
@@ -65,8 +68,8 @@ define void @bar() {
 ;;                                   ^^^^ 0xD9D4: constant discriminator = 55764
 ;;                                         ^^ 0x80: bits 61..60 key = IA; bit 63 addr disc = true
 
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764, ptr inttoptr (i64 1 to ptr)), ptr null }]
+@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @foo, ptr null }]
+@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr @bar, ptr null }]
 
 define void @foo() {
   ret void
@@ -76,29 +79,6 @@ define void @bar() {
   ret void
 }
 
-;--- err1.ll
-
-; RUN: not --crash llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - err1.ll 2>&1 | \
-; RUN:   FileCheck %s --check-prefix=ERR1
-
-; ERR1: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'ptr inttoptr (i64 1 to ptr)' is allowed
-
-@llvm.global_ctors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @foo, i32 0, i64 55764, ptr inttoptr (i64 2 to ptr)), ptr null }]
-
-define void @foo() {
-  ret void
-}
-
-;--- err2.ll
-
-; RUN: not --crash llc -mtriple aarch64-elf -mattr=+pauth -filetype=asm -o - err2.ll 2>&1 | \
-; RUN:   FileCheck %s --check-prefix=ERR2
-
-; ERR2: LLVM ERROR: unexpected address discrimination value for ctors/dtors entry, only 'ptr inttoptr (i64 1 to ptr)' is allowed
-
-@g = external global ptr
-@llvm.global_dtors = appending global [1 x { i32, ptr, ptr }] [{ i32, ptr, ptr } { i32 65535, ptr ptrauth (ptr @bar, i32 0, i64 55764, ptr @g), ptr null }]
-
-define void @bar() {
-  ret void
-}
+!llvm.module.flags = !{!0, !1}
+!0 = !{i32 1, !"ptrauth-init-fini", i32 1}
+!1 = !{i32 1, !"ptrauth-init-fini-address-discrimination", i32 1}

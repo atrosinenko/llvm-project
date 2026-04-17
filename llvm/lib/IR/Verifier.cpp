@@ -910,6 +910,19 @@ void Verifier::visitGlobalVariable(const GlobalVariable &GV) {
       Check(ETy->isPointerTy(), "wrong type for intrinsic global variable",
             &GV);
     }
+
+    auto *Init = GV.hasInitializer()
+                     ? dyn_cast<ConstantArray>(GV.getInitializer())
+                     : nullptr;
+    if (Init) {
+      for (const Use &U : Init->operands()) {
+        auto *Elt = dyn_cast<ConstantStruct>(U);
+        if (!Elt || Elt->getNumOperands() != 3)
+          continue;
+        Check(!isa<ConstantPtrAuth>(Elt->getOperand(1)),
+              "signing of ctors/dtors should be requested via module flags");
+      }
+    }
   }
 
   if (GV.hasName() && (GV.getName() == "llvm.used" ||
@@ -1963,6 +1976,8 @@ void Verifier::visitModuleFlags() {
   SmallVector<const MDNode*, 16> Requirements;
   uint64_t PAuthABIPlatform = -1;
   uint64_t PAuthABIVersion = -1;
+  bool HasPtrauthInitFini = false;
+  bool HasPtrauthInitFiniAddr = false;
   for (const MDNode *MDN : Flags->operands()) {
     visitModuleFlag(MDN, SeenIDs, Requirements);
     if (MDN->getNumOperands() != 3)
@@ -1976,9 +1991,18 @@ void Verifier::visitModuleFlags() {
         if (const auto *PAV =
                 mdconst::dyn_extract_or_null<ConstantInt>(MDN->getOperand(2)))
           PAuthABIVersion = PAV->getZExtValue();
+      } else if (FlagName->getString() == "ptrauth-init-fini") {
+        HasPtrauthInitFini = true;
+      } else if (FlagName->getString() ==
+                 "ptrauth-init-fini-address-discrimination") {
+        HasPtrauthInitFiniAddr = true;
       }
     }
   }
+
+  if (HasPtrauthInitFiniAddr)
+    Check(HasPtrauthInitFini, "ptrauth-init-fini-address-discrimination module "
+                              "flag requires ptrauth-init-fini");
 
   if ((PAuthABIPlatform == uint64_t(-1)) != (PAuthABIVersion == uint64_t(-1)))
     CheckFailed("either both or no 'aarch64-elf-pauthabi-platform' and "

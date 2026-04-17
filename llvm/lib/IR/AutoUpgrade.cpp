@@ -6165,12 +6165,92 @@ void llvm::UpgradeARCRuntime(Module &M) {
     UpgradeToIntrinsic(I.first, I.second);
 }
 
+// Upgrade from wrapping each pointer in @llvm.global_(ctors|dtors) with
+// ptrauth constant expression to storing plain pointers in these arrays and
+// requesting the particular signing schema globally via module flags.
+//
+// Only perform the upgrade if all elements of *both* arrays agree on a common
+// signing schema.
+static bool upgradePtrauthInitFiniArrays(Module &M) {
+  std::optional<bool> UseAddressDisc;
+  auto UpgradePointer = [&UseAddressDisc](Constant *CV) -> Constant * {
+    const unsigned ExpectedConstDisc = 0xD9D4;
+    const unsigned ExpectedAddressMarker = 1;
+
+    auto *CPA = dyn_cast<ConstantPtrAuth>(CV);
+    // Nothing to upgrade or unknown pattern found.
+    if (!CPA || !CPA->getDiscriminator()->equalsInt(ExpectedConstDisc))
+      return nullptr;
+
+    bool HasAddressDisc;
+    if (!CPA->hasAddressDiscriminator())
+      HasAddressDisc = false;
+    else if (CPA->hasSpecialAddressDiscriminator(ExpectedAddressMarker))
+      HasAddressDisc = true;
+    else
+      return nullptr; // Unknown pattern
+
+    if (UseAddressDisc && *UseAddressDisc != HasAddressDisc)
+      return nullptr;
+
+    UseAddressDisc = HasAddressDisc;
+    return CPA->getPointer();
+  };
+
+  SmallVector<std::pair<GlobalVariable *, Constant *>> PendingUpgrades;
+  for (const char *Name : {"llvm.global_ctors", "llvm.global_dtors"}) {
+    auto *GV = dyn_cast_if_present<GlobalVariable>(M.getNamedValue(Name));
+    if (!GV || !GV->hasInitializer())
+      continue;
+
+    auto *Init = dyn_cast<ConstantArray>(GV->getInitializer());
+    if (!Init)
+      return false;
+
+    std::vector<Constant *> NewElements;
+    NewElements.reserve(Init->getNumOperands());
+    for (Use &U : Init->operands()) {
+      auto *Elt = dyn_cast<ConstantStruct>(U.get());
+      if (!Elt || Elt->getNumOperands() != 3)
+        return false;
+
+      Constant *Prio = Elt->getOperand(0);
+      Constant *Func = UpgradePointer(Elt->getOperand(1));
+      Constant *Arg = Elt->getOperand(2);
+      if (!Func)
+        return false;
+
+      NewElements.push_back(
+          ConstantStruct::get(Elt->getType(), {Prio, Func, Arg}));
+    }
+
+    Constant *NewInit = ConstantArray::get(Init->getType(), NewElements);
+    PendingUpgrades.push_back({GV, NewInit});
+  }
+
+  if (PendingUpgrades.empty())
+    return false;
+  assert(UseAddressDisc.has_value());
+
+  for (auto [GV, NewInit] : PendingUpgrades)
+    GV->setInitializer(NewInit);
+  M.addModuleFlag(Module::Error, "ptrauth-init-fini", 1);
+  if (*UseAddressDisc)
+    M.addModuleFlag(Module::Error, "ptrauth-init-fini-address-discriminator",
+                    1);
+
+  return true;
+}
+
 bool llvm::UpgradeModuleFlags(Module &M) {
+  bool Changed = false;
+  Changed |= upgradePtrauthInitFiniArrays(M);
+
   NamedMDNode *ModFlags = M.getModuleFlagsMetadata();
   if (!ModFlags)
-    return false;
+    return Changed;
 
-  bool HasObjCFlag = false, HasClassProperties = false, Changed = false;
+  bool HasObjCFlag = false, HasClassProperties = false;
   bool HasSwiftVersionFlag = false;
   uint8_t SwiftMajorVersion, SwiftMinorVersion;
   uint32_t SwiftABIVersion;
