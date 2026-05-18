@@ -89,9 +89,7 @@ void Derived4::abc() {}
 
 void FUNC4(Derived4* p) {
 // CHECK: %[[VTABLE:[a-z]+]] = load ptr, ptr %{{.*}}
-// CHECK: %[[T0:[0-9]+]] = ptrtoint ptr %[[VTABLE]] to i64
-// CHECK: %[[T3:[0-9]+]] = call i64 @llvm.ptrauth.auth(i64 %[[T0]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
-// CHECK: %[[T4:[0-9]+]] = inttoptr i64 %[[T3]] to ptr
+// CHECK: %[[T4:[0-9]+]] = call ptr @llvm.ptrauth.auth.p0(ptr %[[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64

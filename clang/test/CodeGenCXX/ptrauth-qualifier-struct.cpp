@@ -64,8 +64,7 @@ void testMoveConstructor(SA a) {
 // CHECK: %[[V2:.*]] = load ptr, ptr %[[M02]], align 8
 // CHECK: %[[V3:.*]] = ptrtoint ptr %[[M02]] to i64
 // CHECK: %[[V5:.*]] = ptrtoint ptr %[[M0]] to i64
-// CHECK: %[[V8:.*]] = ptrtoint ptr %[[V2]] to i64
-// CHECK: %[[V9:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V8]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
+// CHECK: %[[V9:.*]] = call ptr @llvm.ptrauth.resign.p0(ptr %[[V2]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
 
 void testCopyAssignment(SA a) {
   SA t;
@@ -87,8 +86,7 @@ void testCopyAssignment(SA a) {
 // CHECK: %[[V2:.*]] = load ptr, ptr %[[M02]], align 8
 // CHECK: %[[V3:.*]] = ptrtoint ptr %[[M02]] to i64
 // CHECK: %[[V5:.*]] = ptrtoint ptr %[[M0]] to i64
-// CHECK: %[[V8:.*]] = ptrtoint ptr %[[V2]] to i64
-// CHECK: %[[V9:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V8]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
+// CHECK: %[[V9:.*]] = call ptr @llvm.ptrauth.resign.p0(ptr %[[V2]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
 
 void testMoveAssignment(SA a) {
   SA t;
@@ -139,8 +137,7 @@ void testMoveAssignment(SI a) {
 // CHECK: %[[V2:.*]] = load ptr, ptr %[[M02]], align 8
 // CHECK: %[[V3:.*]] = ptrtoint ptr %[[M02]] to i64
 // CHECK: %[[V5:.*]] = ptrtoint ptr %[[M0]] to i64
-// CHECK: %[[V8:.*]] = ptrtoint ptr %[[V2]] to i64
-// CHECK: %[[V9:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V8]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
+// CHECK: %[[V9:.*]] = call ptr @llvm.ptrauth.resign.p0(ptr %[[V2]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
 
 // CHECK: define linkonce_odr {{.*}}@_ZN2SAC2EOS_(ptr noundef nonnull align 8 dereferenceable(16) %[[THIS:.*]], ptr noundef nonnull align 8 dereferenceable(16) %0)
 // IOS: %[[RETVAL:.*]] = alloca ptr, align 8
@@ -156,5 +153,4 @@ void testMoveAssignment(SI a) {
 // CHECK: %[[V2:.*]] = load ptr, ptr %[[M02]], align 8
 // CHECK: %[[V3:.*]] = ptrtoint ptr %[[M02]] to i64
 // CHECK: %[[V5:.*]] = ptrtoint ptr %[[M0]] to i64
-// CHECK: %[[V8:.*]] = ptrtoint ptr %[[V2]] to i64
-// CHECK: %[[V9:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V8]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]
+// CHECK: %[[V9:.*]] = call ptr @llvm.ptrauth.resign.p0(ptr %[[V2]]) [ "ptrauth"(i64 1, i64 50, i64 %[[V3]]), "ptrauth"(i64 1, i64 50, i64 %[[V5]]) ]

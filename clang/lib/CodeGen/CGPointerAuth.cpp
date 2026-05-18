@@ -290,9 +290,10 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
     llvm::Value *AuthedValue = EmitPointerAuthAuth(CurAuth, Value);
     return EmitPointerAuthSign(NewAuth, AuthedValue);
   }
-  // Convert the pointer to intptr_t before signing it.
+
   auto *OrigType = Value->getType();
-  Value = Builder.CreatePtrToInt(Value, IntPtrTy);
+  if (!OrigType->isPointerTy())
+    Value = Builder.CreateIntToPtr(Value, DefaultPtrTy);
 
   SmallVector<llvm::OperandBundleDef> OBs;
   EmitPointerAuthOperandBundle(CurAuth, OBs);
@@ -300,11 +301,12 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
 
   // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(<cur_schema>),
   //                                               "ptrauth"(<new_schema>) ]
-  auto *Intrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign);
+  auto *Intrinsic =
+      CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign, Value->getType());
   Value = EmitRuntimeCall(Intrinsic, {Value}, OBs);
 
   // Convert back to the original type.
-  Value = Builder.CreateIntToPtr(Value, OrigType);
+  Value = Builder.CreatePtrToInt(Value, OrigType);
   return Value;
 }
 

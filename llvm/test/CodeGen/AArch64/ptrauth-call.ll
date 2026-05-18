@@ -308,9 +308,8 @@ define void @test_tailcall_omit_mov_x16_x16(ptr %objptr) #0 {
 ; ELF-NEXT:       braa    x2, x16
   %vtable.signed = load ptr, ptr %objptr, align 8
   %objptr.int = ptrtoint ptr %objptr to i64
-  %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
-  %vtable.unsigned = inttoptr i64 %vtable.unsigned.int to ptr
+  %vtable.unsigned = tail call ptr @llvm.ptrauth.auth.p0(ptr %vtable.signed) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
+  %vtable.unsigned.int = ptrtoint ptr %vtable.unsigned to i64
   %virt.func.signed = load ptr, ptr %vtable.unsigned, align 8
   tail call void %virt.func.signed(ptr %objptr) [ "ptrauth"(i64 0, i64 54167, i64 %vtable.unsigned.int) ]
   ret void
@@ -342,9 +341,8 @@ define i32 @test_call_omit_extra_moves(ptr %objptr) #0 {
 ; CHECK-NEXT:    ret
   %vtable.signed = load ptr, ptr %objptr
   %objptr.int = ptrtoint ptr %objptr to i64
-  %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
-  %vtable = inttoptr i64 %vtable.int to ptr
+  %vtable = tail call ptr @llvm.ptrauth.auth.p0(ptr %vtable.signed) [ "ptrauth"(i64 2, i64 6503, i64 %objptr.int) ]
+  %vtable.int = ptrtoint ptr %vtable to i64
   %callee.signed = load ptr, ptr %vtable
   %call.result = tail call i32 %callee.signed(ptr %objptr) [ "ptrauth"(i64 0, i64 34646, i64 %vtable.int) ]
   ret i32 42

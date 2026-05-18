@@ -3475,16 +3475,16 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
   SmallVector<llvm::OperandBundleDef, 1> OBs;
   CGF.EmitPointerAuthOperandBundle(PointerAuth, OBs);
 
-  // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
-  Pointer = CGF.Builder.CreatePtrToInt(Pointer, CGF.IntPtrTy);
+  if (!OrigType->isPointerTy())
+    Pointer = CGF.Builder.CreateIntToPtr(Pointer, CGF.DefaultPtrTy);
 
   // call i64 @llvm.ptrauth.<op>(i64 %pointer) [ "ptrauth"(<schema>)]
-  auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID);
+  auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID, Pointer->getType());
   Pointer = CGF.EmitRuntimeCall(Intrinsic, {Pointer}, OBs);
 
   // Convert back to the original type.
-  Pointer = CGF.Builder.CreateIntToPtr(Pointer, OrigType);
+  Pointer = CGF.Builder.CreatePtrToInt(Pointer, OrigType);
   return Pointer;
 }
 
@@ -3499,15 +3499,20 @@ CodeGenFunction::EmitPointerAuthSign(const CGPointerAuthInfo &PointerAuth,
 
 llvm::Value *CodeGenFunction::emitStrip(const CGPointerAuthInfo &PointerAuth,
                                         llvm::Value *Pointer) {
-  auto StripIntrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_strip);
+  auto OrigType = Pointer->getType();
+  if (!OrigType->isPointerTy())
+    Pointer = Builder.CreateIntToPtr(Pointer, DefaultPtrTy);
+
+  auto StripIntrinsic =
+      CGM.getIntrinsic(llvm::Intrinsic::ptrauth_strip, Pointer->getType());
 
   auto Key = Builder.getInt64(PointerAuth.getKey());
-  // Convert the pointer to intptr_t before signing it.
-  auto OrigType = Pointer->getType();
   llvm::OperandBundleDef OB("ptrauth", ArrayRef<llvm::Value *>({Key}));
-  Pointer = EmitRuntimeCall(StripIntrinsic,
-                            {Builder.CreatePtrToInt(Pointer, IntPtrTy)}, {OB});
-  return Builder.CreateIntToPtr(Pointer, OrigType);
+  Pointer = EmitRuntimeCall(StripIntrinsic, {Pointer}, {OB});
+
+  // Convert back to the original type.
+  Pointer = Builder.CreatePtrToInt(Pointer, OrigType);
+  return Pointer;
 }
 
 llvm::Value *

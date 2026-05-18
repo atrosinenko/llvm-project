@@ -2955,13 +2955,13 @@ def int_vector_partial_reduce_fadd : DefaultAttrsIntrinsic<[LLVMMatchType<0>],
 // Requires exactly one "ptrauth" call operand bundle specifying the schema.
 // Returns the first argument, with embedded signature.
 def int_ptrauth_sign :
-  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
+  DefaultAttrsIntrinsic<[LLVMMatchType<0>], [llvm_anyptr_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer, using the specified signing schema.
 // Requires exactly one "ptrauth" call operand bundle specifying the schema.
 // Returns the first argument, with the signature removed.
 // The signature must be valid.
-def int_ptrauth_auth : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
+def int_ptrauth_auth : Intrinsic<[LLVMMatchType<0>], [llvm_anyptr_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer and resign it.
 // Requires exactly two "ptrauth" call operand bundles specifying the signing
@@ -2971,7 +2971,7 @@ def int_ptrauth_auth : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 // The signature must be valid.
 // This is a combined form of @llvm.ptrauth.sign and @llvm.ptrauth.auth, with
 // an additional integrity guarantee on the intermediate value.
-def int_ptrauth_resign : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
+def int_ptrauth_resign : Intrinsic<[LLVMMatchType<0>], [llvm_anyptr_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer, load 32bit value at offset from pointer, add
 // both, and sign it.
@@ -2983,8 +2983,8 @@ def int_ptrauth_resign : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 // The signature must be valid.
 // This is a combined form of int_ptrauth_resign for relative pointers
 def int_ptrauth_resign_load_relative
-    : Intrinsic<[llvm_i64_ty],
-                [llvm_i64_ty, llvm_i64_ty],
+    : Intrinsic<[LLVMMatchType<0>],
+                [llvm_anyptr_ty, llvm_i64_ty],
                 [IntrReadMem, ImmArg<ArgIndex<1>>]>;
 
 // Strip the embedded signature out of a signed pointer.
@@ -2993,7 +2993,7 @@ def int_ptrauth_resign_load_relative
 // This behaves like @llvm.ptrauth.auth, but doesn't require the signature to
 // be valid.
 def int_ptrauth_strip :
-  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
+  DefaultAttrsIntrinsic<[LLVMMatchType<0>], [llvm_anyptr_ty], [IntrNoMem]>;
 
 // Blend a small integer discriminator with an address discriminator, producing
 // a new discriminator value.

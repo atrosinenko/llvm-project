@@ -6330,8 +6330,13 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
 
     // Cast the value to intptr_t, saving its original type.
     Args.push_back(EmitScalarExpr(E->getArg(0)));
-    llvm::Type *OrigValueType = Args[0]->getType();
-    Args[0] = ConvertToInt64(Args[0]);
+
+    if (BuiltinID == Builtin::BI__builtin_ptrauth_sign_generic_data ||
+        BuiltinID == Builtin::BI__builtin_ptrauth_blend_discriminator) {
+      Args[0] = ConvertToInt64(Args[0]);
+    } else {
+      assert(Args[0]->getType()->isPointerTy());
+    }
 
     switch (BuiltinID) {
     default:
@@ -6367,33 +6372,28 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     }
 
     // Call the intrinsic.
-    auto IntrinsicID = [&]() -> unsigned {
+    auto *Intrinsic = [&]() {
       switch (BuiltinID) {
       case Builtin::BI__builtin_ptrauth_blend_discriminator:
-        return Intrinsic::ptrauth_blend;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_blend);
       case Builtin::BI__builtin_ptrauth_auth:
-        return Intrinsic::ptrauth_auth;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_auth, Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_auth_and_resign:
-        return Intrinsic::ptrauth_resign;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_resign, Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_auth_load_relative_and_sign:
-        return Intrinsic::ptrauth_resign_load_relative;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_resign_load_relative,
+                                Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_sign_generic_data:
-        return Intrinsic::ptrauth_sign_generic;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_sign_generic);
       case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
-        return Intrinsic::ptrauth_sign;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_sign, Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_strip:
-        return Intrinsic::ptrauth_strip;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_strip, Args[0]->getType());
       }
       llvm_unreachable("bad ptrauth intrinsic");
     }();
-    auto Intrinsic = CGM.getIntrinsic(IntrinsicID);
     llvm::Value *Result = EmitRuntimeCall(Intrinsic, Args, OBs);
 
-    if (BuiltinID != Builtin::BI__builtin_ptrauth_sign_generic_data &&
-        BuiltinID != Builtin::BI__builtin_ptrauth_blend_discriminator &&
-        OrigValueType->isPointerTy()) {
-      Result = Builder.CreateIntToPtr(Result, OrigValueType);
-    }
     return RValue::get(Result);
   }
 

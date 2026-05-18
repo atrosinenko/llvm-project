@@ -13,12 +13,12 @@
 ; Empty "ptrauth" bundles are rejected by target-independent LLVM IR Verifier.
 
 ; EMPTY:      Expected non-empty ptrauth bundle
-; EMPTY-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"() ]
+; EMPTY-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"() ]
 ; EMPTY-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"() ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"() ]
+  ret ptr %res
 }
 
 ;--- wrong-type-i32.ll
@@ -29,24 +29,24 @@ define i64 @test(i64 %p) {
 ; source is being read.
 
 ; WRONG-TYPE-I32:      Ptrauth bundle must only contain i64 operands
-; WRONG-TYPE-I32-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i32 0, i32 0, i64 0) ]
+; WRONG-TYPE-I32-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i32 0, i32 0, i64 0) ]
 ; WRONG-TYPE-I32-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i32 0, i32 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i32 0, i32 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-type-ptr.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-type-ptr.ll 2>&1 | FileCheck --check-prefix=WRONG-TYPE-PTR %s
 
 ; WRONG-TYPE-PTR:      Ptrauth bundle must only contain i64 operands
-; WRONG-TYPE-PTR-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, ptr %arg) ]
+; WRONG-TYPE-PTR-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, ptr %arg) ]
 ; WRONG-TYPE-PTR-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p, ptr %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, ptr %arg) ]
-  ret i64 %res
+define ptr @test(ptr %p, ptr %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, ptr %arg) ]
+  ret ptr %res
 }
 
 ;--- wrong-not-one-bundle.ll
@@ -56,36 +56,36 @@ define i64 @test(i64 %p, ptr %arg) {
 ; LLVM IR Verifier.
 
 ; WRONG-NOT-ONE-BUNDLE:      Expected exactly one ptrauth bundle
-; WRONG-NOT-ONE-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
+; WRONG-NOT-ONE-BUNDLE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
 ; WRONG-NOT-ONE-BUNDLE-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-not-two-bundles.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-not-two-bundles.ll 2>&1 | FileCheck --check-prefix=WRONG-NOT-TWO-BUNDLES %s
 
 ; WRONG-NOT-TWO-BUNDLES:      Expected exactly two ptrauth bundles
-; WRONG-NOT-TWO-BUNDLES-NEXT: %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+; WRONG-NOT-TWO-BUNDLES-NEXT: %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 ; WRONG-NOT-TWO-BUNDLES-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-missing-bundle.ll
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth < %t/wrong-missing-bundle.ll 2>&1 | FileCheck --check-prefix=WRONG-MISSING-BUNDLE %s
 
 ; WRONG-MISSING-BUNDLE:      Expected exactly one ptrauth bundle
-; WRONG-MISSING-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p)
+; WRONG-MISSING-BUNDLE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p)
 ; WRONG-MISSING-BUNDLE-NEXT: llc: error: '<stdin>': input module cannot be verified
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p)
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p)
+  ret ptr %res
 }
 
 ;--- wrong-indirect-call-multiple-bundles.ll
@@ -104,12 +104,12 @@ define i64 @test(ptr %fptr) {
 ; RUN: not llc -mtriple x86_64 -global-isel=1 -global-isel-abort=1 < %t/unsupported-target-intrinsic.ll 2>&1 | FileCheck --check-prefix=UNSUPPORTED-TARGET-INTRINSIC %s
 
 ; UNSUPPORTED-TARGET-INTRINSIC:      Ptrauth schema violates target-specific constraints:
-; UNSUPPORTED-TARGET-INTRINSIC-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
+; UNSUPPORTED-TARGET-INTRINSIC-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0) ]
 ; UNSUPPORTED-TARGET-INTRINSIC-NEXT: LLVM ERROR: Invalid ptrauth schema: this target does not support pointer authentication
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0) ]
+  ret ptr %res
 }
 
 ;--- unsupported-target-indirect-call.ll
@@ -132,12 +132,12 @@ define i64 @test(ptr %fptr) {
 ; Single-operand bundles may be used on AArch64, but not by this intrinsic.
 
 ; WRONG-NOT-3-OPS:      Ptrauth schema violates target-specific constraints:
-; WRONG-NOT-3-OPS-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
+; WRONG-NOT-3-OPS-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0) ]
 ; WRONG-NOT-3-OPS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: three-element ptrauth schema expected
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-not-1-ops.ll
@@ -147,12 +147,12 @@ define i64 @test(i64 %p) {
 ; Three-operand bundles may be used on AArch64, but not by this intrinsic.
 
 ; WRONG-NOT-1-OPS:      Ptrauth schema violates target-specific constraints:
-; WRONG-NOT-1-OPS-NEXT: %res = call i64 @llvm.ptrauth.strip(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+; WRONG-NOT-1-OPS-NEXT: %res = call ptr @llvm.ptrauth.strip.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 ; WRONG-NOT-1-OPS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: single-element ptrauth schema expected
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.strip(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.strip.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-num-operands.ll
@@ -162,12 +162,12 @@ define i64 @test(i64 %p) {
 ; Four-operand bundles are never used on AArch64.
 
 ; WRONG-NUM-OPERANDS:      Ptrauth schema violates target-specific constraints:
-; WRONG-NUM-OPERANDS-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
+; WRONG-NUM-OPERANDS-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
 ; WRONG-NUM-OPERANDS-NEXT: LLVM ERROR: Invalid ptrauth schema: test: three-element ptrauth schema expected
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-key-not-const.ll
@@ -175,12 +175,12 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-key-not-const.ll 2>&1 | FileCheck --check-prefix=WRONG-KEY-NOT-CONST %s
 
 ; WRONG-KEY-NOT-CONST:      Ptrauth schema violates target-specific constraints:
-; WRONG-KEY-NOT-CONST-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
+; WRONG-KEY-NOT-CONST-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
 ; WRONG-KEY-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 %arg, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-key-negative.ll
@@ -188,12 +188,12 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-key-negative.ll 2>&1 | FileCheck --check-prefix=WRONG-KEY-NEGATIVE %s
 
 ; WRONG-KEY-NEGATIVE:      Ptrauth schema violates target-specific constraints:
-; WRONG-KEY-NEGATIVE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 -1, i64 0, i64 0) ]
+; WRONG-KEY-NEGATIVE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 -1, i64 0, i64 0) ]
 ; WRONG-KEY-NEGATIVE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 -1, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 -1, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-key-out-of-range.ll
@@ -201,12 +201,12 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-key-out-of-range.ll 2>&1 | FileCheck --check-prefix=WRONG-KEY-OUT-OF-RANGE %s
 
 ; WRONG-KEY-OUT-OF-RANGE:      Ptrauth schema violates target-specific constraints:
-; WRONG-KEY-OUT-OF-RANGE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 4, i64 0, i64 0) ]
+; WRONG-KEY-OUT-OF-RANGE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 4, i64 0, i64 0) ]
 ; WRONG-KEY-OUT-OF-RANGE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 4, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 4, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-imm-modifier-not-const.ll
@@ -214,12 +214,12 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-imm-modifier-not-const.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-NOT-CONST %s
 
 ; WRONG-IMM-MODIFIER-NOT-CONST:      Ptrauth schema violates target-specific constraints:
-; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
+; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
 ; WRONG-IMM-MODIFIER-NOT-CONST-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 %arg, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-imm-modifier-negative.ll
@@ -227,12 +227,12 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-imm-modifier-negative.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-NEGATIVE %s
 
 ; WRONG-IMM-MODIFIER-NEGATIVE:      Ptrauth schema violates target-specific constraints:
-; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
+; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
 ; WRONG-IMM-MODIFIER-NEGATIVE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 -1, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-imm-modifier-too-wide.ll
@@ -240,12 +240,12 @@ define i64 @test(i64 %p) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-imm-modifier-too-wide.ll 2>&1 | FileCheck --check-prefix=WRONG-IMM-MODIFIER-TOO-WIDE %s
 
 ; WRONG-IMM-MODIFIER-TOO-WIDE:      Ptrauth schema violates target-specific constraints:
-; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
+; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
 ; WRONG-IMM-MODIFIER-TOO-WIDE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: constant modifier must be 16-bit unsigned constant
 
-define i64 @test(i64 %p) {
-  %res = call i64 @llvm.ptrauth.sign(i64 %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p) {
+  %res = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 123456, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-first-bundle.ll
@@ -255,12 +255,12 @@ define i64 @test(i64 %p) {
 ; If the intrinsic accepts two bundles, both should be checked.
 
 ; WRONG-FIRST-BUNDLE:      Ptrauth schema violates target-specific constraints:
-; WRONG-FIRST-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
+; WRONG-FIRST-BUNDLE-NEXT: %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
 ; WRONG-FIRST-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 %arg, i64 0, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %res
 }
 
 ;--- wrong-second-bundle.ll
@@ -268,10 +268,10 @@ define i64 @test(i64 %p, i64 %arg) {
 ; RUN: not llc -mtriple aarch64 -mattr=+pauth -global-isel=1 -global-isel-abort=1 < %t/wrong-second-bundle.ll 2>&1 | FileCheck --check-prefix=WRONG-SECOND-BUNDLE %s
 
 ; WRONG-SECOND-BUNDLE:      Ptrauth schema violates target-specific constraints:
-; WRONG-SECOND-BUNDLE-NEXT: %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]
+; WRONG-SECOND-BUNDLE-NEXT: %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]
 ; WRONG-SECOND-BUNDLE-NEXT: LLVM ERROR: Invalid ptrauth schema: test: key must be constant in range [0, 3]
 
-define i64 @test(i64 %p, i64 %arg) {
-  %res = call i64 @llvm.ptrauth.resign(i64 %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]
-  ret i64 %res
+define ptr @test(ptr %p, i64 %arg) {
+  %res = call ptr @llvm.ptrauth.resign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 %arg, i64 0, i64 0) ]
+  ret ptr %res
 }

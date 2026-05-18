@@ -493,11 +493,12 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
   if (Triple(M.getTargetTriple()).isArm64e())
     return false;
 
+  Type *PtrArgTy = Intr.getReturnType();
   Type *Int64Ty = Type::getInt64Ty(M.getContext());
 
   assert(Intr.getIntrinsicID() == Intrinsic::ptrauth_sign ||
          Intr.getIntrinsicID() == Intrinsic::ptrauth_auth);
-  auto *EmuFnTy = FunctionType::get(Int64Ty, {Int64Ty, Int64Ty}, false);
+  auto *EmuFnTy = FunctionType::get(PtrArgTy, {PtrArgTy, Int64Ty}, false);
   FunctionCallee EmuIntr = M.getOrInsertFunction(
       Intr.getIntrinsicID() == Intrinsic::ptrauth_auth ? "__emupac_autda"
                                                        : "__emupac_pacda",

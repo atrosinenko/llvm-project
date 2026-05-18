@@ -1763,7 +1763,8 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
         break;
 
       rename(F);
-      NewFn = Intrinsic::getOrInsertDeclaration(F->getParent(), ID);
+      PointerType *PtrTy = PointerType::get(F->getContext(), 0);
+      NewFn = Intrinsic::getOrInsertDeclaration(F->getParent(), ID, PtrTy);
       return true;
     }
     break;
@@ -5818,6 +5819,7 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
   case Intrinsic::ptrauth_strip: {
     SmallVector<Value *, 2> Args;
     SmallVector<OperandBundleDef> OBs;
+    Type *PtrArgTy = NewFn->getFunctionType()->getParamType(0);
 
     // New-style intrinsic call.
     if (CI->countOperandBundlesOfType("ptrauth")) {
@@ -5827,7 +5829,7 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
       break;
     }
 
-    Args.push_back(CI->getArgOperand(0));
+    Args.push_back(Builder.CreateIntToPtr(CI->getArgOperand(0), PtrArgTy));
     switch (NewFn->getIntrinsicID()) {
     case Intrinsic::ptrauth_strip:
       // Special case: only the key ID without any discriminator.
@@ -5854,7 +5856,12 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
     CI->getOperandBundlesAsDefs(OBs);
 
     NewCall = Builder.CreateCall(NewFn, Args, OBs);
-    break;
+    NewCall->takeName(CI);
+
+    auto *ConvertedResult = Builder.CreatePtrToInt(NewCall, CI->getType());
+    CI->replaceAllUsesWith(ConvertedResult);
+    CI->eraseFromParent();
+    return;
   }
   }
   assert(NewCall && "Should have either set this variable or returned through "

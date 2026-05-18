@@ -959,13 +959,13 @@ def SDTPtrAuthSchemaDef : SDTypeProfile<1, -1, [
   SDTCisVT<0, untyped>
 ]>;
 def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
-  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>
 ]>;
 def SDTPtrAuthTwoSchemas : SDTypeProfile<1, 3, [    // resign
-  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>
 ]>;
 def SDTPtrAuthResignLoadRelative : SDTypeProfile<1, 4, [    // resign_load_relative
-  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>, SDTCisVT<4, i64>
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>, SDTCisVT<4, i64>
 ]>;
 
 def ptrauth_schema : SDNode<"ISD::PtrAuthSchema", SDTPtrAuthSchemaDef, []>;

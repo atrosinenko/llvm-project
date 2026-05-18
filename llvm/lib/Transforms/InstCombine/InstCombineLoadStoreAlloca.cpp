@@ -1202,16 +1202,15 @@ Instruction *InstCombinerImpl::visitLoadInst(LoadInst &LI) {
         Builder.Insert(NewLI);
 
         Function *AuthIntr = Intrinsic::getOrInsertDeclaration(
-            F.getParent(), Intrinsic::ptrauth_auth, {});
-        auto *LIInt = Builder.CreatePtrToInt(NewLI, Builder.getInt64Ty());
+            F.getParent(), Intrinsic::ptrauth_auth, LI.getType());
+
         Bundles.emplace_back("ptrauth",
                              ArrayRef<Value *>({
                                  Builder.getInt64(/*AArch64PACKey::DA*/ 2),
                                  II->getOperand(1),
                                  Builder.getInt64(0),
                              }));
-        Value *Auth = Builder.CreateCall(AuthIntr, {LIInt}, Bundles);
-        Auth = Builder.CreateIntToPtr(Auth, Builder.getPtrTy());
+        Value *Auth = Builder.CreateCall(AuthIntr, {NewLI}, Bundles);
         return replaceInstUsesWith(LI, Auth);
       }
     }
@@ -1606,16 +1605,15 @@ Instruction *InstCombinerImpl::visitStoreInst(StoreInst &SI) {
         Builder.SetInsertPoint(&SI);
 
         Function *SignIntr = Intrinsic::getOrInsertDeclaration(
-            F.getParent(), Intrinsic::ptrauth_sign, {});
-        auto *ValInt = Builder.CreatePtrToInt(Val, Builder.getInt64Ty());
+            F.getParent(), Intrinsic::ptrauth_sign, Val->getType());
+
         Bundles.emplace_back("ptrauth",
                              ArrayRef<Value *>({
                                  Builder.getInt64(/*AArch64PACKey::DA*/ 2),
                                  II->getOperand(1),
                                  Builder.getInt64(0),
                              }));
-        Value *Sign = Builder.CreateCall(SignIntr, {ValInt}, Bundles);
-        Sign = Builder.CreateIntToPtr(Sign, Builder.getPtrTy());
+        Value *Sign = Builder.CreateCall(SignIntr, {Val}, Bundles);
 
         replaceOperand(SI, 0, Sign);
         replaceOperand(SI, 1, II->getOperand(0));

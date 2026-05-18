@@ -20,7 +20,7 @@ void test_block_nonaddress_capture() {
   use_block(^{ return ptr->value; });
 }
 // CHECK-LABEL: define internal i32 @__test_block_nonaddress_capture_block_invoke
-// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 15, i64 0) ]
+// CHECK: call ptr @llvm.ptrauth.auth.p0(ptr {{%.*}}) [ "ptrauth"(i64 1, i64 15, i64 0) ]
 
 // CHECK-LABEL: define void @test_block_address_capture(
 void test_block_address_capture() {
@@ -34,16 +34,14 @@ void test_block_address_capture() {
   // CHECK: [[T02:%.*]] = ptrtoint ptr [[CAPTURE]] to i64
   // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
   // CHECK: br i1 [[T0]]
-  // CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 30, i64 [[T01]]), "ptrauth"(i64 1, i64 30, i64 [[T02]]) ]
-  // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
+  // CHECK: [[T2:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 1, i64 30, i64 [[T01]]), "ptrauth"(i64 1, i64 30, i64 [[T02]]) ]
   // CHECK: [[T0:%.*]] = phi
   // CHECK: store ptr [[T0]], ptr [[CAPTURE]]
   struct A * __ptrauth(1, 1, 30) ptr = createA();
   use_block(^{ return ptr->value; });
 }
 // CHECK-LABEL: define internal i32 @__test_block_address_capture_block_invoke
-// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 30, i64 {{.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.auth.p0(ptr {{%.*}}) [ "ptrauth"(i64 1, i64 30, i64 {{.*}}) ]
 
 // CHECK: linkonce_odr hidden void @__copy_helper_block_8_32p1d30(
 // CHECK: [[OLDSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 5
@@ -53,9 +51,7 @@ void test_block_address_capture() {
 // CHECK: [[T02:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
 // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK: br i1 [[T0]]
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 30, i64 [[T01]]), "ptrauth"(i64 1, i64 30, i64 [[T02]]) ]
-// CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
+// CHECK: [[T2:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 1, i64 30, i64 [[T01]]), "ptrauth"(i64 1, i64 30, i64 [[T02]]) ]
 // CHECK: [[T0:%.*]] = phi
 // CHECK: store ptr [[T0]], ptr [[NEWSLOT]]
 
@@ -79,13 +75,11 @@ void test_block_address_byref_capture() {
   // CHECK: store i32 48,
   // CHECK: [[COPY_HELPER_FIELD:%.*]] = getelementptr inbounds nuw [[BYREF_T]], ptr [[BYREF]], i32 0, i32 4
   // CHECK: [[T0:%.*]] = ptrtoint ptr [[COPY_HELPER_FIELD]] to i64
-  // CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @__Block_byref_object_copy_ to i64)) [ "ptrauth"(i64 0, i64 0, i64 [[T0]]) ]
-  // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
+  // CHECK: [[T2:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr @__Block_byref_object_copy_) [ "ptrauth"(i64 0, i64 0, i64 [[T0]]) ]
   // CHECK: store ptr [[T2]], ptr [[COPY_HELPER_FIELD]], align
   // CHECK: [[DISPOSE_HELPER_FIELD:%.*]] = getelementptr inbounds nuw [[BYREF_T]], ptr [[BYREF]], i32 0, i32 5
   // CHECK: [[T0:%.*]] = ptrtoint ptr [[DISPOSE_HELPER_FIELD]] to i64
-  // CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @__Block_byref_object_dispose_ to i64)) [ "ptrauth"(i64 0, i64 0, i64 [[T0]]) ]
-  // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
+  // CHECK: [[T2:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr @__Block_byref_object_dispose_) [ "ptrauth"(i64 0, i64 0, i64 [[T0]]) ]
   // CHECK: store ptr [[T2]], ptr [[DISPOSE_HELPER_FIELD]], align
   //   flags - copy/dispose required
   // CHECK: store i32 1107296256, ptr
@@ -100,8 +94,6 @@ void test_block_address_byref_capture() {
 // CHECK: [[T02:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
 // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK: br i1 [[T0]]
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 60, i64 [[T01]]), "ptrauth"(i64 1, i64 60, i64 [[T02]]) ]
-// CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
+// CHECK: [[T2:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 1, i64 60, i64 [[T01]]), "ptrauth"(i64 1, i64 60, i64 [[T02]]) ]
 // CHECK: [[T0:%.*]] = phi
 // CHECK: store ptr [[T0]], ptr [[NEWSLOT]]

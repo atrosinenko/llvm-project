@@ -3330,11 +3330,10 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       } else
         break;
       BasePtr = CI->getArgOperand(0);
-    } else if (const auto *PtrToInt = dyn_cast<PtrToIntOperator>(Ptr)) {
+    } else if (const auto *CPA = dyn_cast<ConstantPtrAuth>(Ptr)) {
       // ptrauth constants are equivalent to a call to @llvm.ptrauth.sign for
       // our purposes, so check for that too.
-      const auto *CPA = dyn_cast<ConstantPtrAuth>(PtrToInt->getOperand(0));
-      if (!CPA || DS || !CPA->isKnownCompatibleWith(ThisAutSchema.Inputs, DL))
+      if (DS || !CPA->isKnownCompatibleWith(ThisAutSchema.Inputs, DL))
         break;
 
       if (NeedSign) {
@@ -3349,14 +3348,13 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
             Ops.push_back(cast<Constant>(U.get()));
           auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), Ops,
                                               /*DeactivationSymbol=*/Null);
-          replaceInstUsesWith(
-              *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
+          replaceInstUsesWith(*II, NewCPA);
           return eraseInstFromFunction(*II);
         }
       }
 
       // auth(ptrauth(p,schema1),schema1) -> p
-      BasePtr = Builder.CreatePtrToInt(CPA->getPointer(), II->getType());
+      BasePtr = CPA->getPointer();
     } else
       break;
 
@@ -3385,8 +3383,9 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     if (DS)
       Bundles.push_back(OperandBundleDef("deactivation-symbol", DS));
 
+    Type *PtrArgTy = II->getType();
     Function *NewFn =
-        Intrinsic::getOrInsertDeclaration(II->getModule(), NewIntrin);
+        Intrinsic::getOrInsertDeclaration(II->getModule(), NewIntrin, PtrArgTy);
     return CallInst::Create(NewFn, {BasePtr}, Bundles);
   }
   case Intrinsic::arm_neon_vtbl1:
@@ -4573,11 +4572,7 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
     return nullptr;
 
   const Value *Callee = Call.getCalledOperand();
-  const auto *IPC = dyn_cast<IntToPtrInst>(Callee);
-  if (!IPC || !IPC->isNoopCast(DL))
-    return nullptr;
-
-  const auto *II = dyn_cast<IntrinsicInst>(IPC->getOperand(0));
+  const auto *II = dyn_cast<IntrinsicInst>(Callee);
   if (!II)
     return nullptr;
 
@@ -4628,7 +4623,6 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   if (!NewCallee)
     return nullptr;
 
-  NewCallee = Builder.CreateBitOrPointerCast(NewCallee, Callee->getType());
   CallBase *NewCall = CallBase::Create(&Call, NewBundles);
   NewCall->setCalledOperand(NewCallee);
   return NewCall;
