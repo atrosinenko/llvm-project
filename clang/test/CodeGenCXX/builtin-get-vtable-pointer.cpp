@@ -52,9 +52,7 @@ template <class A> struct same_type<A, A> {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA6:![0-9]+]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9:![0-9]+]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -66,9 +64,7 @@ template <class A> struct same_type<A, A> {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9:![0-9]+]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -80,9 +76,7 @@ template <class A> struct same_type<A, A> {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9:![0-9]+]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -107,9 +101,7 @@ const void *a(A *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA11:![0-9]+]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -121,9 +113,7 @@ const void *a(A *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -135,9 +125,7 @@ const void *a(A *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -162,9 +150,7 @@ const void *b(B *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -176,9 +162,7 @@ const void *b(B *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -190,9 +174,7 @@ const void *b(B *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA11]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -217,9 +199,7 @@ const void *b_as_A(B *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA13:![0-9]+]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -231,9 +211,7 @@ const void *b_as_A(B *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -245,9 +223,7 @@ const void *b_as_A(B *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -272,9 +248,7 @@ const void *c(C *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -286,9 +260,7 @@ const void *c(C *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -300,9 +272,7 @@ const void *c(C *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA13]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -341,9 +311,7 @@ const void *c_as_Z(C *o) {
 // CHECK-TYPEAUTH:       [[CAST_END]]:
 // CHECK-TYPEAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -362,9 +330,7 @@ const void *c_as_Z(C *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -383,9 +349,7 @@ const void *c_as_Z(C *o) {
 // CHECK-BOTHAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP4]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = inttoptr i64 [[TMP5]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP7:%.*]] = load volatile i8, ptr [[TMP6]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP6]]
 //
@@ -410,9 +374,7 @@ const void *c_as_B(C *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA15:![0-9]+]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA15]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -424,9 +386,7 @@ const void *c_as_B(C *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA15]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -438,9 +398,7 @@ const void *c_as_B(C *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA15]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -478,9 +436,7 @@ const void *d(D *o) {
 // CHECK-TYPEAUTH-NEXT:    br i1 [[TMP1]], label %[[CAST_END:.*]], label %[[CAST_NOTNULL:.*]]
 // CHECK-TYPEAUTH:       [[CAST_NOTNULL]]:
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP4]], i64 -32
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-TYPEAUTH-NEXT:    [[ADD_PTR:%.*]] = getelementptr inbounds i8, ptr [[TMP0]], i64 [[VBASE_OFFSET]]
@@ -488,9 +444,7 @@ const void *d(D *o) {
 // CHECK-TYPEAUTH:       [[CAST_END]]:
 // CHECK-TYPEAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE1:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP5:%.*]] = ptrtoint ptr [[VTABLE1]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP6:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP5]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[TMP6]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP7:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP8:%.*]] = load volatile i8, ptr [[TMP7]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP7]]
 //
@@ -505,9 +459,7 @@ const void *d(D *o) {
 // CHECK-ADDRESSAUTH:       [[CAST_NOTNULL]]:
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP5]], i64 -32
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    [[ADD_PTR:%.*]] = getelementptr inbounds i8, ptr [[TMP0]], i64 [[VBASE_OFFSET]]
@@ -516,9 +468,7 @@ const void *d(D *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE1:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP7:%.*]] = ptrtoint ptr [[VTABLE1]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP8:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP7]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP6]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP9:%.*]] = inttoptr i64 [[TMP8]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP9:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE1]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP6]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP10:%.*]] = load volatile i8, ptr [[TMP9]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP9]]
 //
@@ -533,9 +483,7 @@ const void *d(D *o) {
 // CHECK-BOTHAUTH:       [[CAST_NOTNULL]]:
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP4]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = inttoptr i64 [[TMP5]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP6]], i64 -32
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-BOTHAUTH-NEXT:    [[ADD_PTR:%.*]] = getelementptr inbounds i8, ptr [[TMP0]], i64 [[VBASE_OFFSET]]
@@ -544,9 +492,7 @@ const void *d(D *o) {
 // CHECK-BOTHAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE1:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP7:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP9:%.*]] = ptrtoint ptr [[VTABLE1]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP10:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP9]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP7]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP11:%.*]] = inttoptr i64 [[TMP10]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP11:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE1]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP7]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP12:%.*]] = load volatile i8, ptr [[TMP11]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP11]]
 //
@@ -571,9 +517,7 @@ const void *d_as_A(D *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA17:![0-9]+]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -585,9 +529,7 @@ const void *d_as_A(D *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -599,9 +541,7 @@ const void *d_as_A(D *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -640,9 +580,7 @@ const void *e(E *o) {
 // CHECK-TYPEAUTH:       [[CAST_END]]:
 // CHECK-TYPEAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -661,9 +599,7 @@ const void *e(E *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -682,9 +618,7 @@ const void *e(E *o) {
 // CHECK-BOTHAUTH-NEXT:    [[CAST_RESULT:%.*]] = phi ptr [ [[ADD_PTR]], %[[CAST_NOTNULL]] ], [ null, %[[ENTRY]] ]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[CAST_RESULT]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[CAST_RESULT]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP4]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = inttoptr i64 [[TMP5]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP7:%.*]] = load volatile i8, ptr [[TMP6]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP6]]
 //
@@ -709,9 +643,7 @@ const void *e_as_B(E *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[O]], ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -723,9 +655,7 @@ const void *e_as_B(E *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -737,9 +667,7 @@ const void *e_as_B(E *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[O_ADDR]], align 8, !tbaa [[TBAA17]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -764,9 +692,7 @@ const void *e_as_D(E *o) {
 // CHECK-TYPEAUTH-NEXT:    store ptr [[AARRAY]], ptr [[AARRAY_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[AARRAY_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP3]]
 //
@@ -778,9 +704,7 @@ const void *e_as_D(E *o) {
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[AARRAY_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP1]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP4]]
 //
@@ -792,9 +716,7 @@ const void *e_as_D(E *o) {
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = load ptr, ptr [[AARRAY_ADDR]], align 8, !tbaa [[TBAA6]]
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[TMP0]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[TMP0]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP1]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = load volatile i8, ptr [[TMP5]], align 8
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP5]]
 //
@@ -822,9 +744,7 @@ extern "C" const void *aArrayParameter(A aArray[]) {
 // CHECK-TYPEAUTH-NEXT:    [[CALL:%.*]] = call ptr @_ZN5test11AC1Ev(ptr nonnull align 8 dereferenceable(8) [[ARRAY]])
 // CHECK-TYPEAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::A"], ptr [[ARRAY]], i64 0, i64 0
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP0]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = inttoptr i64 [[TMP1]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = load volatile i8, ptr [[TMP2]], align 8
 // CHECK-TYPEAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[ARRAY]]) #[[ATTR7]]
 // CHECK-TYPEAUTH-NEXT:    ret ptr [[TMP2]]
@@ -838,9 +758,7 @@ extern "C" const void *aArrayParameter(A aArray[]) {
 // CHECK-ADDRESSAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::A"], ptr [[ARRAY]], i64 0, i64 0
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[ARRAYDECAY]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP1]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP0]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP0]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = load volatile i8, ptr [[TMP3]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[ARRAY]]) #[[ATTR7]]
 // CHECK-ADDRESSAUTH-NEXT:    ret ptr [[TMP3]]
@@ -854,9 +772,7 @@ extern "C" const void *aArrayParameter(A aArray[]) {
 // CHECK-BOTHAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::A"], ptr [[ARRAY]], i64 0, i64 0
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[ARRAYDECAY]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP0]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP0]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = load volatile i8, ptr [[TMP4]], align 8
 // CHECK-BOTHAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[ARRAY]]) #[[ATTR7]]
 // CHECK-BOTHAUTH-NEXT:    ret ptr [[TMP4]]
@@ -1003,9 +919,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-TYPEAUTH-NEXT:    br i1 [[TMP1]], label %[[CAST_END11:.*]], label %[[CAST_NOTNULL9:.*]]
 // CHECK-TYPEAUTH:       [[CAST_NOTNULL9]]:
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[DINSTANCE]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = inttoptr i64 [[TMP3]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP4:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP4]], i64 -32
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-TYPEAUTH-NEXT:    [[ADD_PTR10:%.*]] = getelementptr inbounds i8, ptr [[DINSTANCE]], i64 [[VBASE_OFFSET]]
@@ -1017,9 +931,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-TYPEAUTH-NEXT:    br i1 [[TMP5]], label %[[CAST_END19:.*]], label %[[CAST_NOTNULL14:.*]]
 // CHECK-TYPEAUTH:       [[CAST_NOTNULL14]]:
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE15:%.*]] = load ptr, ptr [[EINSTANCE]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[VTABLE15]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP7:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP6]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP8:%.*]] = inttoptr i64 [[TMP7]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP8:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE15]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET_PTR16:%.*]] = getelementptr i8, ptr [[TMP8]], i64 -32
 // CHECK-TYPEAUTH-NEXT:    [[VBASE_OFFSET17:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR16]], align 8
 // CHECK-TYPEAUTH-NEXT:    [[ADD_PTR18:%.*]] = getelementptr inbounds i8, ptr [[EINSTANCE]], i64 [[VBASE_OFFSET17]]
@@ -1065,9 +977,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-TYPEAUTH-NEXT:    [[CALL48:%.*]] = call ptr @_ZN5test16e_as_DEPNS_1EE(ptr [[EINSTANCE]])
 // CHECK-TYPEAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::E"], ptr [[EARRAY]], i64 0, i64 0
 // CHECK-TYPEAUTH-NEXT:    [[VTABLE49:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
-// CHECK-TYPEAUTH-NEXT:    [[TMP12:%.*]] = ptrtoint ptr [[VTABLE49]] to i64
-// CHECK-TYPEAUTH-NEXT:    [[TMP13:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP12]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
-// CHECK-TYPEAUTH-NEXT:    [[TMP14:%.*]] = inttoptr i64 [[TMP13]] to ptr
+// CHECK-TYPEAUTH-NEXT:    [[TMP14:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE49]]) [ "ptrauth"(i64 2, i64 48388, i64 0) ]
 // CHECK-TYPEAUTH-NEXT:    [[TMP15:%.*]] = load volatile i8, ptr [[TMP14]], align 8
 // CHECK-TYPEAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EARRAY]]) #[[ATTR7]]
 // CHECK-TYPEAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EINSTANCE]]) #[[ATTR7]]
@@ -1114,9 +1024,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-ADDRESSAUTH:       [[CAST_NOTNULL9]]:
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[DINSTANCE]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[DINSTANCE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP4:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP3]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[TMP4]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP5:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP2]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP5]], i64 -32
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    [[ADD_PTR10:%.*]] = getelementptr inbounds i8, ptr [[DINSTANCE]], i64 [[VBASE_OFFSET]]
@@ -1129,9 +1037,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-ADDRESSAUTH:       [[CAST_NOTNULL14]]:
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE15:%.*]] = load ptr, ptr [[EINSTANCE]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP7:%.*]] = ptrtoint ptr [[EINSTANCE]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[VTABLE15]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP9:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP8]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP7]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP10:%.*]] = inttoptr i64 [[TMP9]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP10:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE15]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP7]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET_PTR16:%.*]] = getelementptr i8, ptr [[TMP10]], i64 -32
 // CHECK-ADDRESSAUTH-NEXT:    [[VBASE_OFFSET17:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR16]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    [[ADD_PTR18:%.*]] = getelementptr inbounds i8, ptr [[EINSTANCE]], i64 [[VBASE_OFFSET17]]
@@ -1178,9 +1084,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-ADDRESSAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::E"], ptr [[EARRAY]], i64 0, i64 0
 // CHECK-ADDRESSAUTH-NEXT:    [[VTABLE49:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP14:%.*]] = ptrtoint ptr [[ARRAYDECAY]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP15:%.*]] = ptrtoint ptr [[VTABLE49]] to i64
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP16:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP15]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP14]]) ]
-// CHECK-ADDRESSAUTH-NEXT:    [[TMP17:%.*]] = inttoptr i64 [[TMP16]] to ptr
+// CHECK-ADDRESSAUTH-NEXT:    [[TMP17:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE49]]) [ "ptrauth"(i64 2, i64 0, i64 [[TMP14]]) ]
 // CHECK-ADDRESSAUTH-NEXT:    [[TMP18:%.*]] = load volatile i8, ptr [[TMP17]], align 8
 // CHECK-ADDRESSAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EARRAY]]) #[[ATTR7]]
 // CHECK-ADDRESSAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EINSTANCE]]) #[[ATTR7]]
@@ -1227,9 +1131,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-BOTHAUTH:       [[CAST_NOTNULL9]]:
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE:%.*]] = load ptr, ptr [[DINSTANCE]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[DINSTANCE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP5:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP4]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = inttoptr i64 [[TMP5]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP6:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP2]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET_PTR:%.*]] = getelementptr i8, ptr [[TMP6]], i64 -32
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR]], align 8
 // CHECK-BOTHAUTH-NEXT:    [[ADD_PTR10:%.*]] = getelementptr inbounds i8, ptr [[DINSTANCE]], i64 [[VBASE_OFFSET]]
@@ -1242,9 +1144,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-BOTHAUTH:       [[CAST_NOTNULL14]]:
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE15:%.*]] = load ptr, ptr [[EINSTANCE]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[EINSTANCE]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP10:%.*]] = ptrtoint ptr [[VTABLE15]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP11:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP10]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP8]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP12:%.*]] = inttoptr i64 [[TMP11]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP12:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE15]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP8]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET_PTR16:%.*]] = getelementptr i8, ptr [[TMP12]], i64 -32
 // CHECK-BOTHAUTH-NEXT:    [[VBASE_OFFSET17:%.*]] = load i64, ptr [[VBASE_OFFSET_PTR16]], align 8
 // CHECK-BOTHAUTH-NEXT:    [[ADD_PTR18:%.*]] = getelementptr inbounds i8, ptr [[EINSTANCE]], i64 [[VBASE_OFFSET17]]
@@ -1291,9 +1191,7 @@ extern "C" const void *aArrayLocal() {
 // CHECK-BOTHAUTH-NEXT:    [[ARRAYDECAY:%.*]] = getelementptr inbounds [1 x %"struct.test1::E"], ptr [[EARRAY]], i64 0, i64 0
 // CHECK-BOTHAUTH-NEXT:    [[VTABLE49:%.*]] = load ptr, ptr [[ARRAYDECAY]], align 8, !tbaa [[TBAA9]]
 // CHECK-BOTHAUTH-NEXT:    [[TMP16:%.*]] = ptrtoint ptr [[ARRAYDECAY]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP18:%.*]] = ptrtoint ptr [[VTABLE49]] to i64
-// CHECK-BOTHAUTH-NEXT:    [[TMP19:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP18]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP16]]) ]
-// CHECK-BOTHAUTH-NEXT:    [[TMP20:%.*]] = inttoptr i64 [[TMP19]] to ptr
+// CHECK-BOTHAUTH-NEXT:    [[TMP20:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE49]]) [ "ptrauth"(i64 2, i64 48388, i64 [[TMP16]]) ]
 // CHECK-BOTHAUTH-NEXT:    [[TMP21:%.*]] = load volatile i8, ptr [[TMP20]], align 8
 // CHECK-BOTHAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EARRAY]]) #[[ATTR7]]
 // CHECK-BOTHAUTH-NEXT:    call void @llvm.lifetime.end.p0(ptr [[EINSTANCE]]) #[[ATTR7]]

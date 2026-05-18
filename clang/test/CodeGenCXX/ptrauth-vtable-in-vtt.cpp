@@ -52,21 +52,19 @@
 // CHECK:       [[VTABLE:%.*]] = load ptr, ptr [[VTT]], align 8
 // ADDRESS:     [[VTABLE_ADDR:%.*]] = ptrtoint ptr [[VTT]] to i64
 // ADDRESSTYPE: [[VTABLE_ADDR:%.*]] = ptrtoint ptr [[VTT]] to i64
-// CHECK:       [[VTABLEi64:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// DEFAULT:     call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
-// ADDRESS:     call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE_ADDR]]) ]
-// TYPE:        call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 49118, i64 0) ]
-// ADDRESSTYPE: call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 49118, i64 [[VTABLE_ADDR]]) ]
+// DEFAULT:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+// ADDRESS:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE_ADDR]]) ]
+// TYPE:        call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 49118, i64 0) ]
+// ADDRESSTYPE: call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 49118, i64 [[VTABLE_ADDR]]) ]
 
 // CHECK:       [[VTTOFFSET:%.*]]  = getelementptr inbounds ptr, ptr [[VTT]], i64 1
 // CHECK:       [[VTABLE2:%.*]] = load ptr, ptr [[VTTOFFSET]], align 8
 // ADDRESS:     [[VTABLE2_ADDR:%.*]] = ptrtoint ptr [[VTTOFFSET]] to i64
 // ADDRESSTYPE: [[VTABLE2_ADDR:%.*]] = ptrtoint ptr [[VTTOFFSET]] to i64
-// CHECK:       [[VTABLE2i64:%.*]] = ptrtoint ptr [[VTABLE2]] to i64
-// DEFAULT:     call i64 @llvm.ptrauth.auth(i64 [[VTABLE2i64]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
-// ADDRESS:     call i64 @llvm.ptrauth.auth(i64 [[VTABLE2i64]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE2_ADDR]]) ]
-// TYPE:        call i64 @llvm.ptrauth.auth(i64 [[VTABLE2i64]]) [ "ptrauth"(i64 2, i64 49118, i64 0) ]
-// ADDRESSTYPE: call i64 @llvm.ptrauth.auth(i64 [[VTABLE2i64]]) [ "ptrauth"(i64 2, i64 49118, i64 [[VTABLE2_ADDR]]) ]
+// DEFAULT:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE2]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+// ADDRESS:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE2]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE2_ADDR]]) ]
+// TYPE:        call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE2]]) [ "ptrauth"(i64 2, i64 49118, i64 0) ]
+// ADDRESSTYPE: call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE2]]) [ "ptrauth"(i64 2, i64 49118, i64 [[VTABLE2_ADDR]]) ]
 
 // CHECK-LABEL: @_ZN1DC2Ev
 // CHECK:       %vtt.addr = alloca ptr, align 8
@@ -77,11 +75,10 @@
 // CHECK:       [[VTABLE:%.*]] = load ptr, ptr [[VTT]], align 8
 // ADDRESS:     [[VTABLE_ADDR:%.*]] = ptrtoint ptr [[VTT]] to i64
 // ADDRESSTYPE: [[VTABLE_ADDR:%.*]] = ptrtoint ptr [[VTT]] to i64
-// CHECK:       [[VTABLEi64:%.*]] = ptrtoint ptr [[VTABLE]] to i64
-// DEFAULT:     call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
-// ADDRESS:     call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE_ADDR]]) ]
-// TYPE:        call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 820, i64 0) ]
-// ADDRESSTYPE: call i64 @llvm.ptrauth.auth(i64 [[VTABLEi64]]) [ "ptrauth"(i64 2, i64 820, i64 [[VTABLE_ADDR]]) ]
+// DEFAULT:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+// ADDRESS:     call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 0, i64 [[VTABLE_ADDR]]) ]
+// TYPE:        call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 820, i64 0) ]
+// ADDRESSTYPE: call ptr @llvm.ptrauth.auth.p0(ptr [[VTABLE]]) [ "ptrauth"(i64 2, i64 820, i64 [[VTABLE_ADDR]]) ]
 
 struct V {
     virtual void f();

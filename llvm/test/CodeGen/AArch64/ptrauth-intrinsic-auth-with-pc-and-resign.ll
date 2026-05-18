@@ -21,7 +21,7 @@
 
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
 
-define i64 @test_resign_with_pc_ia_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
+define ptr @test_resign_with_pc_ia_ia(ptr %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
 ; UNCHECKED-LABEL: test_resign_with_pc_ia_ia:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -65,11 +65,11 @@ define i64 @test_resign_with_pc_ia_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign(ptr %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_with_pc_ib_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
+define ptr @test_resign_with_pc_ib_ia(ptr %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
 ; UNCHECKED-LABEL: test_resign_with_pc_ib_ia:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -113,11 +113,11 @@ define i64 @test_resign_with_pc_ib_ia(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_with_pc_ia_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
+define ptr @test_resign_with_pc_ia_ib(ptr %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
 ; UNCHECKED-LABEL: test_resign_with_pc_ia_ib:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -161,11 +161,11 @@ define i64 @test_resign_with_pc_ia_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacib x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 %arg3) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 %arg3) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_with_pc_ib_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
+define ptr @test_resign_with_pc_ib_ib(ptr %arg, i64 %arg1, i64 %arg2, i64 %arg3) {
 ; UNCHECKED-LABEL: test_resign_with_pc_ib_ib:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -209,11 +209,11 @@ define i64 @test_resign_with_pc_ib_ib(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3)
 ; TRAP-NEXT:    pacib x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 %arg3) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 1, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 %arg3) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_with_pc_iza_ib(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_with_pc_iza_ib(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_with_pc_iza_ib:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -257,11 +257,11 @@ define i64 @test_resign_with_pc_iza_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacib x17, x2
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 1, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 1, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_with_pc_ia_izb(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_with_pc_ia_izb(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_with_pc_ia_izb:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -305,13 +305,13 @@ define i64 @test_resign_with_pc_ia_izb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacizb x17
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 1, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
 ; The "ptrauth-auth-traps" function attribute enables trapping in default
 ; (checked) mode, with the same behavior as -aarch64-ptrauth-auth-checks=trap.
-define i64 @test_resign_with_pc_trap_attribute(i64 %arg, i64 %arg1, i64 %arg2, i64 %arg3) "ptrauth-auth-traps" {
+define ptr @test_resign_with_pc_trap_attribute(ptr %arg, i64 %arg1, i64 %arg2, i64 %arg3) "ptrauth-auth-traps" {
 ; UNCHECKED-LABEL: test_resign_with_pc_trap_attribute:
 ; UNCHECKED:       ; %bb.0:
 ; UNCHECKED-NEXT:    mov x17, x0
@@ -353,6 +353,6 @@ define i64 @test_resign_with_pc_trap_attribute(i64 %arg, i64 %arg1, i64 %arg2, i
 ; TRAP-NEXT:    pacia x17, x3
 ; TRAP-NEXT:    mov x0, x17
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth.with.pc.and.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.with.pc.and.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 %arg1, i64 %arg2), "ptrauth"(i64 0, i64 0, i64 %arg3) ]
+  ret ptr %tmp
 }

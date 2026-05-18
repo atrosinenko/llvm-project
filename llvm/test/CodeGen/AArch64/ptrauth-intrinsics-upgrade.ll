@@ -6,10 +6,18 @@
 
 define void @test_ptrauth_sign(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_sign(
-; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
-; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 42, i64 0) ]
-; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
-; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP3]]) [ "ptrauth"(i64 1, i64 42, i64 0) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP5]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_DISCR1:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP7]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_DISCR1]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -22,10 +30,18 @@ define void @test_ptrauth_sign(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_sign_ds(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_sign_ds(
-; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 42, i64 0), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[P]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP3]]) [ "ptrauth"(i64 1, i64 42, i64 0), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP5]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_DISCR1:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[TMP7]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_DISCR1]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -38,10 +54,18 @@ define void @test_ptrauth_sign_ds(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_auth(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_auth(
-; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
-; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 42, i64 0) ]
-; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
-; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP3]]) [ "ptrauth"(i64 1, i64 42, i64 0) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP5]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_DISCR1:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP7]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_DISCR1]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -54,10 +78,18 @@ define void @test_ptrauth_auth(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_auth_ds(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_auth_ds(
-; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 42, i64 0), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "deactivation-symbol"(ptr @ds) ]
-; CHECK-NEXT:    [[BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP3]]) [ "ptrauth"(i64 1, i64 42, i64 0), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP5]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_DISCR1:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP7]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "deactivation-symbol"(ptr @ds) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_DISCR1]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -70,18 +102,42 @@ define void @test_ptrauth_auth_ds(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_resign(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_resign(
-; CHECK-NEXT:    [[IMM_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 42, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[ZERO_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[ADDR_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[BLENDED_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[IMM_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 0) ]
-; CHECK-NEXT:    [[IMM_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[IMM_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 5678, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[ZERO_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[ADDR_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR]]), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[BLENDED_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 0) ]
-; CHECK-NEXT:    [[BLENDED_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[BLENDED_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P]]) [ "ptrauth"(i64 1, i64 111, i64 [[ADDR]]), "ptrauth"(i64 2, i64 222, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[IMM_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 42, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[IMM_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ZERO_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP3]]) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[ZERO_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP5]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_IMM_DISCR1:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP7]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_IMM_DISCR1]] to i64
+; CHECK-NEXT:    [[TMP9:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP9]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP10:%.*]] = ptrtoint ptr [[IMM_ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP11:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP11]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP12:%.*]] = ptrtoint ptr [[IMM_ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP13:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_BLENDED_DISCR2:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP13]]) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 5678, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP14:%.*]] = ptrtoint ptr [[IMM_BLENDED_DISCR2]] to i64
+; CHECK-NEXT:    [[TMP15:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ZERO_BLENDED_DISCR3:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP15]]) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP16:%.*]] = ptrtoint ptr [[ZERO_BLENDED_DISCR3]] to i64
+; CHECK-NEXT:    [[TMP17:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_BLENDED_DISCR4:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP17]]) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR]]), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP18:%.*]] = ptrtoint ptr [[ADDR_BLENDED_DISCR4]] to i64
+; CHECK-NEXT:    [[TMP19:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_ZERO_DISCR5:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP19]]) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP20:%.*]] = ptrtoint ptr [[BLENDED_ZERO_DISCR5]] to i64
+; CHECK-NEXT:    [[TMP21:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_ADDR_DISCR6:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP21]]) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP22:%.*]] = ptrtoint ptr [[BLENDED_ADDR_DISCR6]] to i64
+; CHECK-NEXT:    [[TMP23:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_BLENDED_DISCR78:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP23]]) [ "ptrauth"(i64 1, i64 111, i64 [[ADDR]]), "ptrauth"(i64 2, i64 222, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP24:%.*]] = ptrtoint ptr [[BLENDED_BLENDED_DISCR78]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %imm.imm.discr     = call i64 @llvm.ptrauth.resign(i64 %p, i32 1, i64 42,    i32 2, i64 123)
@@ -113,18 +169,42 @@ define void @test_ptrauth_resign(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_resign_load_relative(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_resign_load_relative(
-; CHECK-NEXT:    [[IMM_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P:%.*]], i64 42) [ "ptrauth"(i64 1, i64 42, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[ZERO_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[ADDR_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[BLENDED_IMM_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "ptrauth"(i64 2, i64 123, i64 0) ]
-; CHECK-NEXT:    [[IMM_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 0) ]
-; CHECK-NEXT:    [[IMM_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[IMM_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 5678, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[ZERO_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[ADDR_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR]]), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[BLENDED_ZERO_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 0) ]
-; CHECK-NEXT:    [[BLENDED_ADDR_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
-; CHECK-NEXT:    [[BLENDED_BLENDED_DISCR:%.*]] = call i64 @llvm.ptrauth.resign.load.relative(i64 [[P]], i64 42) [ "ptrauth"(i64 1, i64 111, i64 [[ADDR]]), "ptrauth"(i64 2, i64 222, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[IMM_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP1]], i64 42) [ "ptrauth"(i64 1, i64 42, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[IMM_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ZERO_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP3]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[ZERO_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_IMM_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP5]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP6:%.*]] = ptrtoint ptr [[ADDR_IMM_DISCR]] to i64
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_IMM_DISCR1:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP7]], i64 42) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR]]), "ptrauth"(i64 2, i64 123, i64 0) ]
+; CHECK-NEXT:    [[TMP8:%.*]] = ptrtoint ptr [[BLENDED_IMM_DISCR1]] to i64
+; CHECK-NEXT:    [[TMP9:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_ZERO_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP9]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP10:%.*]] = ptrtoint ptr [[IMM_ZERO_DISCR]] to i64
+; CHECK-NEXT:    [[TMP11:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_ADDR_DISCR:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP11]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP12:%.*]] = ptrtoint ptr [[IMM_ADDR_DISCR]] to i64
+; CHECK-NEXT:    [[TMP13:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[IMM_BLENDED_DISCR2:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP13]], i64 42) [ "ptrauth"(i64 1, i64 123, i64 0), "ptrauth"(i64 2, i64 5678, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP14:%.*]] = ptrtoint ptr [[IMM_BLENDED_DISCR2]] to i64
+; CHECK-NEXT:    [[TMP15:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ZERO_BLENDED_DISCR3:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP15]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP16:%.*]] = ptrtoint ptr [[ZERO_BLENDED_DISCR3]] to i64
+; CHECK-NEXT:    [[TMP17:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[ADDR_BLENDED_DISCR4:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP17]], i64 42) [ "ptrauth"(i64 1, i64 0, i64 [[ADDR]]), "ptrauth"(i64 2, i64 4321, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP18:%.*]] = ptrtoint ptr [[ADDR_BLENDED_DISCR4]] to i64
+; CHECK-NEXT:    [[TMP19:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_ZERO_DISCR5:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP19]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 0) ]
+; CHECK-NEXT:    [[TMP20:%.*]] = ptrtoint ptr [[BLENDED_ZERO_DISCR5]] to i64
+; CHECK-NEXT:    [[TMP21:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_ADDR_DISCR6:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP21]], i64 42) [ "ptrauth"(i64 1, i64 8765, i64 [[ADDR]]), "ptrauth"(i64 2, i64 0, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP22:%.*]] = ptrtoint ptr [[BLENDED_ADDR_DISCR6]] to i64
+; CHECK-NEXT:    [[TMP23:%.*]] = inttoptr i64 [[P]] to ptr
+; CHECK-NEXT:    [[BLENDED_BLENDED_DISCR78:%.*]] = call ptr @llvm.ptrauth.resign.load.relative.p0(ptr [[TMP23]], i64 42) [ "ptrauth"(i64 1, i64 111, i64 [[ADDR]]), "ptrauth"(i64 2, i64 222, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP24:%.*]] = ptrtoint ptr [[BLENDED_BLENDED_DISCR78]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %imm.imm.discr     = call i64 @llvm.ptrauth.resign.load.relative(i64 %p, i32 1, i64 42,    i32 2, i64 123, i64 42)
@@ -156,7 +236,9 @@ define void @test_ptrauth_resign_load_relative(i64 %p, i64 %addr) {
 
 define void @test_ptrauth_strip(i64 %p) {
 ; CHECK-LABEL: @test_ptrauth_strip(
-; CHECK-NEXT:    [[RES:%.*]] = call i64 @llvm.ptrauth.strip(i64 [[P:%.*]]) [ "ptrauth"(i64 1) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[RES:%.*]] = call ptr @llvm.ptrauth.strip.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[RES]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %res = call i64 @llvm.ptrauth.strip(i64 %p, i32 1)
@@ -165,8 +247,12 @@ define void @test_ptrauth_strip(i64 %p) {
 
 define void @test_ptrauth_reused_blend(i64 %p1, i64 %p2, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_reused_blend(
-; CHECK-NEXT:    [[RES1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P1:%.*]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]) ]
-; CHECK-NEXT:    [[RES2:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P2:%.*]]) [ "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P1:%.*]] to ptr
+; CHECK-NEXT:    [[RES11:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[RES11]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[P2:%.*]] to ptr
+; CHECK-NEXT:    [[RES22:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP3]]) [ "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP4:%.*]] = ptrtoint ptr [[RES22]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -177,7 +263,9 @@ define void @test_ptrauth_reused_blend(i64 %p1, i64 %p2, i64 %addr) {
 
 define void @test_ptrauth_reused_blend_same_inst(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @test_ptrauth_reused_blend_same_inst(
-; CHECK-NEXT:    [[RES:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[RES1:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP1]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[RES1]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
@@ -190,7 +278,9 @@ define void @test_ptrauth_blend_in_other_bb(i64 %p, i64 %addr) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[EXIT:%.*]]
 ; CHECK:       exit:
-; CHECK-NEXT:    [[RES:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[P:%.*]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP0:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[RES1:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[TMP0]]) [ "ptrauth"(i64 1, i64 1234, i64 [[ADDR:%.*]]), "ptrauth"(i64 2, i64 1234, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[RES1]] to i64
 ; CHECK-NEXT:    ret void
 ;
 entry:
@@ -283,7 +373,9 @@ define void @not_upgraded_direct_three_args(i64 %p, i64 %addr) {
 define void @not_upgraded_wrong_position_in_bundle(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @not_upgraded_wrong_position_in_bundle(
 ; CHECK-NEXT:    [[DISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[ADDR:%.*]], i64 42)
-; CHECK-NEXT:    [[TMP1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "ptrauth"(i64 [[DISC]], i64 1, i64 0) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[TMP2:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 [[DISC]], i64 1, i64 0) ]
+; CHECK-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[TMP2]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
@@ -294,7 +386,9 @@ define void @not_upgraded_wrong_position_in_bundle(i64 %p, i64 %addr) {
 define void @not_upgraded_both_positions_in_bundle(i64 %p, i64 %addr) {
 ; CHECK-LABEL: @not_upgraded_both_positions_in_bundle(
 ; CHECK-NEXT:    [[DISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[ADDR:%.*]], i64 42)
-; CHECK-NEXT:    [[TMP1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[P:%.*]]) [ "ptrauth"(i64 [[DISC]], i64 42, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP1:%.*]] = inttoptr i64 [[P:%.*]] to ptr
+; CHECK-NEXT:    [[TMP2:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 [[DISC]], i64 42, i64 [[ADDR]]) ]
+; CHECK-NEXT:    [[TMP3:%.*]] = ptrtoint ptr [[TMP2]] to i64
 ; CHECK-NEXT:    ret void
 ;
   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)

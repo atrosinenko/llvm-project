@@ -45,8 +45,7 @@ void auto_sel(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[DST_ADDR:%.*]] = getelementptr inbounds i8, ptr [[V1]], i64 {{%.*}}
 // CHECK-AUTHENTICATED-SEL: [[CAST_DST_ADDR:%.*]] = ptrtoint ptr [[DST_ADDR]] to i64
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR]] to i64
-// CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 22466, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22466, i64 [[CAST_SRC_ADDR]]) ]
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[SRC_SEL_ADDR:%.*]]) [ "ptrauth"(i64 3, i64 22466, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22466, i64 [[CAST_SRC_ADDR]]) ]
 
 // CHECK-UNAUTHENTICATED-SEL: define void @auto_sel
 SEL const_auto_sel(Test *in) {
@@ -56,8 +55,7 @@ SEL const_auto_sel(Test *in) {
 
 // CHECK-AUTHENTICATED-SEL: define ptr @const_auto_sel
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = ptrtoint ptr {{%.*}} to i64
-// CHECK-AUTHENTICATED-SEL: [[AUTHENTICATED:%.*]] = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 22466, i64 {{%.*}}) ]
-// CHECK-AUTHENTICATED-SEL: [[RESULT:%.*]] = inttoptr i64 [[AUTHENTICATED]] to ptr
+// CHECK-AUTHENTICATED-SEL: [[AUTHENTICATED:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr {{%.*}}) [ "ptrauth"(i64 3, i64 22466, i64 {{%.*}}) ]
 
 void volatile_auto_sel(Test *out, Test *in) {
   volatile_auto_sel_ptr_type_test = &in->volatile_auto_sel;
@@ -71,8 +69,7 @@ void volatile_auto_sel(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[DST_ADDR:%.*]] = getelementptr inbounds i8, ptr [[V2]], i64 {{%.*}}
 // CHECK-AUTHENTICATED-SEL: [[CAST_DST_ADDR:%.*]] = ptrtoint ptr [[DST_ADDR]] to i64
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR]] to i64
-// CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 22466, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22466, i64 [[CAST_SRC_ADDR]]) ]
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[SRC_SEL_ADDR:%.*]]) [ "ptrauth"(i64 3, i64 22466, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22466, i64 [[CAST_SRC_ADDR]]) ]
 
 void manual(Test *out, Test *in) {
   out->manual = in->manual;
@@ -85,8 +82,7 @@ void manual(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[DST_ADDR:%.*]] = getelementptr inbounds i8, ptr [[V1]], i64 {{%.*}}
 // CHECK-AUTHENTICATED-SEL: [[CAST_DST_ADDR:%.*]] = ptrtoint ptr [[DST_ADDR]] to i64
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR]] to i64
-// CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 22467, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22467, i64 [[CAST_SRC_ADDR]]) ]
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[SRC_SEL_ADDR:%.*]]) [ "ptrauth"(i64 3, i64 22467, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22467, i64 [[CAST_SRC_ADDR]]) ]
 
 // CHECK-UNAUTHENTICATED-SEL: define void @manual
 // CHECK-UNAUTHENTICATED-SEL: [[V0:%.*]] = load ptr, ptr %out.addr
@@ -95,7 +91,6 @@ void manual(Test *out, Test *in) {
 // CHECK-UNAUTHENTICATED-SEL: [[DST_ADDR:%.*]] = getelementptr inbounds i8, ptr [[V1]], i64 {{%.*}}
 // CHECK-UNAUTHENTICATED-SEL: [[CAST_DST_ADDR:%.*]] = ptrtoint ptr [[DST_ADDR]] to i64
 // CHECK-UNAUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR]] to i64
-// CHECK-UNAUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-UNAUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 22467, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22467, i64 [[CAST_SRC_ADDR]]) ]
+// CHECK-UNAUTHENTICATED-SEL: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[SRC_SEL_ADDR:%.*]]) [ "ptrauth"(i64 3, i64 22467, i64 [[CAST_DST_ADDR]]), "ptrauth"(i64 3, i64 22467, i64 [[CAST_SRC_ADDR]]) ]
 
 }

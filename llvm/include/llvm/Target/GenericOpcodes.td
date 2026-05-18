@@ -148,8 +148,8 @@ def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
 }
 
 def G_PTRAUTH_AUTH : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$schema);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$schema);
   // Authentication should not be speculated: moving G_PTRAUTH_AUTH above the
   // point where it is known to succeed under correct program operation may
   // lead to program crashes.
@@ -157,35 +157,35 @@ def G_PTRAUTH_AUTH : GenericInstruction {
 }
 
 def G_PTRAUTH_SIGN : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$schema);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$schema);
   let hasSideEffects = 0;
 }
 
 def G_PTRAUTH_RESIGN : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$old_schema, unknown:$new_schema);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$old_schema, unknown:$new_schema);
   // Resign includes authentication and thus should not be speculated.
   let hasSideEffects = 1;
 }
 
 def G_PTRAUTH_RESIGN_LOAD_RELATIVE : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$old_schema, unknown:$new_schema, untyped_imm_0:$addend);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$old_schema, unknown:$new_schema, untyped_imm_0:$addend);
   let hasSideEffects = 0;
   let mayLoad = 1;
 }
 
 def G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$old_schema, unknown:$new_schema);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$old_schema, unknown:$new_schema);
   let hasSideEffects = 0;
   let mayLoad = 1;
 }
 
 def G_PTRAUTH_STRIP : GenericInstruction {
-  let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins type0:$value, unknown:$schema);
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, unknown:$schema);
   let hasSideEffects = 0;
 }
 

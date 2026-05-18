@@ -6,7 +6,7 @@
 
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
 
-define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
+define ptr @test_auth_ia(ptr %arg, i64 %arg1) {
 ; DARWIN-LABEL: test_auth_ia:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -18,11 +18,11 @@ define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autia x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ia_zero(i64 %arg) {
+define ptr @test_auth_ia_zero(ptr %arg) {
 ; DARWIN-LABEL: test_auth_ia_zero:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -34,11 +34,11 @@ define i64 @test_auth_ia_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autiza x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
+define ptr @test_auth_ib(ptr %arg, i64 %arg1) {
 ; DARWIN-LABEL: test_auth_ib:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -50,11 +50,11 @@ define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autib x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ib_zero(i64 %arg) {
+define ptr @test_auth_ib_zero(ptr %arg) {
 ; DARWIN-LABEL: test_auth_ib_zero:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -66,11 +66,11 @@ define i64 @test_auth_ib_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autizb x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 1, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_da(i64 %arg, i64 %arg1) {
+define ptr @test_auth_da(ptr %arg, i64 %arg1) {
 ; DARWIN-LABEL: test_auth_da:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -82,11 +82,11 @@ define i64 @test_auth_da(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autda x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_da_zero(i64 %arg) {
+define ptr @test_auth_da_zero(ptr %arg) {
 ; DARWIN-LABEL: test_auth_da_zero:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -98,11 +98,11 @@ define i64 @test_auth_da_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdza x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_db(i64 %arg, i64 %arg1) {
+define ptr @test_auth_db(ptr %arg, i64 %arg1) {
 ; DARWIN-LABEL: test_auth_db:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -114,11 +114,11 @@ define i64 @test_auth_db(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdb x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_db_zero(i64 %arg) {
+define ptr @test_auth_db_zero(ptr %arg) {
 ; DARWIN-LABEL: test_auth_db_zero:
 ; DARWIN:       ; %bb.0:
 ; DARWIN-NEXT:    mov x16, x0
@@ -130,13 +130,13 @@ define i64 @test_auth_db_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdzb x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
 ; Note that this might seem like a no-op but is actually a valid way to enforce
 ; the validity of a signature.
-define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_ia_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_ia_ia:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -160,11 +160,11 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_ib_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_ib_ia:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -188,11 +188,11 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_da_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_da_ia:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -216,11 +216,11 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_db_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_ia:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -244,11 +244,11 @@ define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_db_ib(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_ib:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -272,11 +272,11 @@ define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacib x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 1, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 1, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_db_da(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_da:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -300,11 +300,11 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacda x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 2, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 2, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_db_db(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_db:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -328,11 +328,11 @@ define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdb x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_iza_db(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_iza_db:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -356,11 +356,11 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdb x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_da_dzb(ptr %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_da_dzb:
 ; NOFPAC:       %bb.0:
 ; NOFPAC-NEXT:    mov x16, x0
@@ -384,11 +384,11 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdzb x16
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 0) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
+define ptr @test_auth_trap_attribute(ptr %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; ALL-LABEL: test_auth_trap_attribute:
 ; DARWIN-NOFPAC:       %bb.0:
 ; DARWIN-NOFPAC-NEXT:    mov x16, x0
@@ -421,6 +421,6 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; ELF-FPAC:       %bb.0:
 ; ELF-FPAC-NEXT:    autia x0, x1
 ; ELF-FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }

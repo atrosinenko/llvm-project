@@ -11,8 +11,7 @@ void (*fptr)(void);
 // CHECK-LABEL: define{{.*}} void @test1
 void test1() {
   // TYPE: [[LOAD:%.*]] = load ptr, ptr @cptr
-  // TYPE: [[TOINT:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // TYPE: call i64 @llvm.ptrauth.resign(i64 [[TOINT]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
+  // TYPE: call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
   // TYPE: call void {{.*}}() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
 
@@ -28,12 +27,10 @@ char test2() {
   // TYPE-NEXT: br i1 [[CMP]], label %[[NONNULL:.*]], label %[[CONT:.*]]
 
   // TYPE: [[NONNULL]]:
-  // TYPE: [[TOINT:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // TYPE: [[CALL:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TOINT]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
-  // TYPE: [[TOPTR:%.*]] = inttoptr i64 [[CALL]] to ptr
+  // TYPE: [[CALL:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
 
   // TYPE: [[CONT]]:
-  // TYPE: phi ptr [ null, {{.*}} ], [ [[TOPTR]], %[[NONNULL]] ]
+  // TYPE: phi ptr [ null, {{.*}} ], [ [[CALL]], %[[NONNULL]] ]
   // ZERO-NOT: @llvm.ptrauth.resign
 }
 
@@ -42,10 +39,8 @@ void test4() {
   (*((fptr_t)(&*((char *)(&*(fptr_t)cptr)))))();
 
   // CHECK: [[LOAD:%.*]] = load ptr, ptr @cptr
-  // TYPE-NEXT: [[CAST4:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // TYPE-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[CAST4]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
-  // TYPE-NEXT: [[CAST5:%.*]] = inttoptr i64 [[RESIGN]] to ptr
-  // TYPE-NEXT: call void [[CAST5]]() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
+  // TYPE-NEXT: [[RESIGN:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
+  // TYPE-NEXT: call void [[RESIGN]]() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
   // ZERO: call void [[LOAD]]() [ "ptrauth"(i64 0, i64 0, i64 0) ]
 }
@@ -60,11 +55,10 @@ void test5() {
   // TYPE-NEXT: br i1 [[CMP]], label %[[NONNULL:.*]], label %[[CONT:.*]]
 
   // TYPE: [[NONNULL]]:
-  // TYPE: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 {{.*}}) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
-  // TYPE: [[CAST:%.*]] = inttoptr i64 [[RESIGN]] to ptr
+  // TYPE: [[RESIGN:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr {{.*}}) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
 
   // TYPE: [[CONT]]:
-  // TYPE: [[PHI:%.*]] = phi ptr [ null, {{.*}} ], [ [[CAST]], %[[NONNULL]] ]
+  // TYPE: [[PHI:%.*]] = phi ptr [ null, {{.*}} ], [ [[RESIGN]], %[[NONNULL]] ]
   // TYPE: store ptr [[PHI]], ptr @vptr
   // ZERO-NOT: @llvm.ptrauth.resign
 }

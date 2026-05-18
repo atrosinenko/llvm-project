@@ -25,5 +25,4 @@ namespace Test1 {
 // CHECK-LABEL: define linkonce_odr void @_ZTv0_n24_N5Test11DD0Ev(ptr noundef %this)
 // CHECK: %[[This:.*]] = load ptr
 // CHECK: %[[SignedVTable:.*]] = load ptr, ptr %[[This]], align 8
-// CHECK: %[[SignedVTableAsInt:.*]] = ptrtoint ptr %[[SignedVTable]] to i64
-// CHECK: %[[VTable:.*]] = call i64 @llvm.ptrauth.auth(i64 %[[SignedVTableAsInt]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+// CHECK: %[[VTable:.*]] = call ptr @llvm.ptrauth.auth.p0(ptr %[[SignedVTable]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
