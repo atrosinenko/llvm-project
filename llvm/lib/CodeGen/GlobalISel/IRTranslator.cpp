@@ -3024,11 +3024,10 @@ bool IRTranslatorImpl::translatePtrAuthIntrinsic(const CallInst &CI,
   TLI->reportFatalErrorOnInvalidPtrAuthSchema(CI);
 
   auto TranslatePtrAuthBundle = [&](unsigned Index) {
-    auto Bundle = CI.getOperandBundleAt(Index);
-    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+    auto Bundle = CI.getNthOperandBundleOfType("ptrauth", Index);
 
     SmallVector<SrcOp> SchemaOps;
-    for (const Use &Operand : Bundle.Inputs)
+    for (const Use &Operand : Bundle->Inputs)
       SchemaOps.push_back(getOrCreateVReg(*Operand));
 
     Register Res = MRI->createGenericVirtualRegister(LLT::token());
