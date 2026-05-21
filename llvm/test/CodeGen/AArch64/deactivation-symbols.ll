@@ -44,6 +44,15 @@ define ptr @pauth_sign(ptr %p, i64 %d) {
   ret ptr %signed
 }
 
+; CHECK: pauth_sign_swap:
+define ptr @pauth_sign_swap(ptr %p, i64 %d) {
+  ; CHECK: [[LABEL:.L.*]]:
+  ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
+  ; CHECK-NEXT: pacia x0, x1
+  %signed = call ptr @llvm.ptrauth.sign(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 0, i64 0, i64 %d) ]
+  ret ptr %signed
+}
+
 ; CHECK: pauth_auth_zero:
 define ptr @pauth_auth_zero(ptr %p) {
   ; CHECK: [[LABEL:.L.*]]:
@@ -69,5 +78,14 @@ define ptr @pauth_auth(ptr %p, i64 %d) {
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: autia x0, x1
   %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 %d), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
+}
+
+; CHECK: pauth_auth_swap:
+define ptr @pauth_auth_swap(ptr %p, i64 %d) {
+  ; CHECK: [[LABEL:.L.*]]:
+  ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
+  ; CHECK-NEXT: autia x0, x1
+  %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 0, i64 0, i64 %d) ]
   ret ptr %authed
 }

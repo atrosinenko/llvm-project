@@ -3297,8 +3297,7 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     // sign+auth component if the key and discriminator match.
     bool NeedSign = II->getIntrinsicID() == Intrinsic::ptrauth_resign;
     Value *Ptr = II->getArgOperand(0);
-    auto ThisAutSchema =
-        *II->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 0);
+    auto ThisAutSchema = *II->getNthOperandBundleOfType("ptrauth", 0);
     Value *DS = nullptr;
     if (auto Bundle = II->getOperandBundle(LLVMContext::OB_deactivation_symbol))
       DS = Bundle->Inputs[0];
@@ -3317,16 +3316,15 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
 
       if (CI->getIntrinsicID() == Intrinsic::ptrauth_sign) {
         if (ThisAutSchema.Inputs !=
-            CI->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 0)->Inputs)
+            CI->getNthOperandBundleOfType("ptrauth", 0)->Inputs)
           break;
       } else if (CI->getIntrinsicID() == Intrinsic::ptrauth_resign) {
         // The resign intrinsic does not support deactivation symbols.
         assert(!DS);
         if (ThisAutSchema.Inputs !=
-            CI->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 1)->Inputs)
+            CI->getNthOperandBundleOfType("ptrauth", 1)->Inputs)
           break;
-        NewAutSchema =
-            *CI->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 0);
+        NewAutSchema = *CI->getNthOperandBundleOfType("ptrauth", 0);
       } else
         break;
       BasePtr = CI->getArgOperand(0);
@@ -3337,8 +3335,7 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         break;
 
       if (NeedSign) {
-        auto ThisSignSchema =
-            *II->getOperandBundleOfTypeAt(LLVMContext::OB_ptrauth, 1);
+        auto ThisSignSchema = *II->getNthOperandBundleOfType("ptrauth", 1);
         // resign(ptrauth(p, schema0), schema0, schema1) -> ptrauth(p, schema1)
         auto IsConstant = [](Value *V) { return isa<Constant>(V); };
         if (llvm::all_of(ThisSignSchema.Inputs, IsConstant)) {
@@ -3379,7 +3376,7 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     if (NewAutSchema)
       Bundles.emplace_back(*NewAutSchema);
     if (NeedSign)
-      Bundles.emplace_back(II->getOperandBundleAt(1));
+      Bundles.emplace_back(*II->getNthOperandBundleOfType("ptrauth", 1));
     if (DS)
       Bundles.push_back(OperandBundleDef("deactivation-symbol", DS));
 
@@ -4599,10 +4596,11 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // call(ptrauth.resign(p)), ["ptrauth"()] ->  call p, ["ptrauth"()]
   // assuming the call bundle and the sign operands match.
   case Intrinsic::ptrauth_resign: {
-    if (II->getOperandBundleAt(1).Inputs != PtrAuthBundleOrNone->Inputs)
+    if (II->getNthOperandBundleOfType("ptrauth", 1)->Inputs !=
+        PtrAuthBundleOrNone->Inputs)
       return nullptr;
 
-    NewBundles.emplace_back(II->getOperandBundleAt(0));
+    NewBundles.emplace_back(*II->getNthOperandBundleOfType("ptrauth", 0));
     NewCallee = II->getOperand(0);
     break;
   }
@@ -4611,7 +4609,8 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // assuming the call bundle and the sign operands match.
   // Non-ptrauth indirect calls are undesirable, but so is ptrauth.sign.
   case Intrinsic::ptrauth_sign: {
-    if (II->getOperandBundleAt(0).Inputs != PtrAuthBundleOrNone->Inputs)
+    if (II->getNthOperandBundleOfType("ptrauth", 0)->Inputs !=
+        PtrAuthBundleOrNone->Inputs)
       return nullptr;
     NewCallee = II->getOperand(0);
     break;

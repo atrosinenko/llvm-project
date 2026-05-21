@@ -6640,11 +6640,10 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
   TLI.reportFatalErrorOnInvalidPtrAuthSchema(I);
 
   auto CreatePtrAuthBundle = [&](unsigned Index) {
-    auto Bundle = I.getOperandBundleAt(Index);
-    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+    auto Bundle = I.getNthOperandBundleOfType("ptrauth", Index);
 
     SmallVector<SDValue> Ops;
-    for (const Use &Operand : Bundle.Inputs)
+    for (const Use &Operand : Bundle->Inputs)
       Ops.push_back(getValue(Operand));
 
     return DAG.getNode(ISD::PtrAuthSchema, SDL, MVT::Other, Ops);

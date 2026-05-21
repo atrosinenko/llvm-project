@@ -498,11 +498,18 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
 
   assert(Intr.getIntrinsicID() == Intrinsic::ptrauth_sign ||
          Intr.getIntrinsicID() == Intrinsic::ptrauth_auth);
+
+  if (PtrArgTy->getPointerAddressSpace() != 0)
+    return false;
+
   auto *EmuFnTy = FunctionType::get(PtrArgTy, {PtrArgTy, Int64Ty}, false);
   FunctionCallee EmuIntr = M.getOrInsertFunction(
       Intr.getIntrinsicID() == Intrinsic::ptrauth_auth ? "__emupac_autda"
                                                        : "__emupac_pacda",
       EmuFnTy);
+
+  FunctionCallee BlendIntr =
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::ptrauth_blend);
 
   for (User *U : llvm::make_early_inc_range(Intr.users())) {
     auto *Call = cast<CallInst>(U);
@@ -511,9 +518,14 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
     if (!Schema)
       continue;
 
-    if (auto *Key = dyn_cast<ConstantInt>(Schema->Inputs[0]);
-        !Key || Key->getZExtValue() != /*AArch64PACKey::DA*/ 2)
+    auto *Key = dyn_cast<ConstantInt>(Schema->Inputs[0]);
+    if (!Key || Key->getZExtValue() != /*AArch64PACKey::DA*/ 2)
       continue;
+
+    Value *Pointer = Call->getArgOperand(0);
+    Value *ConstDiscr = Schema->Inputs[1];
+    Value *AddrDiscr = Schema->Inputs[2];
+    Value *Zero = ConstantInt::get(Int64Ty, 0);
 
     Function *F = Call->getParent()->getParent();
     Attribute FSAttr = F->getFnAttribute("target-features");
@@ -525,8 +537,13 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
       DSBundle.push_back(OperandBundleDef("deactivation-symbol", DS));
 
     IRBuilder<> B(Call);
-    auto *EmuCall = B.CreateCall(
-        EmuIntr, {Call->getArgOperand(0), Schema->Inputs[1]}, DSBundle);
+    Value *Discr;
+    if (ConstDiscr != Zero && AddrDiscr != Zero)
+      Discr = B.CreateCall(BlendIntr, {AddrDiscr, ConstDiscr});
+    else
+      Discr = ConstDiscr == Zero ? AddrDiscr : ConstDiscr;
+
+    auto *EmuCall = B.CreateCall(EmuIntr, {Pointer, Discr}, DSBundle);
     Call->replaceAllUsesWith(EmuCall);
     Call->eraseFromParent();
   }

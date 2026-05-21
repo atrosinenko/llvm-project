@@ -218,6 +218,17 @@ define ptr @test_ptrauth_nop_ds1(ptr %p) {
   ret ptr %authed
 }
 
+define ptr @test_ptrauth_nop_ds1_swap(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_ds1_swap(
+; CHECK-NEXT:    [[SIGNED:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[P:%.*]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[SIGNED]]) [ "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    ret ptr [[AUTHED]]
+;
+  %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234) ]
+  %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "ptrauth"(i64 1, i64 1234) ]
+  ret ptr %authed
+}
+
 define ptr @test_ptrauth_nop_ds2(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_ds2(
 ; CHECK-NEXT:    [[SIGNED:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[P:%.*]]) [ "ptrauth"(i64 1, i64 1234) ]
@@ -226,6 +237,17 @@ define ptr @test_ptrauth_nop_ds2(ptr %p) {
 ;
   %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 1, i64 1234) ]
   %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "ptrauth"(i64 1, i64 1234), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
+}
+
+define ptr @test_ptrauth_nop_ds2_swap(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_ds2_swap(
+; CHECK-NEXT:    [[SIGNED:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[P:%.*]]) [ "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[SIGNED]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    ret ptr [[AUTHED]]
+;
+  %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 1, i64 1234) ]
+  %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234) ]
   ret ptr %authed
 }
 
@@ -240,12 +262,32 @@ define ptr @test_ptrauth_nop_ds3(ptr %p) {
   ret ptr %authed
 }
 
+define ptr @test_ptrauth_nop_ds3_swap(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_ds3_swap(
+; CHECK-NEXT:    [[SIGNED:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[P:%.*]]) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 0) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[SIGNED]]) [ "deactivation-symbol"(ptr @ds2), "ptrauth"(i64 1, i64 1234, i64 0) ]
+; CHECK-NEXT:    ret ptr [[AUTHED]]
+;
+  %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 0) ]
+  %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "deactivation-symbol"(ptr @ds2), "ptrauth"(i64 1, i64 1234, i64 0) ]
+  ret ptr %authed
+}
+
 define ptr @test_ptrauth_nop_ds4(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_ds4(
 ; CHECK-NEXT:    ret ptr [[P:%.*]]
 ;
   %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
   %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "ptrauth"(i64 1, i64 1234, i64 0), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
+}
+
+define ptr @test_ptrauth_nop_ds4_swap(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_ds4_swap(
+; CHECK-NEXT:    ret ptr [[P:%.*]]
+;
+  %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 0) ]
+  %authed = call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 1, i64 1234, i64 0) ]
   ret ptr %authed
 }
 

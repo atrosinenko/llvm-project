@@ -2173,11 +2173,15 @@ public:
     return std::nullopt;
   }
 
+  /// Returns n-th operand bundle of the particular type, if present.
+  ///
+  /// The version accepting the ID as an integer LLVMContext::OB_* constant
+  /// is not provided, as its arguments can be easily swapped by mistake.
   std::optional<OperandBundleUse>
-  getOperandBundleOfTypeAt(uint32_t ID, unsigned Index) const {
+  getNthOperandBundleOfType(StringRef Name, unsigned Index) const {
     for (unsigned i = 0, e = getNumOperandBundles(); i != e; ++i) {
       OperandBundleUse U = getOperandBundleAt(i);
-      if (U.getTagID() != ID)
+      if (U.getTagName() != Name)
         continue;
       if (Index == 0)
         return U;
