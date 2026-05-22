@@ -14,6 +14,9 @@
 #include "Utils/AArch64BaseInfo.h"
 
 namespace llvm {
+
+class OptimizationRemarkEmitter;
+
 namespace AArch64PAuth {
 
 /// PAuth key to be used with function pointers in .init_array and .fini_array.
@@ -118,6 +121,8 @@ class AArch64PointerAuthEarlyIRFixupPass
     : public RequiredPassInfoMixin<AArch64PointerAuthEarlyIRFixupPass> {
   bool eliminateBlendAllocas(Function &F) const;
   bool updateOperandBundles(Function &F) const;
+  void warnOnRemainingBlendCalls(Function &F,
+                                 OptimizationRemarkEmitter &ORE) const;
 
 public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
