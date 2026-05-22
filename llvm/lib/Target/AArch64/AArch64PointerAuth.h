@@ -15,6 +15,9 @@
 #include "llvm/IR/PassManager.h"
 
 namespace llvm {
+
+class OptimizationRemarkEmitter;
+
 namespace AArch64PAuth {
 
 /// Variants of check performed on an authenticated pointer.
@@ -112,6 +115,8 @@ class AArch64PointerAuthEarlyIRFixupPass
     : public RequiredPassInfoMixin<AArch64PointerAuthEarlyIRFixupPass> {
   bool eliminateBlendAllocas(Function &F) const;
   bool updateOperandBundles(Function &F) const;
+  void warnOnRemainingBlendCalls(Function &F,
+                                 OptimizationRemarkEmitter &ORE) const;
 
 public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);

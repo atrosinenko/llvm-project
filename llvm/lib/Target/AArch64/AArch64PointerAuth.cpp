@@ -13,13 +13,16 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64Subtarget.h"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/CodeGen/CFIInstBuilder.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/Utils/PromoteMemToReg.h"
 
 using namespace llvm;
@@ -28,6 +31,10 @@ using namespace llvm::AArch64PAuth;
 #define AARCH64_POINTER_AUTH_NAME "AArch64 Pointer Authentication"
 
 namespace {
+
+cl::opt<bool> WarnOnRemainingBlendCalls(
+    "aarch64-warn-on-remaining-ptrauth-blend", cl::init(true),
+    "Report @llvm.ptrauth.blend calls not replaced by operand bundles");
 
 class AArch64PointerAuthImpl {
 public:
@@ -433,6 +440,22 @@ bool AArch64PointerAuthEarlyIRFixupPass::updateOperandBundles(
   return Changed;
 }
 
+void AArch64PointerAuthEarlyIRFixupPass::warnOnRemainingBlendCalls(
+    Function &F, OptimizationRemarkEmitter &ORE) const {
+  for (auto &BB : F) {
+    for (auto &I : BB) {
+      auto *II = dyn_cast<IntrinsicInst>(&I);
+      if (!II || II->getIntrinsicID() != Intrinsic::ptrauth_blend ||
+          II->uses().empty())
+        continue;
+
+      ORE.emit(DiagnosticInfoOptimizationFailure(
+          F, II->getDebugLoc(),
+          "failed to eliminate call to @llvm.ptrauth.blend intrinsic"));
+    }
+  }
+}
+
 PreservedAnalyses
 AArch64PointerAuthEarlyIRFixupPass::run(Function &F,
                                         FunctionAnalysisManager &AM) {
@@ -440,6 +463,11 @@ AArch64PointerAuthEarlyIRFixupPass::run(Function &F,
 
   Changed |= eliminateBlendAllocas(F);
   Changed |= updateOperandBundles(F);
+
+  if (WarnOnRemainingBlendCalls) {
+    auto &ORE = AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
+    warnOnRemainingBlendCalls(F, ORE);
+  }
 
   if (!Changed)
     return PreservedAnalyses::all();
