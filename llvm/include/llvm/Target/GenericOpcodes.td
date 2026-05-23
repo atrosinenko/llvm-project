@@ -172,7 +172,7 @@ def G_PTRAUTH_RESIGN : GenericInstruction {
 def G_PTRAUTH_RESIGN_LOAD_RELATIVE : GenericInstruction {
   let OutOperandList = (outs ptype0:$dst);
   let InOperandList = (ins ptype0:$value, untyped_imm_0:$old_schema, untyped_imm_0:$new_schema, untyped_imm_0:$addend);
-  let hasSideEffects = 0;
+  let hasSideEffects = 1;
   let mayLoad = 1;
 }
 

@@ -96,8 +96,8 @@ enum NodeType {
   /// A temporary node representing the operands of "ptrauth" bundle or the
   /// schema part of ptrauth constant in the original LLVM IR.
   /// It has target-dependent number of i64 operands and produces a token value
-  /// to be passed as input operand to one of PtrAuth(Auth|Sign|Resign|Strip)
-  /// or PtrAuthGlobalAddress nodes.
+  /// to be passed as input operand to one of PtrAuth(Auth|Sign|Resign|Strip),
+  /// PtrAuthResignLoadRelative, or PtrAuthGlobalAddress nodes.
   PtrAuthSchema,
 
   /// A ptrauth constant.
@@ -112,8 +112,9 @@ enum NodeType {
 
   /// Various PtrAuth operations.
   ///
-  /// Ptr(Auth|Sign|Strip) ptr, schema_token
-  /// PtrResign            ptr, old_schema, new_schema
+  /// Ptr(Auth|Sign|Strip)      ptr, schema_token
+  /// PtrResign                 ptr, old_schema, new_schema
+  /// PtrAuthResignLoadRelative ptr, old_schema, new_schema, addend
   PtrAuthAuth,
   PtrAuthSign,
   PtrAuthResign,

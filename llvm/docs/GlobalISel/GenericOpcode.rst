@@ -88,44 +88,44 @@ and an opaque token produced by `G_PTRAUTH_SCHEMA`.
 G_PTRAUTH_AUTH
 ^^^^^^^^^^^^^^
 
-Authenticate a pointer value (converted to an integer) according to the signing
-schema specified by the token operand.
+Authenticate a pointer value according to the signing schema specified by
+the token operand.
 
 .. code-block:: none
 
-  %0:_(s64) = G_PTRAUTH_AUTH %1:_, %2:_(s0)
+  %0:_(p0) = G_PTRAUTH_AUTH %1:_, %2:_(s0)
 
 G_PTRAUTH_SIGN
 ^^^^^^^^^^^^^^
 
-Sign a pointer value (converted to an integer) according to the signing
-schema specified by the token operand.
+Sign a pointer value according to the signing schema specified by
+the token operand.
 
 .. code-block:: none
 
-  %0:_(s64) = G_PTRAUTH_SIGN %1:_, %2:_(s0)
+  %0:_(p0) = G_PTRAUTH_SIGN %1:_, %2:_(s0)
 
 G_PTRAUTH_RESIGN
 ^^^^^^^^^^^^^^^^
 
-Authenticate a pointer value (converted to an integer) and re-sign it according
-to the signing schemas specified by the token operands.
+Authenticate a pointer value and re-sign it according to the signing schemas
+specified by the token operands.
 
 .. code-block:: none
 
-  %0:_(s64) = G_PTRAUTH_RESIGN %1:_, %2:_(s0), %3:_(s0)
+  %0:_(p0) = G_PTRAUTH_RESIGN %1:_, %2:_(s0), %3:_(s0)
 
 G_PTRAUTH_STRIP
 ^^^^^^^^^^^^^^^
 
 Produces non-signed pointer value without authenticating.
-Accepts a pointer value (converted to an integer) and a token providing the
-information about the signing schema that produced this value (the particular
-semantic of this information is target-specific).
+Accepts a pointer value and a token providing the information about the
+signing schema that produced this value (the particular semantic of this
+information is target-specific).
 
 .. code-block:: none
 
-  %0:_(s64) = G_PTRAUTH_STRIP %1:_, %2:_(s0)
+  %0:_(p0) = G_PTRAUTH_STRIP %1:_, %2:_(s0)
 
 G_BLOCK_ADDR
 ^^^^^^^^^^^^

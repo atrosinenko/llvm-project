@@ -2544,7 +2544,7 @@ void CodeGenModule::EmitCtorList(CtorList &Fns, const char *GlobalName) {
       llvm::Constant *StorageAddress =
           (InitFiniAuthSchema.isAddressDiscriminated()
                ? llvm::ConstantInt::get(
-                     IntPtrTy,
+                     Int64Ty,
                      llvm::ConstantPtrAuth::AddrDiscriminator_CtorsDtors)
                : nullptr);
       llvm::Constant *SignedCtorPtr = getConstantSignedPointer(

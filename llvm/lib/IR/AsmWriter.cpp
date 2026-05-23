@@ -1702,7 +1702,7 @@ static void writeConstantInternal(raw_ostream &Out, const Constant *CV,
     }
     Out << "]";
     Constant *Sym = CPA->getDeactivationSymbol();
-    if (!Sym->isNullValue()) {
+    if (!isa<ConstantPointerNull>(Sym)) {
       Out << ", ";
       writeAsOperandInternal(Out, Sym, WriterCtx, /*PrintType=*/true);
     }

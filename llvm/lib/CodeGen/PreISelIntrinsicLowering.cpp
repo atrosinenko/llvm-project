@@ -515,7 +515,7 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
     auto *Call = cast<CallInst>(U);
     // We only support the DA key for now.
     auto Schema = Call->getOperandBundle("ptrauth");
-    if (!Schema)
+    if (!Schema || Schema->Inputs.size() != 3)
       continue;
 
     auto *Key = dyn_cast<ConstantInt>(Schema->Inputs[0]);

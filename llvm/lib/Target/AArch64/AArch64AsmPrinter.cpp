@@ -2454,13 +2454,13 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
 
   if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
     // Have to emit separate auth and branch instructions for D-key.
-    assert(AArch64::X16 != AddrDisc);
-    emitMovXReg(AArch64::X16, BrTarget);
-    emitAUT(Key, AArch64::X16, DiscReg);
+    Register Scratch = DiscReg == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+    emitMovXReg(Scratch, BrTarget);
+    emitAUT(Key, Scratch, DiscReg);
 
     MCInst BranchInst;
     BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
-    BranchInst.addOperand(MCOperand::createReg(AArch64::X16));
+    BranchInst.addOperand(MCOperand::createReg(Scratch));
     EmitToStreamer(BranchInst);
     return;
   }
@@ -2707,7 +2707,7 @@ const MCExpr *
 AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
   MCContext &Ctx = OutContext;
 
-  auto CheckShema = [](const ConstantPtrAuth &CPA, bool CheckIntDisc) {
+  auto CheckSchema = [](const ConstantPtrAuth &CPA, bool CheckIntDisc) {
     if (auto Error = AArch64TargetLowering::validateConstantPtrAuthSchema(
             CPA.getSchema(), CheckIntDisc)) {
       errs() << "Ptrauth schema violates target-specific constraints:\n";
@@ -2717,7 +2717,7 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
     }
   };
 
-  CheckShema(CPA, /*CheckIntDisc=*/false);
+  CheckSchema(CPA, /*CheckIntDisc=*/false);
 
   // Figure out the base symbol and the addend, if any.
   APInt Offset(64, 0);
@@ -2758,7 +2758,7 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
           BaseGVB && BaseGVB->isDSOLocal(), DSExpr))
     return IFuncSym;
 
-  CheckShema(CPA, /*CheckIntDisc=*/true);
+  CheckSchema(CPA, /*CheckIntDisc=*/true);
 
   if (DSExpr)
     report_fatal_error("deactivation symbols unsupported in constant "
@@ -3396,17 +3396,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     Register AddrDisc = MI->getOperand(4).getReg();
 
-    // AUTH_TCRETURN[_BTI] pseudos are permitted to clobber both X16 and X17.
-    // At the same time, depending on the instruction either Callee or AddrDisc
-    // may be passed in X16 or X17. It is okay to have ScratchDiscReg equal to
-    // DiscReg and and/or ScratchCalleeCopyReg equal to Callee, as long as
-    // Callee != ScratchDiscReg (since Callee is read after the discriminator
-    // computation writes its result).
-    // FIXME: Come up with a cleaner approach.
-    Register ScratchDiscReg = AArch64::X16;
-    Register ScratchCalleeCopyReg = AArch64::X17;
-    if (Callee == ScratchDiscReg)
-      std::swap(ScratchDiscReg, ScratchCalleeCopyReg);
+    Register ScratchReg = Callee == AArch64::X16 ? AArch64::X17 : AArch64::X16;
 
     emitPtrauthTailCallHardening(MI);
 
@@ -3420,11 +3410,13 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     // restriction manually not to clobber an unexpected register.
     bool AddrDiscIsImplicitDef =
         AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
-    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchDiscReg,
+    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
                                                 AddrDiscIsImplicitDef);
 
     if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
       // Have to emit separate auth and branch instructions for D-key.
+      Register ScratchCalleeCopyReg =
+          DiscReg == AArch64::X16 ? AArch64::X17 : AArch64::X16;
       if (Callee != ScratchCalleeCopyReg)
         emitMovXReg(ScratchCalleeCopyReg, Callee);
       emitAUT(Key, ScratchCalleeCopyReg, DiscReg);

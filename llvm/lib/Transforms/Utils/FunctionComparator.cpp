@@ -530,7 +530,8 @@ int FunctionComparator::cmpConstants(const Constant *L,
       if (int Res = cmpValues(LPA->getSchema()[I], RPA->getSchema()[I]))
         return Res;
     }
-    return 0;
+    return cmpConstants(LPA->getDeactivationSymbol(),
+                        RPA->getDeactivationSymbol());
   }
   default: // Unknown constant, abort.
     LLVM_DEBUG(dbgs() << "Looking at valueID " << L->getValueID() << "\n");

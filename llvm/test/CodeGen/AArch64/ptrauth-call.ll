@@ -253,18 +253,18 @@ define i32 @test_call_db_imm(ptr %arg0) #0 {
 
 define i32 @test_tailcall_da_0(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_da_0:
-; CHECK-NEXT:    mov x17, x0
-; CHECK-NEXT:    autdza x17
-; CHECK-NEXT:    br x17
+; CHECK-NEXT:    mov x16, x0
+; CHECK-NEXT:    autdza x16
+; CHECK-NEXT:    br x16
   %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 2, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
 define i32 @test_tailcall_db_0(ptr %arg0) #0 {
 ; CHECK-LABEL: test_tailcall_db_0:
-; CHECK-NEXT:    mov x17, x0
-; CHECK-NEXT:    autdzb x17
-; CHECK-NEXT:    br x17
+; CHECK-NEXT:    mov x16, x0
+; CHECK-NEXT:    autdzb x16
+; CHECK-NEXT:    br x16
   %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 3, i64 0, i64 0) ]
   ret i32 %tmp0
 }

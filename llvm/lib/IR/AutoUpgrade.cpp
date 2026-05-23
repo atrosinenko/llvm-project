@@ -5821,14 +5821,6 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
     SmallVector<OperandBundleDef> OBs;
     Type *PtrArgTy = NewFn->getFunctionType()->getParamType(0);
 
-    // New-style intrinsic call.
-    if (CI->countOperandBundlesOfType("ptrauth")) {
-      llvm::append_range(Args, CI->args());
-      CI->getOperandBundlesAsDefs(OBs);
-      NewCall = Builder.CreateCall(NewFn, Args, OBs);
-      break;
-    }
-
     Args.push_back(Builder.CreateIntToPtr(CI->getArgOperand(0), PtrArgTy));
     switch (NewFn->getIntrinsicID()) {
     case Intrinsic::ptrauth_strip:

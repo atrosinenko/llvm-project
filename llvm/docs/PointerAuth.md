@@ -38,7 +38,8 @@ Most pointer authentication intrinsics, as well as authenticated indirect calls,
 are parameterized by signing schema description expressed by a `ptrauth` call
 operand bundle. A `ptrauth` call operand bundle has one or more `i64` operands,
 whose interpretation is target-dependent: `"ptrauth"(i64 op1, i64 op2, ...)`.
-A particular target may require some of the operands to be integer constants.
+A particular target may require some of the operands to be integer constants,
+restrict the allowed lengths of operand tuples, and so on.
 
 #### Authenticated indirect calls
 
@@ -68,16 +69,14 @@ is functionally equivalent to:
 
 ```llvm
 define void @f(ptr %fp) {
-  %fp_i = ptrtoint ptr %fp to i64
-  %fp_auth = call i64 @llvm.ptrauth.auth(i64 %fp_i)  [ "ptrauth"(i64 <op1>, i64 <op2>, ...) ]
-  %fp_auth_p = inttoptr i64 %fp_auth to ptr
-  call void %fp_auth_p()
+  %fp_auth = call ptr @llvm.ptrauth.auth.p0(ptr %fp)  [ "ptrauth"(i64 <op1>, i64 <op2>, ...) ]
+  call void %fp_auth()
   ret void
 }
 ```
 
-but with the added guarantee that `%fp_i`, `%fp_auth`, and `%fp_auth_p`
-are not stored to (and reloaded from) memory.
+but with the added guarantee that `%fp_auth` is not stored to
+(and reloaded from) memory.
 
 
 ### Intrinsics
@@ -85,13 +84,18 @@ are not stored to (and reloaded from) memory.
 These intrinsics are provided by LLVM to expose pointer authentication
 operations.
 
+Several operations accept a pointer-typed argument and return a pointer-typed
+result. In such cases, both pointers use the same address space, and the intrinsic
+is overloaded, with a single type parameter `p<N>`. For the sake of brevity, the
+syntax is shown for the zeroth address space.
 
-#### '`llvm.ptrauth.sign`'
+
+#### '`llvm.ptrauth.sign.p<N>`'
 
 ##### Syntax:
 
 ```llvm
-declare i64 @llvm.ptrauth.sign(i64 <value>) [ "ptrauth"(...) ]
+declare ptr @llvm.ptrauth.sign.p0(ptr <value>) [ "ptrauth"(...) ]
 ```
 
 ##### Overview:
@@ -117,12 +121,12 @@ If `value` is not a pointer value for which the chosen signing schema is
 appropriate, the behavior is undefined.
 
 
-#### '`llvm.ptrauth.auth`'
+#### '`llvm.ptrauth.auth.p<N>`'
 
 ##### Syntax:
 
 ```llvm
-declare i64 @llvm.ptrauth.auth(i64 <value>) [ "ptrauth"(...) ]
+declare ptr @llvm.ptrauth.auth.p0(ptr <value>) [ "ptrauth"(...) ]
 ```
 
 ##### Overview:
@@ -144,12 +148,12 @@ If `value` does not have a correct signature for the signing schema,
 the intrinsic traps in a target-specific way.
 
 
-#### '`llvm.ptrauth.strip`'
+#### '`llvm.ptrauth.strip.p<N>`'
 
 ##### Syntax:
 
 ```llvm
-declare i64 @llvm.ptrauth.strip(i64 <value>) [ "ptrauth"(...) ]
+declare ptr @llvm.ptrauth.strip.p0(ptr <value>) [ "ptrauth"(...) ]
 ```
 
 ##### Overview:
@@ -185,12 +189,12 @@ If `value` is a signed pointer value, but the signing schema described by the
 used to generate `value`, the behavior is target-specific.
 
 
-#### '`llvm.ptrauth.resign`'
+#### '`llvm.ptrauth.resign.p<N>`'
 
 ##### Syntax:
 
 ```llvm
-declare i64 @llvm.ptrauth.resign(i64 <value>) [ "ptrauth"(<old schema>), "ptrauth"(<new schema>) ]
+declare ptr @llvm.ptrauth.resign.p0(ptr <value>) [ "ptrauth"(<old schema>), "ptrauth"(<new schema>) ]
 ```
 
 ##### Overview:
@@ -247,6 +251,39 @@ As opposed to [`llvm.ptrauth.sign`](#llvm-ptrauth-sign), it does not interpret
 `value` as a pointer value.  Instead, it is an arbitrary data value.
 
 
+#### '`llvm.ptrauth.blend`'
+
+##### Syntax:
+
+```llvm
+declare i64 @llvm.ptrauth.blend(i64 <address discriminator>, i64 <integer discriminator>)
+```
+
+##### Overview:
+
+The '`llvm.ptrauth.blend`' intrinsic blends a pointer address discriminator
+with a small integer discriminator to produce a new "blended" discriminator.
+
+This is a legacy intrinsic that existed before the discriminator-blending logic
+was built directly into the discriminator-using intrinsics.
+
+The '`llvm.ptrauth.blend`' intrinsic should not be used in a new LLVM IR,
+unless a fallback is required for upgrading an old IR. This might be needed if
+an unsupported transformations was already applied by an old version of LLVM.
+
+##### Arguments:
+
+The `address discriminator` argument is a pointer value.
+The `integer discriminator` argument is a small integer, as specified by the
+target.
+
+##### Semantics:
+
+The '`llvm.ptrauth.blend`' intrinsic combines a small integer discriminator
+with a pointer address discriminator, in a way that is specified by the target
+implementation.
+
+
 ### Constant
 
 [Intrinsics](#intrinsics) can be used to produce signed pointers dynamically,
@@ -259,13 +296,15 @@ which describes an authenticated relocation producing a signed pointer.
 
 ```llvm
 ptrauth (ptr CST, [i64 op1, ..., i64 opN])
+ptrauth (ptr CST, [i64 op1, ..., i64 opN], ptr DS)
 ```
 
 is equivalent to:
 
 ```llvm
-  %signedval = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 op1, ..., i64 opN) ]
-  %result = inttoptr i64 %signedval to ptr
+  %result = call ptr @llvm.ptrauth.sign.p0(ptr CST) [ "ptrauth"(i64 op1, ..., i64 opN) ]
+  ; or
+  %result = call ptr @llvm.ptrauth.sign.p0(ptr CST) [ "ptrauth"(i64 op1, ..., i64 opN), "deactivation-symbol"(ptr DS) ]
 ```
 
 
@@ -333,6 +372,14 @@ The semantics of the blend operation are specified by the ABI. In both the
 ELF PAuth ABI Extension and arm64e, it's a `MOVK` into the high 16 bits.
 Consequently, this limits the width of the integer discriminator used in blends
 to 16 bits.
+
+The existing behavior is to pass through an operand without blending, if the
+other one is a *constant* zero:
+* `"ptrauth"(i64 <key>, i64 0, i64 %raw)` yields `%raw` (does not clear its
+  top-most 16 bits)
+* `"ptrauth"(i64 <key>, i64 <const>, i64 0)` yields `<const>` (does not shift
+  the constant left by 48 bits)
+
 
 #### Instructions
 
