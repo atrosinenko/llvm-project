@@ -122,7 +122,7 @@ CGPointerAuthInfo CodeGenFunction::EmitPointerAuthInfo(
     assert(StorageAddress &&
            "address not provided for address-discriminated schema");
 
-    AddrDiscriminator = Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
+    AddrDiscriminator = Builder.CreatePtrToInt(StorageAddress, Int64Ty);
   }
 
   return CGPointerAuthInfo(
@@ -144,7 +144,7 @@ CodeGenFunction::EmitPointerAuthInfo(PointerAuthQualifier Qual,
     assert(StorageAddress.isValid() &&
            "address discrimination without address");
     llvm::Value *StoragePtr = StorageAddress.emitRawPointer(*this);
-    AddrDiscriminator = Builder.CreatePtrToInt(StoragePtr, IntPtrTy);
+    AddrDiscriminator = Builder.CreatePtrToInt(StoragePtr, Int64Ty);
   }
 
   return CGPointerAuthInfo(Qual.getKey(), Qual.getAuthenticationMode(),
@@ -296,11 +296,11 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
   if (!OrigType->isPointerTy())
     Value = Builder.CreateIntToPtr(Value, DefaultPtrTy);
 
-  SmallVector<llvm::OperandBundleDef> OBs;
+  SmallVector<llvm::OperandBundleDef, 2> OBs;
   EmitPointerAuthOperandBundle(CurAuth, OBs);
   EmitPointerAuthOperandBundle(NewAuth, OBs);
 
-  // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(<cur_schema>),
+  // call ptr @llvm.ptrauth.resign(ptr %pointer) [ "ptrauth"(<cur_schema>),
   //                                               "ptrauth"(<new_schema>) ]
   auto *Intrinsic =
       CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign, Value->getType());
@@ -393,6 +393,7 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer,
   return getConstantSignedPointer(Pointer, Info.getKey(), AddrDisc, IntDisc);
 }
 
+// FIXME Switch to the same argument order as in "ptrauth" bundle.
 llvm::Constant *
 CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
                                         llvm::Constant *StorageAddress,
@@ -403,7 +404,7 @@ CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
            llvm::ConstantPtrAuth::AddrDiscriminator_CtorsDtors);
     AddressDiscriminator = StorageAddress;
   } else if (StorageAddress) {
-    assert(StorageAddress->getType() == DefaultPtrTy);
+    assert(StorageAddress->getType()->isPointerTy());
     AddressDiscriminator =
         llvm::ConstantExpr::getPtrToInt(StorageAddress, Int64Ty);
   } else {
@@ -633,7 +634,7 @@ std::optional<CGPointerAuthInfo> CodeGenModule::getVTablePointerAuthInfo(
   if (Authentication->isAddressDiscriminated()) {
     assert(StorageAddress &&
            "address not provided for address-discriminated schema");
-    AddrDiscriminator = CGF->Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
+    AddrDiscriminator = CGF->Builder.CreatePtrToInt(StorageAddress, Int64Ty);
   }
 
   return CGPointerAuthInfo(

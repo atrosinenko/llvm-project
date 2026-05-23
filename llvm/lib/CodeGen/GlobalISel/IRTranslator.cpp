@@ -3027,6 +3027,9 @@ bool IRTranslatorImpl::translatePtrAuthIntrinsic(const CallInst &CI,
     auto Bundle = CI.getNthOperandBundleOfType("ptrauth", Index);
 
     SmallVector<SrcOp> SchemaOps;
+    // FIXME Should we make use of "immediate constant" `SrcOp`s for constants?
+    //       Probably not, as dealing with a copy of XZR in a vreg is probably
+    //       easier than getting immediate operand in place of a register one.
     for (const Use &Operand : Bundle->Inputs)
       SchemaOps.push_back(getOrCreateVReg(*Operand));
 
@@ -3043,8 +3046,8 @@ bool IRTranslatorImpl::translatePtrAuthIntrinsic(const CallInst &CI,
       Opcode == TargetOpcode::G_PTRAUTH_AUTH_WITH_PC_AND_RESIGN ||
       Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
     SrcOps.push_back(TranslatePtrAuthBundle(1));
+  // FIXME Is addMemOperand() call required here?
   if (Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
-    // FIXME Is addMemOperand() call required here?
     SrcOps.push_back(cast<ConstantInt>(CI.getArgOperand(1))->getZExtValue());
 
   Register Dst = getOrCreateVReg(CI);

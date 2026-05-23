@@ -22,6 +22,14 @@ namespace clang {
 namespace CodeGen {
 
 class CGPointerAuthInfo {
+private:
+  PointerAuthenticationMode AuthenticationMode : 2;
+  unsigned IsIsaPointer : 1;
+  unsigned AuthenticatesNullValues : 1;
+  unsigned Key : 2;
+  unsigned IntDiscriminator;
+  llvm::Value *AddrDiscriminator;
+
 public:
   CGPointerAuthInfo()
       : AuthenticationMode(PointerAuthenticationMode::None),
@@ -96,14 +104,6 @@ public:
     };
     return AsTuple(LHS) == AsTuple(RHS);
   }
-
-private:
-  PointerAuthenticationMode AuthenticationMode : 2;
-  unsigned IsIsaPointer : 1;
-  unsigned AuthenticatesNullValues : 1;
-  unsigned Key : 2;
-  unsigned IntDiscriminator;
-  llvm::Value *AddrDiscriminator;
 };
 
 } // end namespace CodeGen
