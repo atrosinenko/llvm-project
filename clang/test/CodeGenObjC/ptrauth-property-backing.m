@@ -23,58 +23,50 @@ __attribute__((objc_root_class))
 // CHECK-LABEL: define internal ptr @"\01-[Root field1]"
 // CHECK: [[LOAD:%.*]] = load atomic i64, ptr [[ADDR:%.*]] unordered
 // CHECK: [[CAST_ADDR:%.*]] = ptrtoint ptr [[ADDR]] to i64
-// CHECK: [[BLEND:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ADDR]], i64 1)
-// CHECK: [[RESULT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[LOAD]], i32 1, i64 [[BLEND]])
+// CHECK: [[CAST_LOAD:%.*]] = inttoptr i64 [[LOAD]] to ptr
+// CHECK: [[RESULT:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[CAST_LOAD]]) [ "ptrauth"(i64 1, i64 1, i64 [[CAST_ADDR]]) ]
 
 // CHECK-LABEL: define internal void @"\01-[Root setField1:]"
 // CHECK: [[CAST_ADDR:%.*]] = ptrtoint ptr [[ADDR:%.*]] to i64
-// CHECK: [[BLEND:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ADDR]], i64 1)
-// CHECK: [[RESULT:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[VALUE:%.*]], i32 1, i64 [[BLEND]])
-// CHECK: [[PHI:%.*]] = phi i64 [ 0, {{%.*}} ], [ [[RESULT]], {{%.*}} ]
+// CHECK: [[RESULT:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[VALUE:%.*]]) [ "ptrauth"(i64 1, i64 1, i64 [[CAST_ADDR]]) ]
+// CHECK: [[CAST_RESULT:%.*]] = ptrtoint ptr [[RESULT]] to i64
+// CHECK: [[PHI:%.*]] = phi i64 [ 0, {{%.*}} ], [ [[CAST_RESULT]], {{%.*}} ]
 // CHECK: store atomic i64 [[PHI]], ptr [[ADDR]] unordered
 
 // CHECK-LABEL: define internal ptr @"\01-[Root field2]"
 // CHECK: load ptr, ptr
 // CHECK: [[LOAD:%.*]] = load ptr, ptr [[ADDR:%.*]],
 // CHECK: [[CAST_ADDR:%.*]] = ptrtoint ptr [[ADDR]] to i64
-// CHECK: [[BLEND:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ADDR:%.*]], i64 1)
-// CHECK: [[VALUE:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK: [[RESULT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[VALUE]], i32 1, i64 [[BLEND]])
+// CHECK: [[RESULT:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[LOAD]]) [ "ptrauth"(i64 1, i64 1, i64 [[CAST_ADDR:%.*]]) ]
 
 // CHECK-LABEL: define internal void @"\01-[Root setField2:]"
 // CHECK: [[CAST_ADDR:%.*]] = ptrtoint ptr [[ADDR:%.*]] to i64
-// CHECK: [[BLEND:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ADDR]], i64 1)
-// CHECK: [[CAST_VALUE:%.*]] = ptrtoint ptr [[VALUE:%.*]] to i64
-// CHECK: [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[CAST_VALUE]], i32 1, i64 [[BLEND]])
-// CHECK: [[RESULT:%.*]] = inttoptr i64 [[SIGNED]] to ptr
+// CHECK: [[RESULT:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[VALUE:%.*]]) [ "ptrauth"(i64 1, i64 1, i64 [[CAST_ADDR]]) ]
 // CHECK: [[PHI:%.*]] = phi ptr [ null, {{%.*}} ], [ [[RESULT]], {{%.*}} ]
 // CHECK: store ptr [[PHI]], ptr [[ADDR]]
 
 // CHECK-LABEL: define internal ptr @"\01-[Root field3]"
 // CHECK: [[VALUE:%.*]] = load atomic i64, ptr [[ADDR:%.*]] unordered, align 8
 // CHECK: [[CASTED_ADDR:%.*]] = ptrtoint ptr [[ADDR]] to i64
-// CHECK: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CASTED_ADDR]], i64 1)
-// CHECK: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[VALUE]], i32 1, i64 [[BLENDED]], i32 0, i64 0
+// CHECK: [[CASTED_VALUE:%.*]] = inttoptr i64 [[VALUE]] to ptr
+// CHECK: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[CASTED_VALUE]]) [ "ptrauth"(i64 1, i64 1, i64 [[CASTED_ADDR]]), "ptrauth"(i64 0, i64 0, i64 0) ]
 
 // CHECK-LABEL: define internal void @"\01-[Root setField3:]"
 // CHECK: [[VALUE:%.*]] = load i64, ptr {{%.*}}, align 8
 // CHECK: [[CASTED_ADDR:%.*]] = ptrtoint ptr {{%.*}} to i64
-// CHECK: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CASTED_ADDR]], i64 1)
-// CHECK: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[VALUE]], i32 0, i64 0, i32 1, i64 [[BLENDED]])
+// CHECK: [[CASTED_VALUE:%.*]] = inttoptr i64 [[VALUE]] to ptr
+// CHECK: [[RESULT:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[CASTED_VALUE]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 1, i64 1, i64 [[CASTED_ADDR]]) ]
+// CHECK: [[CASTED_RESULT:%.*]] = ptrtoint ptr [[RESULT]] to i64
 // CHECK: store atomic i64
 
 // CHECK-LABEL: define internal ptr @"\01-[Root field4]"
 // CHECK: load ptr, ptr
 // CHECK: [[VALUE:%.*]] = load ptr, ptr [[ADDR:%.*]],
 // CHECK: [[CASTED_ADDR:%.*]] = ptrtoint ptr [[ADDR]] to i64
-// CHECK: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CASTED_ADDR]], i64 123)
-// CHECK: [[CAST_VALUE:%.*]] = ptrtoint ptr [[VALUE]] to i64
-// CHECK: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[CAST_VALUE]], i32 1, i64 [[BLENDED]], i32 0, i64 0)
+// CHECK: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr [[VALUE]]) [ "ptrauth"(i64 1, i64 123, i64 [[CASTED_ADDR]]), "ptrauth"(i64 0, i64 0, i64 0) ]
 
 // CHECK-LABEL: define internal void @"\01-[Root setField4:]"
 // CHECK: [[CAST_ADDR:%.*]] = ptrtoint ptr {{%.*}} to i64
-// CHECK: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ADDR]], i64 123)
 // CHECK: resign.nonnull:
-// CHECK: [[VALUE:%.*]] = ptrtoint ptr %1 to i64
-// CHECK: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[VALUE]], i32 0, i64 0, i32 1, i64 [[BLENDED]])
+// CHECK: {{%.*}} = call ptr @llvm.ptrauth.resign.p0(ptr %1) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 1, i64 123, i64 [[CAST_ADDR]]) ]
 

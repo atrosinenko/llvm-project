@@ -230,6 +230,13 @@ def : GINodeEquiv<G_STRICT_FMA, strict_fma>;
 def : GINodeEquiv<G_STRICT_FSQRT, strict_fsqrt>;
 def : GINodeEquiv<G_STRICT_FLDEXP, strict_fldexp>;
 
+def : GINodeEquiv<G_PTRAUTH_SCHEMA, ptrauth_schema>;
+def : GINodeEquiv<G_PTRAUTH_AUTH,   ptrauth_auth>;
+def : GINodeEquiv<G_PTRAUTH_SIGN,   ptrauth_sign>;
+def : GINodeEquiv<G_PTRAUTH_RESIGN, ptrauth_resign>;
+def : GINodeEquiv<G_PTRAUTH_RESIGN_LOAD_RELATIVE, ptrauth_resign_load_relative>;
+def : GINodeEquiv<G_PTRAUTH_STRIP,  ptrauth_strip>;
+
 // Broadly speaking G_LOAD is equivalent to ISD::LOAD but there are some
 // complications that tablegen must take care of. For example, Predicates such
 // as isSignExtLoad require that this is not a perfect 1:1 mapping since a

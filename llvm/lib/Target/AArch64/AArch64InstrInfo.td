@@ -807,7 +807,7 @@ def AArch64call_arm64ec_to_x64 : SDNode<"AArch64ISD::CALL_ARM64EC_TO_X64",
 // AUTH_CALL chain, callee, auth key #, int disc, addr disc, operands.
 def AArch64authcall : SDNode<"AArch64ISD::AUTH_CALL",
                              SDTypeProfile<0, -1, [SDTCisPtrTy<0>,
-                                                   SDTCisVT<1, i32>,
+                                                   SDTCisVT<1, i64>,
                                                    SDTCisVT<2, i64>,
                                                    SDTCisVT<3, i64>]>,
                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
@@ -817,7 +817,7 @@ def AArch64authcall : SDNode<"AArch64ISD::AUTH_CALL",
 // operands.
 def AArch64authtcret: SDNode<"AArch64ISD::AUTH_TC_RETURN",
                              SDTypeProfile<0, 5, [SDTCisPtrTy<0>,
-                                                  SDTCisVT<2, i32>,
+                                                  SDTCisVT<2, i64>,
                                                   SDTCisVT<3, i64>,
                                                   SDTCisVT<4, i64>]>,
                              [SDNPHasChain,  SDNPOptInGlue, SDNPVariadic]>;
@@ -827,7 +827,7 @@ def AArch64authcall_rvmarker : SDNode<"AArch64ISD::AUTH_CALL_RVMARKER",
                                  SDTypeProfile<0, -1, [SDTCisPtrTy<0>,
                                                        SDTCisVT<1, i32>,
                                                        SDTCisPtrTy<2>,
-                                                       SDTCisVT<3, i32>,
+                                                       SDTCisVT<3, i64>,
                                                        SDTCisVT<4, i64>,
                                                        SDTCisVT<5, i64>]>,
                                  [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
@@ -2103,12 +2103,12 @@ let Predicates = [HasPAuth] in {
   defm AUT : SignAuth<0b001, 0b011, "aut", null_frag>;
 
   def XPACI : ClearAuth<0, "xpaci">;
-  def : Pat<(int_ptrauth_strip GPR64:$Rd, 0), (XPACI GPR64:$Rd)>;
-  def : Pat<(int_ptrauth_strip GPR64:$Rd, 1), (XPACI GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 0))), (XPACI GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 1))), (XPACI GPR64:$Rd)>;
 
   def XPACD : ClearAuth<1, "xpacd">;
-  def : Pat<(int_ptrauth_strip GPR64:$Rd, 2), (XPACD GPR64:$Rd)>;
-  def : Pat<(int_ptrauth_strip GPR64:$Rd, 3), (XPACD GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 2))), (XPACD GPR64:$Rd)>;
+  def : Pat<(ptrauth_strip GPR64:$Rd, (ptrauth_schema (i64 3))), (XPACD GPR64:$Rd)>;
 
   def PACGA : SignAuthTwoOperand<0b1100, "pacga", int_ptrauth_sign_generic>;
 
@@ -2137,7 +2137,7 @@ let Predicates = [HasPAuth] in {
   // operations (such as raw address manipulation or discriminator
   // materialization here), in part because they're handled in a safer way by
   // the kernel, notably on Darwin.
-  def BLRA : Pseudo<(outs), (ins GPR64noip:$Rn, i32imm:$Key, i64imm:$Disc,
+  def BLRA : Pseudo<(outs), (ins GPR64noip:$Rn, i64imm:$Key, i64imm:$Disc,
                                  GPR64:$AddrDisc),
                     [(AArch64authcall GPR64noip:$Rn, timm:$Key, timm:$Disc,
                                       GPR64:$AddrDisc)]>, Sched<[]> {
@@ -2146,14 +2146,14 @@ let Predicates = [HasPAuth] in {
     let mayStore = 0;
     let mayLoad = 0;
     let isCall = 1;
-    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
+    let Size = 20; // See AUTH_TCRETURN.
     let Defs = [X16,X17,LR];
     let Uses = [SP];
   }
 
   def BLRA_RVMARKER : Pseudo<
         (outs), (ins i64imm:$rvfunc, i32imm:$withmarker, GPR64noip:$Rn,
-                     i32imm:$Key, i64imm:$Disc, GPR64:$AddrDisc),
+                     i64imm:$Key, i64imm:$Disc, GPR64:$AddrDisc),
         [(AArch64authcall_rvmarker tglobaladdr:$rvfunc, timm:$withmarker,
                                    GPR64noip:$Rn, timm:$Key, timm:$Disc,
                                    GPR64:$AddrDisc)]>, Sched<[]> {
@@ -2166,7 +2166,7 @@ let Predicates = [HasPAuth] in {
   // BRA pseudo, generalized version of BRAA/BRAB/Z.
   // This directly manipulates x16/x17, which are the only registers the OS
   // guarantees are safe to use for sensitive operations.
-  def BRA : Pseudo<(outs), (ins GPR64noip:$Rn, i32imm:$Key, i64imm:$Disc,
+  def BRA : Pseudo<(outs), (ins GPR64noip:$Rn, i64imm:$Key, i64imm:$Disc,
                                 GPR64noip:$AddrDisc), []>, Sched<[]> {
     let isCodeGenOnly = 1;
     let hasNoSchedulingInfo = 1;
@@ -2177,8 +2177,8 @@ let Predicates = [HasPAuth] in {
     let isTerminator = 1;
     let isBarrier = 1;
     let isIndirectBranch = 1;
-    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
-    let Defs = [X17];
+    let Size = 20; // See AUTH_TCRETURN.
+    let Defs = [X16, X17];
   }
 
   let isReturn = 1, isTerminator = 1, isBarrier = 1 in {
@@ -2194,7 +2194,7 @@ let Predicates = [HasPAuth] in {
   // AUT pseudo.
   // This directly manipulates x16/x17, which are the only registers that
   // certain OSs guarantee are safe to use for sensitive operations.
-  def AUTx16x17 : Pseudo<(outs), (ins i32imm:$Key, i64imm:$Disc,
+  def AUTx16x17 : Pseudo<(outs), (ins i64imm:$Key, i64imm:$Disc,
                                       GPR64noip:$AddrDisc),
                          []>, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
@@ -2218,7 +2218,7 @@ let Predicates = [HasPAuth] in {
   // iff ($AddrDisc is killed OR $Scratch == $AddrDisc), it is easier and more
   // straightforward to mark $Scratch as @earlyclobber.
   def AUTxMxN : Pseudo<(outs GPR64:$AuthVal, GPR64common:$Scratch),
-                       (ins GPR64:$Val, i32imm:$Key,
+                       (ins GPR64:$Val, i64imm:$Key,
                             i64imm:$Disc, GPR64:$AddrDisc),
                        [], "$AuthVal = $Val,@earlyclobber $Scratch">, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
@@ -2235,7 +2235,7 @@ let Predicates = [HasPAuth] in {
   // This enforces the expected immediate modifier is used for signing, even
   // if an attacker is able to substitute AddrDisc.
   def PAC : Pseudo<(outs GPR64:$SignedVal),
-                   (ins GPR64:$Val, i32imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
+                   (ins GPR64:$Val, i64imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
                    [], "$SignedVal = $Val">, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
     let hasSideEffects = 0;
@@ -2247,17 +2247,22 @@ let Predicates = [HasPAuth] in {
     let supportsDeactivationSymbol = true;
   }
 
-  // A standalone pattern is used, so that literal 0 can be passed as $Disc.
-  def : Pat<(int_ptrauth_sign GPR64:$Val, timm:$Key, GPR64noip:$AddrDisc),
-            (PAC GPR64:$Val, $Key, 0, GPR64noip:$AddrDisc)>;
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_schema (i64 imm:$Key),
+                                                      (i64 imm:$Disc),
+                                                      (i64 0))),
+            (PAC GPR64:$Val, imm:$Key, imm:$Disc, zero_reg)>;
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_schema (i64 imm:$Key),
+                                                      (i64 imm:$Disc),
+                                                      GPR64noip:$AddrDisc)),
+            (PAC GPR64:$Val, imm:$Key, imm:$Disc, GPR64noip:$AddrDisc)>;
 
   // AUT and re-PAC a value, using different keys/data.
   // This directly manipulates x16/x17, which are the only registers that
   // certain OSs guarantee are safe to use for sensitive operations.
   def AUTPAC
       : Pseudo<(outs),
-               (ins i32imm:$AUTKey, i64imm:$AUTDisc, GPR64noip:$AUTAddrDisc,
-                    i32imm:$PACKey, i64imm:$PACDisc, GPR64noip:$PACAddrDisc),
+               (ins i64imm:$AUTKey, i64imm:$AUTDisc, GPR64noip:$AUTAddrDisc,
+                    i64imm:$PACKey, i64imm:$PACDisc, GPR64noip:$PACAddrDisc),
                []>, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
     let hasSideEffects = 1;
@@ -2290,7 +2295,7 @@ let Predicates = [HasPAuth] in {
 
   // Materialize a signed global address, with adrp+add and PAC.
   def MOVaddrPAC : Pseudo<(outs),
-                          (ins i64imm:$Addr, i32imm:$Key,
+                          (ins i64imm:$Addr, i64imm:$Key,
                                GPR64noip:$AddrDisc, i64imm:$Disc), []>,
                Sched<[WriteI, ReadI]> {
     let isReMaterializable = 1;
@@ -2301,7 +2306,7 @@ let Predicates = [HasPAuth] in {
 
   // Materialize a signed global address, using a GOT load and PAC.
   def LOADgotPAC : Pseudo<(outs),
-                          (ins i64imm:$Addr, i32imm:$Key,
+                          (ins i64imm:$Addr, i64imm:$Key,
                                GPR64noip:$AddrDisc, i64imm:$Disc), []>,
                Sched<[WriteI, ReadI]> {
     let isReMaterializable = 1;
@@ -2319,7 +2324,7 @@ let Predicates = [HasPAuth] in {
 
   // Load a signed global address from a special $auth_ptr$ stub slot.
   def LOADauthptrstatic : Pseudo<(outs GPR64:$dst),
-                              (ins i64imm:$Addr, i32imm:$Key,
+                              (ins i64imm:$Addr, i64imm:$Key,
                                    i64imm:$Disc), []>,
                Sched<[WriteI, ReadI]> {
     let isReMaterializable = 1;
@@ -2327,34 +2332,35 @@ let Predicates = [HasPAuth] in {
     let Size = 8;
   }
 
-  // Size 16: 4 fixed + 8 variable, to compute discriminator.
+  // Size 20: up to 8 to compute discriminator and up to 12 to MOV, AUTD(A|B)
+  //          and branch.
   // The size returned by getInstSizeInBytes() is incremented according
   // to the variant of LR check.
   // As the check requires either x16 or x17 as a scratch register and
   // authenticated tail call instructions have two register operands,
   // make sure at least one register is usable as a scratch one - for that
   // purpose, use tcGPRnotx16x17 register class for one of the operands.
-  let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 16,
+  let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 20,
       Defs = [X16,X17], Uses = [SP] in {
     def AUTH_TCRETURN
-      : Pseudo<(outs), (ins tcGPRnotx16x17:$dst, i32imm:$FPDiff, i32imm:$Key,
+      : Pseudo<(outs), (ins tcGPRnotx16x17:$dst, i32imm:$FPDiff, i64imm:$Key,
                             i64imm:$Disc, tcGPR64:$AddrDisc),
                []>, Sched<[WriteBrReg]>;
     def AUTH_TCRETURN_BTI
-      : Pseudo<(outs), (ins tcGPRx16x17:$dst, i32imm:$FPDiff, i32imm:$Key,
+      : Pseudo<(outs), (ins tcGPRx16x17:$dst, i32imm:$FPDiff, i64imm:$Key,
                             i64imm:$Disc, tcGPRnotx16x17:$AddrDisc),
                []>, Sched<[WriteBrReg]>;
   }
 
   let Predicates = [TailCallAny] in
-    def : Pat<(AArch64authtcret tcGPRnotx16x17:$dst, (i32 timm:$FPDiff), (i32 timm:$Key),
+    def : Pat<(AArch64authtcret tcGPRnotx16x17:$dst, (i32 timm:$FPDiff), (i64 timm:$Key),
                                 (i64 timm:$Disc), tcGPR64:$AddrDisc),
               (AUTH_TCRETURN tcGPRnotx16x17:$dst, imm:$FPDiff, imm:$Key, imm:$Disc,
                              tcGPR64:$AddrDisc)>;
 
   let Predicates = [TailCallX16X17] in
     def : Pat<(AArch64authtcret tcGPRx16x17:$dst, (i32 timm:$FPDiff),
-                                (i32 timm:$Key), (i64 timm:$Disc),
+                                (i64 timm:$Key), (i64 timm:$Disc),
                                 tcGPRnotx16x17:$AddrDisc),
               (AUTH_TCRETURN_BTI tcGPRx16x17:$dst, imm:$FPDiff, imm:$Key,
                                  imm:$Disc, tcGPRnotx16x17:$AddrDisc)>;

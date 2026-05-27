@@ -421,16 +421,13 @@ MachineInstrBuilder MachineIRBuilder::buildFConstant(const DstOp &Res,
   return buildFConstant(Res, *CFP);
 }
 
-MachineInstrBuilder
-MachineIRBuilder::buildConstantPtrAuth(const DstOp &Res,
-                                       const ConstantPtrAuth *CPA,
-                                       Register Addr, Register AddrDisc) {
+MachineInstrBuilder MachineIRBuilder::buildConstantPtrAuth(const DstOp &Res,
+                                                           Register Ptr,
+                                                           Register Schema) {
   auto MIB = buildInstr(TargetOpcode::G_PTRAUTH_GLOBAL_VALUE);
   Res.addDefToMIB(*getMRI(), MIB);
-  MIB.addUse(Addr);
-  MIB.addImm(CPA->getKey()->getZExtValue());
-  MIB.addUse(AddrDisc);
-  MIB.addImm(CPA->getDiscriminator()->getZExtValue());
+  MIB.addUse(Ptr);
+  MIB.addUse(Schema);
   return MIB;
 }
 

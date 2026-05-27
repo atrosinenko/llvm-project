@@ -35,7 +35,7 @@
 ; CHECK-MACHO-NEXT:    .quad _g@AUTH(ia,0)
 ; CHECK-MACHO-NEXT:    .quad 6
 
-@g.ref.ia.0 = constant { i64, ptr, i64 } { i64 5, ptr ptrauth (ptr @g, i32 0), i64 6 }
+@g.ref.ia.0 = constant { i64, ptr, i64 } { i64 5, ptr ptrauth (ptr @g, [i64 0, i64 0, i64 0]), i64 6 }
 
 ; CHECK-ELF-LABEL:     .globl g.ref.ia.42
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -47,7 +47,7 @@
 ; CHECK-MACHO-NEXT:  _g.ref.ia.42:
 ; CHECK-MACHO-NEXT:    .quad _g@AUTH(ia,42)
 
-@g.ref.ia.42 = constant ptr ptrauth (ptr @g, i32 0, i64 42)
+@g.ref.ia.42 = constant ptr ptrauth (ptr @g, [i64 0, i64 42, i64 0])
 
 ; CHECK-ELF-LABEL:     .globl g.ref.ib.0
 ; CHECK-ELF-NEXT:      .p2align 4
@@ -63,7 +63,7 @@
 ; CHECK-MACHO-NEXT:    .quad _g@AUTH(ib,0)
 ; CHECK-MACHO-NEXT:    .quad 6
 
-@g.ref.ib.0 = constant { i64, ptr, i64 } { i64 5, ptr ptrauth (ptr @g, i32 1, i64 0), i64 6 }
+@g.ref.ib.0 = constant { i64, ptr, i64 } { i64 5, ptr ptrauth (ptr @g, [i64 1, i64 0, i64 0]), i64 6 }
 
 ; CHECK-ELF-LABEL:     .globl g.ref.da.42.addr
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -75,7 +75,7 @@
 ; CHECK-MACHO-NEXT:  _g.ref.da.42.addr:
 ; CHECK-MACHO-NEXT:    .quad _g@AUTH(da,42,addr)
 
-@g.ref.da.42.addr = constant ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.da.42.addr)
+@g.ref.da.42.addr = constant ptr ptrauth (ptr @g, [i64 2, i64 42, i64 ptrtoint (ptr @g.ref.da.42.addr to i64)])
 
 ; CHECK-ELF-LABEL:     .globl g.offset.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -87,7 +87,7 @@
 ; CHECK-MACHO-NEXT:  _g.offset.ref.da.0:
 ; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(da,0)
 
-@g.offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2)
+@g.offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), [i64 2, i64 0, i64 0])
 
 ; CHECK-ELF-LABEL:     .globl g.big_offset.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -99,7 +99,7 @@
 ; CHECK-MACHO-NEXT:  _g.big_offset.ref.da.0:
 ; CHECK-MACHO-NEXT:    .quad (_g+2147549185)@AUTH(da,0)
 
-@g.big_offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), i32 2)
+@g.big_offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), [i64 2, i64 0, i64 0])
 
 ; CHECK-ELF-LABEL:     .globl g.weird_ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -111,7 +111,7 @@
 ; CHECK-MACHO-NEXT:  _g.weird_ref.da.0:
 ; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(da,0)
 
-@g.weird_ref.da.0 = constant i64 ptrtoint (ptr inttoptr (i64 ptrtoint (ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2) to i64) to ptr) to i64)
+@g.weird_ref.da.0 = constant i64 ptrtoint (ptr inttoptr (i64 ptrtoint (ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), [i64 2, i64 0, i64 0]) to i64) to ptr) to i64)
 
 ; Null pointer inside ptrauth is valid (e.g. ptrauth-irelative.ll).
 
@@ -125,7 +125,7 @@
 ; CHECK-MACHO-NEXT:  _g.null_ref.da.0:
 ; CHECK-MACHO-NEXT:    .quad (0)@AUTH(da,0)
 
-@g.null_ref.da.0 = constant ptr ptrauth (ptr null, i32 2)
+@g.null_ref.da.0 = constant ptr ptrauth (ptr null, [i64 2, i64 0, i64 0])
 
 ; CHECK-ELF-LABEL:     .globl g_weak.ref.ia.42
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -137,7 +137,7 @@
 ; CHECK-MACHO-NEXT:  _g_weak.ref.ia.42:
 ; CHECK-MACHO-NEXT:    .quad _g_weak@AUTH(ia,42)
 
-@g_weak.ref.ia.42 = constant ptr ptrauth (ptr @g_weak, i32 0, i64 42)
+@g_weak.ref.ia.42 = constant ptr ptrauth (ptr @g_weak, [i64 0, i64 42, i64 0])
 
 ; CHECK-ELF-LABEL:     .globl g_strong_def.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -149,7 +149,7 @@
 ; CHECK-MACHO-NEXT:  _g_strong_def.ref.da.0:
 ; CHECK-MACHO-NEXT:    .quad _g_strong_def@AUTH(da,0)
 
-@g_strong_def.ref.da.0 = constant ptr ptrauth (ptr @g_strong_def, i32 2)
+@g_strong_def.ref.da.0 = constant ptr ptrauth (ptr @g_strong_def, [i64 2, i64 0, i64 0])
 
 ;--- err-key.ll
 
@@ -165,11 +165,12 @@
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
 
-; CHECK-ERR-KEY: error: AArch64 PAC Key ID '4' out of range [0, 3]
-
+; CHECK-ERR-KEY:      Ptrauth schema violates target-specific constraints:
+; CHECK-ERR-KEY-NEXT: ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
+; CHECK-ERR-KEY-NEXT: LLVM ERROR: Invalid ptrauth schema: key must be constant in range [0, 3]
 
 @g = external global i32
-@g.ref.4.0 = constant ptr ptrauth (ptr @g, i32 4, i64 0)
+@g.ref.4.0 = constant ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
 
 ;--- err-disc.ll
 
@@ -185,10 +186,12 @@
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
 
-; CHECK-ERR-DISC: error: AArch64 PAC Discriminator '65536' out of range [0, 0xFFFF]
+; CHECK-ERR-DISC:      Ptrauth schema violates target-specific constraints:
+; CHECK-ERR-DISC-NEXT: ptr ptrauth (ptr @g, [i64 0, i64 65536, i64 0])
+; CHECK-ERR-DISC-NEXT: LLVM ERROR: Invalid ptrauth schema: constant modifier must be 16-bit unsigned constant
 
 @g = external global i32
-@g.ref.ia.65536 = constant ptr ptrauth (ptr @g, i32 0, i64 65536)
+@g.ref.ia.65536 = constant ptr ptrauth (ptr @g, [i64 0, i64 65536, i64 0])
 
 ;--- err-disc-gnu.ll
 
@@ -202,10 +205,10 @@
 
 @ds = external global i8
 ; CHECK-ERR-DISC-GNU-NOT: error: AArch64 PAC Discriminator '65537' out of range [0, 0xFFFF]
-@g.ref.da.65537 = constant ptr ptrauth (ptr @g, i32 2, i64 65537, ptr @g.ref.da.65537, ptr @ds)
+@g.ref.da.65537 = constant ptr ptrauth (ptr @g, [i64 2, i64 65537, i64 ptrtoint (ptr @g.ref.da.65537 to i64)], ptr @ds)
 
 ; CHECK-ERR-DISC-GNU: error: AArch64 PAC Discriminator '65538' out of range [0, 0xFFFF]
-@g.ref.da.65538 = constant ptr ptrauth (ptr @g, i32 2, i64 65538, ptr null, ptr @ds)
+@g.ref.da.65538 = constant ptr ptrauth (ptr @g, [i64 2, i64 65538, i64 0], ptr @ds)
 
 ;--- err-unsupported-base.ll
 
@@ -217,4 +220,4 @@
 ; CHECK-ERR-BASE: unsupported constant expression in ptrauth pointer
 
 @g = external global i32
-@g.nested_ptrauth = constant ptr ptrauth (ptr ptrauth (ptr @g, i32 0), i32 2)
+@g.nested_ptrauth = constant ptr ptrauth (ptr ptrauth (ptr @g, [i64 0, i64 0, i64 0]), [i64 2, i64 0, i64 0])

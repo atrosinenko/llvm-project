@@ -926,7 +926,7 @@ bool ConstStructBuilder::Build(const APValue &Val, const RecordDecl *RD,
         AddrDisc = Emitter.getCurrentAddrPrivate();
       }
       EltInit = llvm::ConstantPtrAuth::get(
-          EltInit, llvm::ConstantInt::get(CGM.Int32Ty, 2), Disc, AddrDisc,
+          EltInit, {llvm::ConstantInt::get(CGM.Int64Ty, 2), Disc, AddrDisc},
           CGM.getPFPDeactivationSymbol(*Field));
       if (!CGM.getContext().arePFPFieldsTriviallyCopyable(RD))
         Emitter.registerCurrentAddrPrivate(EltInit,
@@ -2274,9 +2274,7 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
           return ConstantLValue(nullptr);
 
         C = applyOffset(C);
-        C = CGM.getConstantSignedPointer(
-            C, AuthInfo.getKey(), nullptr,
-            cast_or_null<llvm::ConstantInt>(AuthInfo.getDiscriminator()));
+        C = CGM.getConstantSignedPointer(C, AuthInfo);
         return ConstantLValue(C, /*applied offset*/ true, /*signed*/ true);
       }
 

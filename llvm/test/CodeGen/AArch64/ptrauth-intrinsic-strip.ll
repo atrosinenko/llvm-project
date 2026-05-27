@@ -4,40 +4,38 @@
 ; RUN: llc < %s -mtriple aarch64-linux-gnu -mattr=+pauth -verify-machineinstrs -global-isel=0 | FileCheck %s
 ; RUN: llc < %s -mtriple aarch64-linux-gnu -mattr=+pauth -verify-machineinstrs -global-isel=1 -global-isel-abort=1 | FileCheck %s
 
-define i64 @test_strip_ia(i64 %arg) {
+define ptr @test_strip_ia(ptr %arg) {
 ; CHECK-LABEL: test_strip_ia:
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpaci x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.strip.p0(ptr %arg) [ "ptrauth"(i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_strip_ib(i64 %arg) {
+define ptr @test_strip_ib(ptr %arg) {
 ; CHECK-LABEL: test_strip_ib:
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpaci x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.strip.p0(ptr %arg) [ "ptrauth"(i64 1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_strip_da(i64 %arg) {
+define ptr @test_strip_da(ptr %arg) {
 ; CHECK-LABEL: test_strip_da:
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpacd x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.strip.p0(ptr %arg) [ "ptrauth"(i64 2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_strip_db(i64 %arg) {
+define ptr @test_strip_db(ptr %arg) {
 ; CHECK-LABEL: test_strip_db:
 ; CHECK:       %bb.0:
 ; CHECK-NEXT:    xpacd x0
 ; CHECK-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.strip(i64 %arg, i32 3)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.strip.p0(ptr %arg) [ "ptrauth"(i64 3) ]
+  ret ptr %tmp
 }
-
-declare i64 @llvm.ptrauth.strip(i64, i32)

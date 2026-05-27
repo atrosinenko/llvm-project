@@ -13,10 +13,10 @@
 #ifndef LLVM_CLANG_LIB_CODEGEN_CGPOINTERAUTHINFO_H
 #define LLVM_CLANG_LIB_CODEGEN_CGPOINTERAUTHINFO_H
 
-#include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
+#include <tuple>
 
 namespace clang {
 namespace CodeGen {
@@ -27,21 +27,24 @@ private:
   unsigned IsIsaPointer : 1;
   unsigned AuthenticatesNullValues : 1;
   unsigned Key : 2;
-  llvm::Value *Discriminator;
+  unsigned IntDiscriminator;
+  llvm::Value *AddrDiscriminator;
 
 public:
   CGPointerAuthInfo()
       : AuthenticationMode(PointerAuthenticationMode::None),
         IsIsaPointer(false), AuthenticatesNullValues(false), Key(0),
-        Discriminator(nullptr) {}
+        IntDiscriminator(0), AddrDiscriminator(nullptr) {}
   CGPointerAuthInfo(unsigned Key, PointerAuthenticationMode AuthenticationMode,
                     bool IsIsaPointer, bool AuthenticatesNullValues,
-                    llvm::Value *Discriminator)
+                    unsigned IntDiscriminator, llvm::Value *AddrDiscriminator)
       : AuthenticationMode(AuthenticationMode), IsIsaPointer(IsIsaPointer),
         AuthenticatesNullValues(AuthenticatesNullValues), Key(Key),
-        Discriminator(Discriminator) {
-    assert(!Discriminator || Discriminator->getType()->isIntegerTy() ||
-           Discriminator->getType()->isPointerTy());
+        IntDiscriminator(IntDiscriminator),
+        AddrDiscriminator(AddrDiscriminator) {
+    assert(llvm::isUInt<16>(IntDiscriminator));
+    assert(!AddrDiscriminator || AddrDiscriminator->getType()->isIntegerTy() ||
+           AddrDiscriminator->getType()->isPointerTy());
   }
 
   explicit operator bool() const { return isSigned(); }
@@ -54,9 +57,15 @@ public:
     assert(isSigned());
     return Key;
   }
-  llvm::Value *getDiscriminator() const {
+
+  unsigned getIntDiscriminator() const {
     assert(isSigned());
-    return Discriminator;
+    return IntDiscriminator;
+  }
+
+  llvm::Value *getAddrDiscriminator() const {
+    assert(isSigned());
+    return AddrDiscriminator;
   }
 
   PointerAuthenticationMode getAuthenticationMode() const {
@@ -83,13 +92,17 @@ public:
 
   friend bool operator!=(const CGPointerAuthInfo &LHS,
                          const CGPointerAuthInfo &RHS) {
-    return LHS.Key != RHS.Key || LHS.Discriminator != RHS.Discriminator ||
-           LHS.AuthenticationMode != RHS.AuthenticationMode;
+    return !(LHS == RHS);
   }
 
   friend bool operator==(const CGPointerAuthInfo &LHS,
                          const CGPointerAuthInfo &RHS) {
-    return !(LHS != RHS);
+    auto AsTuple = [](const CGPointerAuthInfo &Info) {
+      return std::make_tuple(Info.AuthenticationMode, Info.IsIsaPointer,
+                             Info.AuthenticatesNullValues, Info.Key,
+                             Info.IntDiscriminator, Info.AddrDiscriminator);
+    };
+    return AsTuple(LHS) == AsTuple(RHS);
   }
 };
 

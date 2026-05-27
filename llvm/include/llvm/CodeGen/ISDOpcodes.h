@@ -93,11 +93,33 @@ enum NodeType {
   ExternalSymbol,
   BlockAddress,
 
+  /// A temporary node representing the operands of "ptrauth" bundle or the
+  /// schema part of ptrauth constant in the original LLVM IR.
+  /// It has target-dependent number of i64 operands and produces a token value
+  /// to be passed as input operand to one of PtrAuth(Auth|Sign|Resign|Strip),
+  /// PtrAuthResignLoadRelative, or PtrAuthGlobalAddress nodes.
+  PtrAuthSchema,
+
   /// A ptrauth constant.
-  /// ptr, key, addr-disc, disc
-  /// Note that the addr-disc can be a non-constant value, to allow representing
-  /// a constant global address signed using address-diversification, in code.
+  ///
+  /// PtrAuthGlobalAddress ptr, schema_token
+  ///
+  /// Note that operands of PtrAuthSchema referenced by the token operand can
+  /// be non-constant, provided they can also be non-constant for a regular
+  /// sign operation. This is to allow representing a constant global address
+  /// signed using address-diversification, in code.
   PtrAuthGlobalAddress,
+
+  /// Various PtrAuth operations.
+  ///
+  /// Ptr(Auth|Sign|Strip)      ptr, schema_token
+  /// PtrResign                 ptr, old_schema, new_schema
+  /// PtrAuthResignLoadRelative ptr, old_schema, new_schema, addend
+  PtrAuthAuth,
+  PtrAuthSign,
+  PtrAuthResign,
+  PtrAuthResignLoadRelative,
+  PtrAuthStrip,
 
   /// The address of the GOT
   GLOBAL_OFFSET_TABLE,

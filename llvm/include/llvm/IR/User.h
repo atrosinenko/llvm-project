@@ -44,6 +44,7 @@ struct OperandTraits;
 class User : public Value {
   friend struct HungoffOperandTraits;
   template <class ConstantClass> friend struct ConstantAggrKeyType;
+  friend struct ConstantPtrAuthKeyType;
 
   LLVM_ATTRIBUTE_ALWAYS_INLINE static void *
   allocateFixedOperandUser(size_t, unsigned, unsigned);

@@ -1459,15 +1459,30 @@ void AArch64AsmPrinter::emitFunctionEntryLabel() {
   }
 }
 
+static bool hasAddressDiscriminator(const ConstantPtrAuth &CPA) {
+  if (CPA.getSchema().size() != 3)
+    return false;
+  return !cast<Constant>(CPA.getSchema()[2])->isNullValue();
+}
+
+static bool hasSpecialAddressDiscriminator(const ConstantPtrAuth &CPA,
+                                           uint64_t Value) {
+  if (CPA.getSchema().size() != 3)
+    return false;
+
+  auto *IntVal = dyn_cast<ConstantInt>(CPA.getSchema()[2]);
+  return IntVal && IntVal->getZExtValue() == Value;
+}
+
 void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
                                        const Constant *CV) {
   if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV))
-    if (CPA->hasAddressDiscriminator() &&
-        !CPA->hasSpecialAddressDiscriminator(
-            ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
+    if (hasAddressDiscriminator(*CPA) &&
+        !hasSpecialAddressDiscriminator(
+            *CPA, ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
       report_fatal_error(
           "unexpected address discrimination value for ctors/dtors entry, only "
-          "'ptr inttoptr (i64 1 to ptr)' is allowed");
+          "'i64 1' is allowed");
   // If we have signed pointers in xxstructors list, they'll be lowered to @AUTH
   // MCExpr's via AArch64AsmPrinter::lowerConstantPtrAuth. It does not look at
   // actual address discrimination value and only checks
@@ -2436,6 +2451,20 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
       IsCall && (AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17);
   Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17,
                                               AddrDiscIsImplicitDef);
+
+  if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+    // Have to emit separate auth and branch instructions for D-key.
+    Register Scratch = DiscReg == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+    emitMovXReg(Scratch, BrTarget);
+    emitAUT(Key, Scratch, DiscReg);
+
+    MCInst BranchInst;
+    BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
+    BranchInst.addOperand(MCOperand::createReg(Scratch));
+    EmitToStreamer(BranchInst);
+    return;
+  }
+
   emitBLRA(IsCall, Key, BrTarget, DiscReg);
 }
 
@@ -2678,6 +2707,18 @@ const MCExpr *
 AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
   MCContext &Ctx = OutContext;
 
+  auto CheckSchema = [](const ConstantPtrAuth &CPA, bool CheckIntDisc) {
+    if (auto Error = AArch64TargetLowering::validateConstantPtrAuthSchema(
+            CPA.getSchema(), CheckIntDisc)) {
+      errs() << "Ptrauth schema violates target-specific constraints:\n";
+      CPA.print(errs());
+      errs() << "\n";
+      reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
+    }
+  };
+
+  CheckSchema(CPA, /*CheckIntDisc=*/false);
+
   // Figure out the base symbol and the addend, if any.
   APInt Offset(64, 0);
   const Value *BaseGV = CPA.getPointer()->stripAndAccumulateConstantOffsets(
@@ -2708,29 +2749,16 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
     DSExpr = MCSymbolRefExpr::create(getSymbol(DS), Ctx);
   }
 
-  uint64_t KeyID = CPA.getKey()->getZExtValue();
-  // We later rely on valid KeyID value in AArch64PACKeyIDToString call from
-  // AArch64AuthMCExpr::printImpl, so fail fast.
-  if (KeyID > AArch64PACKey::LAST) {
-    CPA.getContext().emitError("AArch64 PAC Key ID '" + Twine(KeyID) +
-                               "' out of range [0, " +
-                               Twine((unsigned)AArch64PACKey::LAST) + "]");
-    KeyID = 0;
-  }
-
-  uint64_t Disc = CPA.getDiscriminator()->getZExtValue();
+  uint64_t KeyID = cast<ConstantInt>(CPA.getSchema()[0])->getZExtValue();
+  uint64_t Disc = cast<ConstantInt>(CPA.getSchema()[1])->getZExtValue();
 
   // Check if we can represent this with an IRELATIVE and emit it if so.
   if (auto *IFuncSym = emitPAuthRelocationAsIRelative(
-          Sym, Disc, AArch64PACKey::ID(KeyID), CPA.hasAddressDiscriminator(),
+          Sym, Disc, AArch64PACKey::ID(KeyID), hasAddressDiscriminator(CPA),
           BaseGVB && BaseGVB->isDSOLocal(), DSExpr))
     return IFuncSym;
 
-  if (!isUInt<16>(Disc)) {
-    CPA.getContext().emitError("AArch64 PAC Discriminator '" + Twine(Disc) +
-                               "' out of range [0, 0xFFFF]");
-    Disc = 0;
-  }
+  CheckSchema(CPA, /*CheckIntDisc=*/true);
 
   if (DSExpr)
     report_fatal_error("deactivation symbols unsupported in constant "
@@ -2738,7 +2766,7 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
 
   // Finally build the complete @AUTH expr.
   return AArch64AuthMCExpr::create(Sym, Disc, AArch64PACKey::ID(KeyID),
-                                   CPA.hasAddressDiscriminator(), Ctx);
+                                   hasAddressDiscriminator(CPA), Ctx);
 }
 
 void AArch64AsmPrinter::LowerLOADauthptrstatic(const MachineInstr &MI) {
@@ -3384,6 +3412,22 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
         AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
     Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
                                                 AddrDiscIsImplicitDef);
+
+    if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+      // Have to emit separate auth and branch instructions for D-key.
+      Register ScratchCalleeCopyReg =
+          DiscReg == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+      if (Callee != ScratchCalleeCopyReg)
+        emitMovXReg(ScratchCalleeCopyReg, Callee);
+      emitAUT(Key, ScratchCalleeCopyReg, DiscReg);
+
+      MCInst BranchInst;
+      BranchInst.setOpcode(AArch64::BR);
+      BranchInst.addOperand(MCOperand::createReg(ScratchCalleeCopyReg));
+      EmitToStreamer(BranchInst);
+      return;
+    }
+
     emitBLRA(/*IsCall*/ false, Key, Callee, DiscReg);
     return;
   }

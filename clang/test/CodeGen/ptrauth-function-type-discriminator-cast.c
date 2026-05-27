@@ -34,7 +34,7 @@ ptr_member pm;
 void (*test_member)() = (void (*)())pm.fptr_;
 
 // CHECKCXX-LABEL: define{{.*}} internal void @__cxx_global_var_init
-// TYPECXX: call i64 @llvm.ptrauth.resign(i64 {{.*}}, i32 0, i64 2712, i32 0, i64 18983)
+// TYPECXX: call ptr @llvm.ptrauth.resign.p0(ptr {{.*}}) [ "ptrauth"(i64 0, i64 2712, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 #endif
 
 
@@ -42,8 +42,7 @@ void (*test_member)() = (void (*)())pm.fptr_;
 void test_cast_to_opaque() {
   opaque = (void *)f;
 
-  // TYPE: [[RESIGN_VAL:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, i32 0, i64 18983) to i64), i32 0, i64 18983, i32 0, i64 0)
-  // TYPE: [[RESIGN_PTR:%.*]] = inttoptr i64 [[RESIGN_VAL]] to ptr
+  // TYPE: [[RESIGN_VAL:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr ptrauth (ptr @f, [i64 0, i64 18983, i64 0])) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
 }
 
@@ -56,8 +55,7 @@ void test_cast_from_opaque() {
   // TYPE: br i1 [[CMP]], label %[[RESIGN_LAB:.*]], label
 
   // TYPE: [[RESIGN_LAB]]:
-  // TYPE: [[INT:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // TYPE: [[RESIGN_INT:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[INT]], i32 0, i64 0, i32 0, i64 18983)
+  // TYPE: [[RESIGN_INT:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 
   // ZERO-NOT: @llvm.ptrauth.resign
 }
@@ -72,9 +70,7 @@ void test_cast_to_intptr() {
   // TYPE: br i1 [[CMP]], label %[[RESIGN_LAB:.*]], label %[[RESIGN_CONT:.*]]
 
   // TYPE: [[RESIGN_LAB]]:
-  // TYPE: [[INT:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // TYPE: [[RESIGN_INT:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[INT]], i32 0, i64 18983, i32 0, i64 0)
-  // TYPE: [[RESIGN:%.*]] = inttoptr i64 [[RESIGN_INT]] to ptr
+  // TYPE: [[RESIGN:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr [[LOAD]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
   // TYPE: br label %[[RESIGN_CONT]]
 
   // TYPE: [[RESIGN_CONT]]:
@@ -86,7 +82,7 @@ void test_cast_to_intptr() {
 // CHECK-LABEL: define{{.*}} void @test_function_to_function_cast
 void test_function_to_function_cast() {
   void (*fptr2)(int) = (void (*)(int))fptr;
-  // TYPE: call i64 @llvm.ptrauth.resign(i64 {{.*}}, i32 0, i64 18983, i32 0, i64 2712)
+  // TYPE: call ptr @llvm.ptrauth.resign.p0(ptr {{.*}}) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
 }
 
@@ -95,11 +91,10 @@ void test_call_lvalue_cast() {
   (*(void (*)(int))f)(42);
 
   // TYPE: entry:
-  // TYPE-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, i32 0, i64 18983) to i64), i32 0, i64 18983, i32 0, i64 2712)
-  // TYPE-NEXT: [[RESIGN_INT:%.*]] = inttoptr i64 [[RESIGN]] to ptr
-  // TYPE-NEXT: call void [[RESIGN_INT]](i32 noundef 42) [ "ptrauth"(i32 0, i64 2712) ]
+  // TYPE-NEXT: [[RESIGN:%.*]] = call ptr @llvm.ptrauth.resign.p0(ptr ptrauth (ptr @f, [i64 0, i64 18983, i64 0])) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
+  // TYPE-NEXT: call void [[RESIGN]](i32 noundef 42) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
   // ZERO-NOT: @llvm.ptrauth.resign
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 42) [ "ptrauth"(i32 0, i64 0) ]
+  // ZERO: call void ptrauth (ptr @f, [i64 0, i64 0, i64 0])(i32 noundef 42) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 }
 
 

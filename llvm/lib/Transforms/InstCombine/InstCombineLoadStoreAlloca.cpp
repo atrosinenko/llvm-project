@@ -1188,10 +1188,10 @@ Instruction *InstCombinerImpl::visitLoadInst(LoadInst &LI) {
   if (isa<PointerType>(LI.getType())) {
     if (auto *II = dyn_cast<IntrinsicInst>(Op)) {
       if (II->getIntrinsicID() == Intrinsic::protected_field_ptr) {
-        std::vector<OperandBundleDef> DSBundle;
+        std::vector<OperandBundleDef> Bundles;
         if (auto Bundle =
                 II->getOperandBundle(LLVMContext::OB_deactivation_symbol))
-          DSBundle.push_back(OperandBundleDef(
+          Bundles.push_back(OperandBundleDef(
               "deactivation-symbol", cast<GlobalValue>(Bundle->Inputs[0])));
 
         IRBuilderBase::InsertPointGuard Guard(Builder);
@@ -1202,14 +1202,15 @@ Instruction *InstCombinerImpl::visitLoadInst(LoadInst &LI) {
         Builder.Insert(NewLI);
 
         Function *AuthIntr = Intrinsic::getOrInsertDeclaration(
-            F.getParent(), Intrinsic::ptrauth_auth, {});
-        auto *LIInt = Builder.CreatePtrToInt(NewLI, Builder.getInt64Ty());
-        Value *Auth = Builder.CreateCall(
-            AuthIntr,
-            {LIInt, Builder.getInt32(/*AArch64PACKey::DA*/ 2),
-             II->getOperand(1)},
-            DSBundle);
-        Auth = Builder.CreateIntToPtr(Auth, Builder.getPtrTy());
+            F.getParent(), Intrinsic::ptrauth_auth, LI.getType());
+
+        Bundles.emplace_back("ptrauth",
+                             ArrayRef<Value *>({
+                                 Builder.getInt64(/*AArch64PACKey::DA*/ 2),
+                                 II->getOperand(1),
+                                 Builder.getInt64(0),
+                             }));
+        Value *Auth = Builder.CreateCall(AuthIntr, {NewLI}, Bundles);
         return replaceInstUsesWith(LI, Auth);
       }
     }
@@ -1594,24 +1595,25 @@ Instruction *InstCombinerImpl::visitStoreInst(StoreInst &SI) {
   if (isa<PointerType>(Val->getType())) {
     if (auto *II = dyn_cast<IntrinsicInst>(Ptr)) {
       if (II->getIntrinsicID() == Intrinsic::protected_field_ptr) {
-        std::vector<OperandBundleDef> DSBundle;
+        std::vector<OperandBundleDef> Bundles;
         if (auto Bundle =
                 II->getOperandBundle(LLVMContext::OB_deactivation_symbol))
-          DSBundle.push_back(OperandBundleDef(
+          Bundles.push_back(OperandBundleDef(
               "deactivation-symbol", cast<GlobalValue>(Bundle->Inputs[0])));
 
         IRBuilderBase::InsertPointGuard Guard(Builder);
         Builder.SetInsertPoint(&SI);
 
         Function *SignIntr = Intrinsic::getOrInsertDeclaration(
-            F.getParent(), Intrinsic::ptrauth_sign, {});
-        auto *ValInt = Builder.CreatePtrToInt(Val, Builder.getInt64Ty());
-        Value *Sign = Builder.CreateCall(
-            SignIntr,
-            {ValInt, Builder.getInt32(/*AArch64PACKey::DA*/ 2),
-             II->getOperand(1)},
-            DSBundle);
-        Sign = Builder.CreateIntToPtr(Sign, Builder.getPtrTy());
+            F.getParent(), Intrinsic::ptrauth_sign, Val->getType());
+
+        Bundles.emplace_back("ptrauth",
+                             ArrayRef<Value *>({
+                                 Builder.getInt64(/*AArch64PACKey::DA*/ 2),
+                                 II->getOperand(1),
+                                 Builder.getInt64(0),
+                             }));
+        Value *Sign = Builder.CreateCall(SignIntr, {Val}, Bundles);
 
         replaceOperand(SI, 0, Sign);
         replaceOperand(SI, 1, II->getOperand(0));

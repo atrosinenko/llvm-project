@@ -879,11 +879,27 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
         CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
     assert(Schema.getKey() == AuthInfo.getKey() &&
            "Keys for virtual and non-virtual member functions must match");
-    auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
+    auto *NonVirtualDiscriminator =
+        Builder.getInt64(AuthInfo.getIntDiscriminator());
+    assert(!AuthInfo.getAddrDiscriminator());
+    // FIXME Investigate re-signing VirtualFn pointer in FnVirtual basic block
+    //       to the same non-zero discriminator or other safer options.
+    //
+    //       Depending on its origin, CalleePtr is authenticated using one of
+    //       two possible constant discriminators. That integer discriminator
+    //       may end up being spilled to the stack and thus be susceptible to
+    //       substitution by the attacker. Authenticating CalleePtr at this
+    //       point is not an option, as it would make things even worse by
+    //       exposing completely unprotected function pointer instead of less
+    //       sensitive discriminator value.
+    //
+    //       "Upgrading" VirtualFn's schema to a custom constant discriminator
+    //       would probably help, but it still requires investigation.
+
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
         Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI);
+        Schema.authenticatesNullValues(), 0, DiscriminatorPHI);
   }
 
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
@@ -915,14 +931,20 @@ static llvm::Constant *pointerAuthResignConstant(
   if (!CPA)
     return nullptr;
 
-  assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey() &&
-         CPA->getAddrDiscriminator()->isNullValue() &&
-         CPA->getDiscriminator() == CurAuthInfo.getDiscriminator() &&
-         "unexpected key or discriminators");
+  // FIXME Refactor and get rid of these assertions.
+#ifndef NDEBUG
+  auto *Key = cast<llvm::ConstantInt>(CPA->getSchema()[0]);
+  auto *IntDiscriminator = cast<llvm::ConstantInt>(CPA->getSchema()[1]);
+  auto *AddrDiscriminator = cast<llvm::Constant>(CPA->getSchema()[2]);
+  assert(CPA->getSchema().size() == 3);
+  assert(Key->getZExtValue() == CurAuthInfo.getKey());
+  assert(IntDiscriminator->getZExtValue() == CurAuthInfo.getIntDiscriminator());
+  assert(!CurAuthInfo.getAddrDiscriminator() &&
+         !NewAuthInfo.getAddrDiscriminator() &&
+         AddrDiscriminator->isNullValue());
+#endif
 
-  return CGM.getConstantSignedPointer(
-      CPA->getPointer(), NewAuthInfo.getKey(), nullptr,
-      cast<llvm::ConstantInt>(NewAuthInfo.getDiscriminator()));
+  return CGM.getConstantSignedPointer(CPA->getPointer(), NewAuthInfo);
 }
 
 /// Perform a bitcast, derived-to-base, or base-to-derived member pointer
@@ -1780,7 +1802,7 @@ llvm::Value *ItaniumCXXABI::emitExactDynamicCast(
     // authenticate the resulting v-table at the end of the cast check.
     PerformPostCastAuthentication = CGF.getLangOpts().PointerAuthCalls;
     CGPointerAuthInfo StrippingAuthInfo(0, PointerAuthenticationMode::Strip,
-                                        false, false, nullptr);
+                                        false, false, 0, nullptr);
     Address VTablePtrPtr = ThisAddr.withElementType(CGF.VoidPtrPtrTy);
     VTable = CGF.Builder.CreateLoad(VTablePtrPtr, "vtable");
     if (PerformPostCastAuthentication)

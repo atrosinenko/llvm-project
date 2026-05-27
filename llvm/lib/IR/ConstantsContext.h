@@ -507,42 +507,54 @@ public:
 };
 
 struct ConstantPtrAuthKeyType {
-  ArrayRef<Constant *> Operands;
+  Constant *Ptr;
+  ArrayRef<Constant *> Schema;
+  Constant *DeactivationSymbol;
 
-  ConstantPtrAuthKeyType(ArrayRef<Constant *> Operands) : Operands(Operands) {}
+  ConstantPtrAuthKeyType(Constant *Ptr, ArrayRef<Constant *> Schema,
+                         Constant *DeactivationSymbol)
+      : Ptr(Ptr), Schema(Schema), DeactivationSymbol(DeactivationSymbol) {}
 
   ConstantPtrAuthKeyType(ArrayRef<Constant *> Operands, const ConstantPtrAuth *)
-      : Operands(Operands) {}
+      : Ptr(Operands[0]), Schema(Operands.drop_front(2)),
+        DeactivationSymbol(Operands[1]) {}
 
   ConstantPtrAuthKeyType(const ConstantPtrAuth *C,
                          SmallVectorImpl<Constant *> &Storage) {
     assert(Storage.empty() && "Expected empty storage");
     for (unsigned I = 0, E = C->getNumOperands(); I != E; ++I)
       Storage.push_back(cast<Constant>(C->getOperand(I)));
-    Operands = Storage;
+    Ptr = Storage[0];
+    DeactivationSymbol = Storage[1];
+    Schema = ArrayRef(Storage).drop_front(2);
   }
 
   bool operator==(const ConstantPtrAuthKeyType &X) const {
-    return Operands == X.Operands;
+    return Ptr == X.Ptr && Schema == X.Schema &&
+           DeactivationSymbol == X.DeactivationSymbol;
   }
 
   bool operator==(const ConstantPtrAuth *C) const {
-    if (Operands.size() != C->getNumOperands())
+    if (Ptr != C->getPointer() || Schema.size() != C->getSchema().size() ||
+        DeactivationSymbol != C->getDeactivationSymbol())
       return false;
-    for (unsigned I = 0, E = Operands.size(); I != E; ++I)
-      if (Operands[I] != C->getOperand(I))
+    for (auto [A, B] : llvm::zip_equal(Schema, C->getSchema()))
+      if (A != B)
         return false;
     return true;
   }
 
-  unsigned getHash() const { return hash_combine_range(Operands); }
+  unsigned getHash() const {
+    return hash_combine(Ptr, hash_combine_range(Schema), DeactivationSymbol);
+  }
 
   using TypeClass = ConstantInfo<ConstantPtrAuth>::TypeClass;
 
   ConstantPtrAuth *create(TypeClass *Ty) const {
-    return new ConstantPtrAuth(Operands[0], cast<ConstantInt>(Operands[1]),
-                               cast<ConstantInt>(Operands[2]), Operands[3],
-                               Operands[4]);
+    unsigned NumVals = Schema.size() + 2;
+    User::IntrusiveOperandsAllocMarker AllocMarker{NumVals};
+    return new (AllocMarker)
+        ConstantPtrAuth(Ptr, Schema, DeactivationSymbol, AllocMarker);
   }
 };
 

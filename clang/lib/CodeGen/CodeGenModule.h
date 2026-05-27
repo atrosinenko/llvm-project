@@ -1137,14 +1137,17 @@ public:
                                            GlobalDecl SchemaDecl,
                                            QualType SchemaType);
 
+  llvm::Constant *getConstantSignedPointer(llvm::Constant *Pointer,
+                                           CGPointerAuthInfo Info);
+
   llvm::Constant *
   getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
                            llvm::Constant *StorageAddress,
                            llvm::ConstantInt *OtherDiscriminator);
 
-  llvm::ConstantInt *
-  getPointerAuthOtherDiscriminator(const PointerAuthSchema &Schema,
-                                   GlobalDecl SchemaDecl, QualType SchemaType);
+  unsigned getPointerAuthOtherDiscriminator(const PointerAuthSchema &Schema,
+                                            GlobalDecl SchemaDecl,
+                                            QualType SchemaType);
 
   uint16_t getPointerAuthDeclDiscriminator(GlobalDecl GD);
   std::optional<CGPointerAuthInfo>

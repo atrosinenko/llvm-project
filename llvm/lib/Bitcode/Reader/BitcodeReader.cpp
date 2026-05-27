@@ -1639,24 +1639,47 @@ Expected<Value *> BitcodeReader::materializeValue(unsigned StartValID,
       } else {
         switch (BC->Opcode) {
         case BitcodeConstant::ConstantPtrAuthOpcode: {
-          auto *Key = dyn_cast<ConstantInt>(ConstOps[1]);
-          if (!Key)
-            return error("ptrauth key operand must be ConstantInt");
+          Constant *Ptr = nullptr;
+          Constant *DeactivationSymbol = nullptr;
+          SmallVector<Constant *> Schema;
 
-          auto *Disc = dyn_cast<ConstantInt>(ConstOps[2]);
-          if (!Disc)
-            return error("ptrauth disc operand must be ConstantInt");
+          Type *Int64Ty = Type::getInt64Ty(BC->getContext());
 
-          Constant *DeactivationSymbol =
-              ConstOps.size() > 4 ? ConstOps[4]
-                                  : ConstantPointerNull::get(cast<PointerType>(
-                                        ConstOps[3]->getType()));
+          switch (BC->Flags) {
+          default:
+            llvm_unreachable("Expected CST_CODE_PTRAUTH* constant");
+          case bitc::CST_CODE_PTRAUTH_OLD2:
+            // Upgrade (ptr @ptr, i32 key, i64 disc, ptr @addr_disc, ptr @ds)
+            DeactivationSymbol = ConstOps[4];
+            [[fallthrough]];
+          case bitc::CST_CODE_PTRAUTH_OLD:
+            // Upgrade (ptr @ptr, i32 key, i64 disc, ptr @addr_disc)
+            Ptr = ConstOps[0];
+            Schema.push_back(ConstantExpr::getBitCast(ConstOps[1], Int64Ty));
+            Schema.push_back(ConstOps[2]);
+            Schema.push_back(ConstantExpr::getPtrToInt(ConstOps[3], Int64Ty));
+            break;
+          case bitc::CST_CODE_PTRAUTH3:
+            Ptr = ConstOps[0];
+            DeactivationSymbol = ConstOps[1];
+            Schema.assign(&ConstOps[2], ConstOps.end());
+            break;
+          }
+
+          if (!Ptr->getType()->isPointerTy())
+            return error("ptrauth signed operand must be a pointer");
+
+          for (Constant *C : Schema)
+            if (!C->getType()->isIntegerTy(64))
+              return error("ptrauth schema operands must be i64 constants");
+
+          if (!DeactivationSymbol)
+            DeactivationSymbol = Constant::getNullValue(Ptr->getType());
           if (!DeactivationSymbol->getType()->isPointerTy())
             return error(
                 "ptrauth deactivation symbol operand must be a pointer");
 
-          C = ConstantPtrAuth::get(ConstOps[0], Key, Disc, ConstOps[3],
-                                   DeactivationSymbol);
+          C = ConstantPtrAuth::get(Ptr, Schema, DeactivationSymbol);
           break;
         }
         case BitcodeConstant::NoCFIOpcode: {
@@ -3852,24 +3875,40 @@ Error BitcodeReader::parseConstants() {
                                   Record[1]);
       break;
     }
-    case bitc::CST_CODE_PTRAUTH: {
+    case bitc::CST_CODE_PTRAUTH_OLD: {
       if (Record.size() < 4)
         return error("Invalid ptrauth record");
       // Ptr, Key, Disc, AddrDisc
-      V = BitcodeConstant::create(Alloc, CurTy,
-                                  BitcodeConstant::ConstantPtrAuthOpcode,
-                                  {(unsigned)Record[0], (unsigned)Record[1],
-                                   (unsigned)Record[2], (unsigned)Record[3]});
+      V = BitcodeConstant::create(
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD},
+          {(unsigned)Record[0], (unsigned)Record[1], (unsigned)Record[2],
+           (unsigned)Record[3]});
       break;
     }
-    case bitc::CST_CODE_PTRAUTH2: {
+    case bitc::CST_CODE_PTRAUTH_OLD2: {
       if (Record.size() < 5)
         return error("Invalid ptrauth record");
       // Ptr, Key, Disc, AddrDisc, DeactivationSymbol
       V = BitcodeConstant::create(
-          Alloc, CurTy, BitcodeConstant::ConstantPtrAuthOpcode,
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH_OLD2},
           {(unsigned)Record[0], (unsigned)Record[1], (unsigned)Record[2],
            (unsigned)Record[3], (unsigned)Record[4]});
+      break;
+    }
+    case bitc::CST_CODE_PTRAUTH3: {
+      if (Record.size() < 3)
+        return error("Invalid ptrauth record");
+      // Ptr, DeactivationSymbol, SchemaArg0 [, SchemaArg1, ...]
+
+      SmallVector<unsigned, 4> Operands;
+      llvm::append_range(Operands, Record);
+
+      V = BitcodeConstant::create(
+          Alloc, CurTy,
+          {BitcodeConstant::ConstantPtrAuthOpcode, bitc::CST_CODE_PTRAUTH3},
+          Operands);
       break;
     }
     }
@@ -5038,7 +5077,7 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
     return nullptr;
   };
 
-  std::vector<OperandBundleDef> OperandBundles;
+  SmallVector<OperandBundleDef> OperandBundles;
 
   // Read all the records.
   SmallVector<uint64_t, 64> Record;
@@ -7239,6 +7278,8 @@ Error BitcodeReader::materializeModule() {
   UpgradeARCRuntime(*TheModule);
 
   copyModuleAttrToFunctions(*TheModule);
+
+  UpgradePtrauthBlendUsers(*TheModule);
 
   return Error::success();
 }

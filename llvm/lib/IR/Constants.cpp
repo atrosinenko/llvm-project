@@ -2050,7 +2050,7 @@ void UndefValue::destroyConstantImpl() {
   } else if (getValueID() == PoisonValueVal) {
     getContext().pImpl->PVConstants.erase(getType());
   }
-  llvm_unreachable("Not a undef or a poison!");
+  llvm_unreachable("Not a undef or a poison!"); // unreachable?!?
 }
 
 PoisonValue *PoisonValue::get(Type *Ty) {
@@ -2231,34 +2231,35 @@ Value *NoCFIValue::handleOperandChangeImpl(Value *From, Value *To) {
 //---- ConstantPtrAuth::get() implementations.
 //
 
-ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr, ConstantInt *Key,
-                                      ConstantInt *Disc, Constant *AddrDisc,
+ConstantPtrAuth *ConstantPtrAuth::get(Constant *Ptr,
+                                      ArrayRef<Constant *> SchemaArgs,
                                       Constant *DeactivationSymbol) {
-  Constant *ArgVec[] = {Ptr, Key, Disc, AddrDisc, DeactivationSymbol};
-  ConstantPtrAuthKeyType MapKey(ArgVec);
+  ConstantPtrAuthKeyType MapKey(Ptr, SchemaArgs, DeactivationSymbol);
   LLVMContextImpl *pImpl = Ptr->getContext().pImpl;
   return pImpl->ConstantPtrAuths.getOrCreate(Ptr->getType(), MapKey);
 }
 
 ConstantPtrAuth *ConstantPtrAuth::getWithSameSchema(Constant *Pointer) const {
-  return get(Pointer, getKey(), getDiscriminator(), getAddrDiscriminator(),
-             getDeactivationSymbol());
+  SmallVector<Constant *> Schema;
+  for (const Use &U : getSchema())
+    Schema.push_back(cast<Constant>(U.get()));
+  return get(Pointer, Schema, getDeactivationSymbol());
 }
 
-ConstantPtrAuth::ConstantPtrAuth(Constant *Ptr, ConstantInt *Key,
-                                 ConstantInt *Disc, Constant *AddrDisc,
-                                 Constant *DeactivationSymbol)
-    : Constant(Ptr->getType(), Value::ConstantPtrAuthVal, AllocMarker) {
+ConstantPtrAuth::ConstantPtrAuth(Constant *Ptr, ArrayRef<Constant *> Schema,
+                                 Constant *DeactivationSymbol,
+                                 AllocInfo AllocInfo)
+    : Constant(Ptr->getType(), Value::ConstantPtrAuthVal, AllocInfo) {
   assert(Ptr->getType()->isPointerTy());
-  assert(Key->getBitWidth() == 32);
-  assert(Disc->getBitWidth() == 64);
-  assert(AddrDisc->getType()->isPointerTy());
   assert(DeactivationSymbol->getType()->isPointerTy());
   setOperand(0, Ptr);
-  setOperand(1, Key);
-  setOperand(2, Disc);
-  setOperand(3, AddrDisc);
-  setOperand(4, DeactivationSymbol);
+  setOperand(1, DeactivationSymbol);
+
+  assert(!Schema.empty());
+  for (unsigned I = 0, N = Schema.size(); I < N; ++I) {
+    assert(Schema[I]->getType()->isIntegerTy(64));
+    setOperand(2 + I, Schema[I]);
+  }
 }
 
 /// Remove the constant from the constant table.
@@ -2270,17 +2271,16 @@ Value *ConstantPtrAuth::handleOperandChangeImpl(Value *From, Value *ToV) {
   assert(isa<Constant>(ToV) && "Cannot make Constant refer to non-constant!");
   Constant *To = cast<Constant>(ToV);
 
-  SmallVector<Constant *, 4> Values;
+  SmallVector<Constant *> Values;
   Values.reserve(getNumOperands());
 
   unsigned NumUpdated = 0;
-
-  Use *OperandList = getOperandList();
   unsigned OperandNo = 0;
-  for (Use *O = OperandList, *E = OperandList + getNumOperands(); O != E; ++O) {
-    Constant *Val = cast<Constant>(O->get());
+
+  for (unsigned I = 0, N = getNumOperands(); I < N; ++I) {
+    Constant *Val = cast<Constant>(getOperand(I));
     if (Val == From) {
-      OperandNo = (O - OperandList);
+      OperandNo = I;
       Val = To;
       ++NumUpdated;
     }
@@ -2291,81 +2291,61 @@ Value *ConstantPtrAuth::handleOperandChangeImpl(Value *From, Value *ToV) {
       Values, this, From, To, NumUpdated, OperandNo);
 }
 
-bool ConstantPtrAuth::hasSpecialAddressDiscriminator(uint64_t Value) const {
-  const auto *CastV = dyn_cast<ConstantExpr>(getAddrDiscriminator());
-  if (!CastV || CastV->getOpcode() != Instruction::IntToPtr)
-    return false;
-
-  const auto *IntVal = dyn_cast<ConstantInt>(CastV->getOperand(0));
-  if (!IntVal)
-    return false;
-
-  return IntVal->getValue() == Value;
-}
-
-bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
-                                            const Value *Discriminator,
-                                            const DataLayout &DL) const {
+template <typename T>
+static bool isConstantPtrAuthCompatibleWithSchema(const ConstantPtrAuth &CPA,
+                                                  ArrayRef<T> OtherSchema,
+                                                  const DataLayout &DL) {
   // This function may only be validly called to analyze a ptrauth operation
   // with no deactivation symbol, so if we have one it isn't compatible.
-  if (!isa<ConstantPointerNull>(getDeactivationSymbol()))
+  if (!isa<ConstantPointerNull>(CPA.getDeactivationSymbol()))
     return false;
 
-  // If the keys are different, there's no chance for this to be compatible.
-  if (getKey() != Key)
-    return false;
+  auto CompatibleOperands = [&DL](Value *This, Value *Other) {
+    if (This == Other)
+      return true;
 
-  // We can have 3 kinds of discriminators:
-  // - simple, integer-only:    `i64 x, ptr null` vs. `i64 x`
-  // - address-only:            `i64 0, ptr p` vs. `ptr p`
-  // - blended address/integer: `i64 x, ptr p` vs. `@llvm.ptrauth.blend(p, x)`
-
-  // If this constant has a simple discriminator (integer, no address), easy:
-  // it's compatible iff the provided full discriminator is also a simple
-  // discriminator, identical to our integer discriminator.
-  if (!hasAddressDiscriminator())
-    return getDiscriminator() == Discriminator;
-
-  // Otherwise, we can isolate address and integer discriminator components.
-  const Value *AddrDiscriminator = nullptr;
-
-  // This constant may or may not have an integer discriminator (instead of 0).
-  if (!getDiscriminator()->isNullValue()) {
-    // If it does, there's an implicit blend.  We need to have a matching blend
-    // intrinsic in the provided full discriminator.
-    if (!match(Discriminator,
-               m_Intrinsic<Intrinsic::ptrauth_blend>(
-                   m_Value(AddrDiscriminator), m_Specific(getDiscriminator()))))
+    // If This and Other are not trivially equal, try analyzing pointers.
+    if (!isa<PtrToIntOperator>(This) || !isa<PtrToIntOperator>(Other))
       return false;
-  } else {
-    // Otherwise, interpret the provided full discriminator as address-only.
-    AddrDiscriminator = Discriminator;
+    This = cast<PtrToIntOperator>(This)->getPointerOperand();
+    Other = cast<PtrToIntOperator>(Other)->getPointerOperand();
+
+    // Reject incompatible pointer types (different address spaces).
+    if (This->getType() != Other->getType())
+      return false;
+    unsigned AddressBitWidth = DL.getIndexTypeSizeInBits(This->getType());
+
+    // Check if two pointers are equivalent base+offset expressions.
+    APInt Off1(AddressBitWidth, 0);
+    auto *Base1 = This->stripAndAccumulateConstantOffsets(
+        DL, Off1, /*AllowNonInbounds=*/true);
+
+    APInt Off2(AddressBitWidth, 0);
+    auto *Base2 = Other->stripAndAccumulateConstantOffsets(
+        DL, Off2, /*AllowNonInbounds=*/true);
+
+    return Base1 == Base2 && Off1 == Off2;
+  };
+
+  if (CPA.getSchema().size() != OtherSchema.size())
+    return false;
+
+  for (unsigned I = 0, N = CPA.getSchema().size(); I < N; ++I) {
+    if (!CompatibleOperands(CPA.getSchema()[I], OtherSchema[I]))
+      return false;
   }
 
-  // Either way, we can now focus on comparing the address discriminators.
+  return true;
+}
 
-  // Discriminators are i64, so the provided addr disc may be a ptrtoint.
-  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDiscriminator))
-    AddrDiscriminator = Cast->getPointerOperand();
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> Schema,
+                                            const DataLayout &DL) const {
+  return isConstantPtrAuthCompatibleWithSchema(*this, Schema, DL);
+}
 
-  // Beyond that, we're only interested in compatible pointers.
-  if (getAddrDiscriminator()->getType() != AddrDiscriminator->getType())
-    return false;
-
-  // These are often the same constant GEP, making them trivially equivalent.
-  if (getAddrDiscriminator() == AddrDiscriminator)
-    return true;
-
-  // Finally, they may be equivalent base+offset expressions.
-  APInt Off1(DL.getIndexTypeSizeInBits(getAddrDiscriminator()->getType()), 0);
-  auto *Base1 = getAddrDiscriminator()->stripAndAccumulateConstantOffsets(
-      DL, Off1, /*AllowNonInbounds=*/true);
-
-  APInt Off2(DL.getIndexTypeSizeInBits(AddrDiscriminator->getType()), 0);
-  auto *Base2 = AddrDiscriminator->stripAndAccumulateConstantOffsets(
-      DL, Off2, /*AllowNonInbounds=*/true);
-
-  return Base1 == Base2 && Off1 == Off2;
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> Schema,
+                                            const DataLayout &DL) const {
+  return isConstantPtrAuthCompatibleWithSchema(*this, Schema, DL);
 }
 
 //---- ConstantExpr::get() implementations.

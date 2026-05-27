@@ -1873,10 +1873,18 @@ SDValue SelectionDAGBuilder::getValueImpl(const Value *V) {
       return DAG.getGlobalAddress(GV, getCurSDLoc(), VT);
 
     if (const ConstantPtrAuth *CPA = dyn_cast<ConstantPtrAuth>(C)) {
+      const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+      TLI.reportFatalErrorOnInvalidPtrAuthSchema(*CPA);
+
+      SmallVector<SDValue> Ops;
+      for (const Use &Operand : CPA->getSchema())
+        Ops.push_back(getValue(Operand));
+
+      SDValue Schema =
+          DAG.getNode(ISD::PtrAuthSchema, getCurSDLoc(), MVT::Other, Ops);
+
       return DAG.getNode(ISD::PtrAuthGlobalAddress, getCurSDLoc(), VT,
-                         getValue(CPA->getPointer()), getValue(CPA->getKey()),
-                         getValue(CPA->getAddrDiscriminator()),
-                         getValue(CPA->getDiscriminator()));
+                         getValue(CPA->getPointer()), Schema);
     }
 
     if (isa<ConstantPointerNull>(C))
@@ -6624,6 +6632,61 @@ void SelectionDAGBuilder::visitVectorExtractLastActive(const CallInst &I,
   setValue(&I, Result);
 }
 
+void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
+                                                unsigned Opcode) {
+  const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+  SDLoc SDL = getCurSDLoc();
+
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(I);
+
+  auto CreatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = I.getNthOperandBundleOfType("ptrauth", Index);
+
+    SmallVector<SDValue> Ops;
+    for (const Use &Operand : Bundle->Inputs)
+      Ops.push_back(getValue(Operand));
+
+    return DAG.getNode(ISD::PtrAuthSchema, SDL, MVT::Other, Ops);
+  };
+  auto CreateDeactivationSymbol = [&]() -> std::optional<SDValue> {
+    auto Bundle = I.getOperandBundle(LLVMContext::OB_deactivation_symbol);
+    if (!Bundle)
+      return std::nullopt;
+
+    auto *Sym = Bundle->Inputs[0].get();
+    return DAG.getDeactivationSymbol(cast<GlobalValue>(Sym));
+  };
+
+  if (Opcode == ISD::PtrAuthResignLoadRelative) {
+    SmallVector<SDValue> Ops;
+    Ops.push_back(getRoot());
+    Ops.push_back(getValue(I.getArgOperand(0)));
+    Ops.push_back(CreatePtrAuthBundle(0));
+    Ops.push_back(CreatePtrAuthBundle(1));
+    Ops.push_back(DAG.getTargetConstant(*cast<ConstantInt>(I.getArgOperand(1)),
+                                        SDL, MVT::i64));
+
+    if (auto SDSym = CreateDeactivationSymbol())
+      Ops.push_back(*SDSym);
+
+    SDValue Res =
+        DAG.getNode(Opcode, SDL, DAG.getVTList(MVT::i64, MVT::Other), Ops);
+    setValue(&I, Res);
+    DAG.setRoot(Res.getValue(1));
+  } else {
+    SmallVector<SDValue> Ops;
+    Ops.push_back(getValue(I.getArgOperand(0)));
+    Ops.push_back(CreatePtrAuthBundle(0));
+    if (Opcode == ISD::PtrAuthResign)
+      Ops.push_back(CreatePtrAuthBundle(1));
+
+    if (auto SDSym = CreateDeactivationSymbol())
+      Ops.push_back(*SDSym);
+
+    setValue(&I, DAG.getNode(Opcode, SDL, MVT::i64, Ops));
+  }
+}
+
 /// Lower the call to the specified intrinsic function.
 void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
                                              unsigned Intrinsic) {
@@ -6640,6 +6703,21 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
   default:
     // By default, turn this into a target intrinsic node.
     visitTargetIntrinsic(I, Intrinsic);
+    return;
+  case Intrinsic::ptrauth_auth:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthAuth);
+    return;
+  case Intrinsic::ptrauth_sign:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthSign);
+    return;
+  case Intrinsic::ptrauth_resign:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthResign);
+    return;
+  case Intrinsic::ptrauth_resign_load_relative:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthResignLoadRelative);
+    return;
+  case Intrinsic::ptrauth_strip:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthStrip);
     return;
   case Intrinsic::vscale: {
     EVT VT = TLI.getValueType(DAG.getDataLayout(), I.getType());
@@ -9250,12 +9328,8 @@ void SelectionDAGBuilder::LowerCallTo(const CallBase &CB, SDValue Callee,
       .setDeactivationSymbol(DeactivationSymbol);
 
   // Set the pointer authentication info if we have it.
-  if (PAI) {
-    if (!TLI.supportPtrAuthBundles())
-      report_fatal_error(
-          "This target doesn't support calls with ptrauth operand bundles.");
+  if (PAI)
     CLI.setPtrAuth(*PAI);
-  }
 
   std::pair<SDValue, SDValue> Result = lowerInvokable(CLI, EHPadBB);
 
@@ -9860,23 +9934,18 @@ void SelectionDAGBuilder::visitCall(const CallInst &I) {
 
 void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
     const CallBase &CB, const BasicBlock *EHPadBB) {
+  const TargetLowering &TLI = DAG.getTargetLoweringInfo();
   auto PAB = CB.getOperandBundle("ptrauth");
   const Value *CalleeV = CB.getCalledOperand();
 
-  // Gather the call ptrauth data from the operand bundle:
-  //   [ i32 <key>, i64 <discriminator> ]
-  const auto *Key = cast<ConstantInt>(PAB->Inputs[0]);
-  const Value *Discriminator = PAB->Inputs[1];
+  assert(!isa<IntrinsicInst>(CB) && "Should be handled by visitIntrinsicCall");
 
-  assert(Key->getType()->isIntegerTy(32) && "Invalid ptrauth key");
-  assert(Discriminator->getType()->isIntegerTy(64) &&
-         "Invalid ptrauth discriminator");
+  TLI.reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
   if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
-    if (CalleeCPA->isKnownCompatibleWith(Key, Discriminator,
-                                         DAG.getDataLayout()))
+    if (CalleeCPA->isKnownCompatibleWith(PAB->Inputs, DAG.getDataLayout()))
       return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
                          CB.isMustTailCall(), EHPadBB);
 
@@ -9884,8 +9953,10 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   assert(!isa<Function>(CalleeV) && "invalid direct ptrauth call");
 
   // Otherwise, do an authenticated indirect call.
-  TargetLowering::PtrAuthInfo PAI = {Key->getZExtValue(),
-                                     getValue(Discriminator)};
+
+  TargetLowering::PtrAuthInfo PAI;
+  for (const Use &U : PAB->Inputs)
+    PAI.Operands.push_back(getValue(U.get()));
 
   LowerCallTo(CB, getValue(CalleeV), CB.isTailCall(), CB.isMustTailCall(),
               EHPadBB, &PAI);

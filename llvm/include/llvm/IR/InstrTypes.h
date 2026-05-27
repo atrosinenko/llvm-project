@@ -2173,6 +2173,24 @@ public:
     return std::nullopt;
   }
 
+  /// Returns n-th operand bundle of the particular type, if present.
+  ///
+  /// The version accepting the ID as an integer LLVMContext::OB_* constant
+  /// is not provided, as its arguments can be easily swapped by mistake.
+  std::optional<OperandBundleUse>
+  getNthOperandBundleOfType(StringRef Name, unsigned Index) const {
+    for (unsigned i = 0, e = getNumOperandBundles(); i != e; ++i) {
+      OperandBundleUse U = getOperandBundleAt(i);
+      if (U.getTagName() != Name)
+        continue;
+      if (Index == 0)
+        return U;
+      --Index;
+    }
+
+    return std::nullopt;
+  }
+
   /// Return the list of operand bundles attached to this instruction as
   /// a vector of OperandBundleDefs.
   ///

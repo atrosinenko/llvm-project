@@ -376,40 +376,6 @@ static bool isZeroingInactiveLanes(SDValue Op) {
   }
 }
 
-static std::tuple<SDValue, SDValue>
-extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
-  SDLoc DL(Disc);
-  SDValue AddrDisc;
-  SDValue ConstDisc;
-
-  // If this is a blend, remember the constant and address discriminators.
-  // Otherwise, it's either a constant discriminator, or a non-blended
-  // address discriminator.
-  if (Disc->getOpcode() == ISD::INTRINSIC_WO_CHAIN &&
-      Disc->getConstantOperandVal(0) == Intrinsic::ptrauth_blend) {
-    AddrDisc = Disc->getOperand(1);
-    ConstDisc = Disc->getOperand(2);
-  } else {
-    ConstDisc = Disc;
-  }
-
-  // If the constant discriminator (either the blend RHS, or the entire
-  // discriminator value) isn't a 16-bit constant, bail out, and let the
-  // discriminator be computed separately.
-  const auto *ConstDiscN = dyn_cast<ConstantSDNode>(ConstDisc);
-  if (!ConstDiscN || !isUInt<16>(ConstDiscN->getZExtValue()))
-    return std::make_tuple(DAG->getTargetConstant(0, DL, MVT::i64), Disc);
-
-  // If there's no address discriminator, use NoRegister, which we'll later
-  // replace with XZR, or directly use a Z variant of the inst. when available.
-  if (!AddrDisc)
-    AddrDisc = DAG->getRegister(AArch64::NoRegister, MVT::i64);
-
-  return std::make_tuple(
-      DAG->getTargetConstant(ConstDiscN->getZExtValue(), DL, MVT::i64),
-      AddrDisc);
-}
-
 AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
                                              const AArch64Subtarget &STI)
     : TargetLowering(TM, STI), Subtarget(&STI) {
@@ -3350,6 +3316,8 @@ AArch64TargetLowering::EmitEntryPStateSM(MachineInstr &MI,
   return BB;
 }
 
+// Used by https://github.com/llvm/llvm-project/pull/130809.
+#if 0
 // Helper function to find the instruction that defined a virtual register.
 // If unable to find such instruction, returns nullptr.
 static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
@@ -3375,57 +3343,7 @@ static const MachineInstr *stripVRegCopies(const MachineRegisterInfo &MRI,
   }
   return nullptr;
 }
-
-void AArch64TargetLowering::fixupPtrauthDiscriminator(
-    MachineInstr &MI, MachineBasicBlock *BB, MachineOperand &IntDiscOp,
-    MachineOperand &AddrDiscOp, const TargetRegisterClass *AddrDiscRC) const {
-  const TargetInstrInfo *TII = Subtarget->getInstrInfo();
-  MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
-  const DebugLoc &DL = MI.getDebugLoc();
-
-  Register AddrDisc = AddrDiscOp.getReg();
-  int64_t IntDisc = IntDiscOp.getImm();
-  assert(IntDisc == 0 && "Blend components are already expanded");
-
-  const MachineInstr *DiscMI = stripVRegCopies(MRI, AddrDisc);
-  if (DiscMI) {
-    switch (DiscMI->getOpcode()) {
-    case AArch64::MOVKXi:
-      // blend(addr, imm) which is lowered as "MOVK addr, #imm, #48".
-      // #imm should be an immediate and not a global symbol, for example.
-      if (DiscMI->getOperand(2).isImm() &&
-          DiscMI->getOperand(3).getImm() == 48) {
-        AddrDisc = DiscMI->getOperand(1).getReg();
-        IntDisc = DiscMI->getOperand(2).getImm();
-      }
-      break;
-    case AArch64::MOVi32imm:
-    case AArch64::MOVi64imm:
-      // Small immediate integer constant passed via VReg.
-      if (DiscMI->getOperand(1).isImm() &&
-          isUInt<16>(DiscMI->getOperand(1).getImm())) {
-        AddrDisc = AArch64::NoRegister;
-        IntDisc = DiscMI->getOperand(1).getImm();
-      }
-      break;
-    }
-  }
-
-  // For uniformity, always use NoRegister, as XZR is not necessarily contained
-  // in the requested register class.
-  if (AddrDisc == AArch64::XZR)
-    AddrDisc = AArch64::NoRegister;
-
-  // Make sure AddrDisc operand respects the register class imposed by MI.
-  if (AddrDisc && MRI.getRegClass(AddrDisc) != AddrDiscRC) {
-    Register TmpReg = MRI.createVirtualRegister(AddrDiscRC);
-    BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg).addReg(AddrDisc);
-    AddrDisc = TmpReg;
-  }
-
-  AddrDiscOp.setReg(AddrDisc);
-  IntDiscOp.setImm(IntDisc);
-}
+#endif
 
 MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     MachineInstr &MI, MachineBasicBlock *BB) const {
@@ -3524,8 +3442,6 @@ MachineBasicBlock *AArch64TargetLowering::EmitInstrWithCustomInserter(
     return EmitZTInstr(MI, BB, AArch64::MOVT_TIZ, /*Op0IsDef=*/true);
 
   case AArch64::PAC:
-    fixupPtrauthDiscriminator(MI, BB, MI.getOperand(3), MI.getOperand(4),
-                              &AArch64::GPR64noipRegClass);
     return BB;
   }
 }
@@ -9949,6 +9865,7 @@ static bool shouldLowerTailCallStackArg(const MachineFunction &MF,
 SDValue
 AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
                                  SmallVectorImpl<SDValue> &InVals) const {
+  const AArch64SelectionDAGInfo *SDI = Subtarget->getSelectionDAGInfo();
   SelectionDAG &DAG = CLI.DAG;
   SDLoc &DL = CLI.DL;
   SmallVector<ISD::OutputArg, 32> &Outs = CLI.Outs;
@@ -10484,20 +10401,14 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   }
 
   if (CLI.PAI) {
-    const uint64_t Key = CLI.PAI->Key;
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
-
-    // Split the discriminator into address/integer components.
-    SDValue AddrDisc, IntDisc;
-    std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(CLI.PAI->Discriminator, &DAG);
+    auto [Key, IntDisc, AddrDisc] =
+        SDI->extractPtrauthBlendDiscriminators(CLI.PAI->Operands, DL, &DAG);
 
     if (Opc == AArch64ISD::CALL_RVMARKER)
       Opc = AArch64ISD::AUTH_CALL_RVMARKER;
     else
       Opc = IsTailCall ? AArch64ISD::AUTH_TC_RETURN : AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(Key, DL, MVT::i32));
+    Ops.push_back(Key);
     Ops.push_back(IntDisc);
     Ops.push_back(AddrDisc);
   }
@@ -10981,7 +10892,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
   // With ptrauth-calls, the tlv access thunk pointer is authenticated (IA, 0).
   if (DAG.getMachineFunction().getFunction().hasFnAttribute("ptrauth-calls")) {
     Opcode = AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i32));
+    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i64));
     Ops.push_back(DAG.getTargetConstant(0, DL, MVT::i64)); // Integer Disc.
     Ops.push_back(DAG.getRegister(AArch64::NoRegister, MVT::i64)); // Addr Disc.
   }
@@ -11338,9 +11249,11 @@ SDValue AArch64TargetLowering::LowerGlobalTLSAddress(SDValue Op,
 // Thus, it's only used for ptrauth references to extern_weak to avoid null
 // checks.
 
-static SDValue LowerPtrAuthGlobalAddressStatically(
-    SDValue TGA, SDLoc DL, EVT VT, AArch64PACKey::ID KeyC,
-    SDValue Discriminator, SDValue AddrDiscriminator, SelectionDAG &DAG) {
+static SDValue LowerPtrAuthGlobalAddressStatically(SDValue TGA, SDLoc DL,
+                                                   EVT VT, SDValue Key,
+                                                   SDValue Discriminator,
+                                                   SDValue AddrDiscriminator,
+                                                   SelectionDAG &DAG) {
   const auto *TGN = cast<GlobalAddressSDNode>(TGA.getNode());
   assert(TGN->getGlobal()->hasExternalWeakLinkage());
 
@@ -11352,10 +11265,10 @@ static SDValue LowerPtrAuthGlobalAddressStatically(
     report_fatal_error(
         "unsupported non-zero offset in weak ptrauth global reference");
 
-  if (!isNullConstant(AddrDiscriminator))
+  auto *AddrDiscReg = dyn_cast<RegisterSDNode>(AddrDiscriminator);
+  if (!AddrDiscReg || AddrDiscReg->getReg() != AArch64::NoRegister)
     report_fatal_error("unsupported weak addr-div ptrauth global");
 
-  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
   return SDValue(DAG.getMachineNode(AArch64::LOADauthptrstatic, DL, MVT::i64,
                                     {TGA, Key, Discriminator}),
                  0);
@@ -11364,21 +11277,13 @@ static SDValue LowerPtrAuthGlobalAddressStatically(
 SDValue
 AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
                                                  SelectionDAG &DAG) const {
+  const AArch64SelectionDAGInfo *SDI = Subtarget->getSelectionDAGInfo();
   SDValue Ptr = Op.getOperand(0);
-  uint64_t KeyC = Op.getConstantOperandVal(1);
-  SDValue AddrDiscriminator = Op.getOperand(2);
-  uint64_t DiscriminatorC = Op.getConstantOperandVal(3);
   EVT VT = Op.getValueType();
   SDLoc DL(Op);
 
-  if (KeyC > AArch64PACKey::LAST)
-    report_fatal_error("key in ptrauth global out of range [0, " +
-                       Twine((int)AArch64PACKey::LAST) + "]");
-
-  // Blend only works if the integer discriminator is 16-bit wide.
-  if (!isUInt<16>(DiscriminatorC))
-    report_fatal_error(
-        "constant discriminator in ptrauth global out of range [0, 0xffff]");
+  auto [Key, Discriminator, AddrDiscriminator] =
+      SDI->extractPtrauthBlendDiscriminators(Op.getOperand(1), &DAG);
 
   // Choosing between 3 lowering alternatives is target-specific.
   if (!Subtarget->isTargetELF() && !Subtarget->isTargetMachO())
@@ -11406,8 +11311,6 @@ AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
   assert(PtrN->getTargetFlags() == 0 &&
          "unsupported target flags on ptrauth global");
 
-  SDValue Key = DAG.getTargetConstant(KeyC, DL, MVT::i32);
-  SDValue Discriminator = DAG.getTargetConstant(DiscriminatorC, DL, MVT::i64);
   SDValue TAddrDiscriminator = !isNullConstant(AddrDiscriminator)
                                    ? AddrDiscriminator
                                    : DAG.getRegister(AArch64::XZR, MVT::i64);
@@ -11430,9 +11333,8 @@ AArch64TargetLowering::LowerPtrAuthGlobalAddress(SDValue Op,
         0);
 
   // extern_weak ref -> LOADauthptrstatic
-  return LowerPtrAuthGlobalAddressStatically(
-      TPtr, DL, VT, (AArch64PACKey::ID)KeyC, Discriminator, AddrDiscriminator,
-      DAG);
+  return LowerPtrAuthGlobalAddressStatically(TPtr, DL, VT, Key, Discriminator,
+                                             AddrDiscriminator, DAG);
 }
 
 // Looks through \param Val to determine the bit that can be used to
@@ -31583,6 +31485,69 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
   // Expand scalar and SVE operations using selects. Neon vectors prefer sub to
   // avoid vselect becoming bsl / unrolling.
   return !VT.isFixedLengthVector();
+}
+
+static std::optional<std::string>
+validateSinglePtrAuthSchema(ArrayRef<Use> Schema, bool ExpectSingleElement,
+                            bool CheckIntDisc) {
+  unsigned NumOperands = Schema.size();
+  if (ExpectSingleElement) {
+    if (NumOperands != 1)
+      return "single-element ptrauth schema expected";
+  } else {
+    if (NumOperands != 3)
+      return "three-element ptrauth schema expected";
+  }
+
+  // The first operand is always the key ID.
+  auto *Key = dyn_cast<ConstantInt>(Schema[0]);
+  if (!Key || Key->getZExtValue() > (unsigned long)AArch64PACKey::LAST)
+    return ("key must be constant in range [0, " +
+            Twine((int)AArch64PACKey::LAST) + "]")
+        .str();
+
+  // Done validating single-operand schemas.
+  if (NumOperands == 1)
+    return std::nullopt;
+
+  if (CheckIntDisc) {
+    auto *IntDisc = dyn_cast<ConstantInt>(Schema[1]);
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return "constant modifier must be 16-bit unsigned constant";
+  }
+
+  return std::nullopt;
+}
+
+std::optional<std::string>
+AArch64TargetLowering::validateConstantPtrAuthSchema(ArrayRef<Use> Schema,
+                                                     bool CheckIntDisc) {
+  return validateSinglePtrAuthSchema(Schema, /*ExpectSingleElement=*/false,
+                                     CheckIntDisc);
+}
+
+std::optional<std::string>
+AArch64TargetLowering::validatePtrAuthSchema(const Value &V) const {
+  if (auto *CB = dyn_cast<CallBase>(&V)) {
+    for (unsigned I = 0, N = CB->getNumOperandBundles(); I < N; ++I) {
+      OperandBundleUse OB = CB->getOperandBundleAt(I);
+      if (OB.getTagID() != LLVMContext::OB_ptrauth)
+        continue;
+
+      bool ExpectSingleElement =
+          CB->getIntrinsicID() == Intrinsic::ptrauth_strip;
+      if (auto Error =
+              validateSinglePtrAuthSchema(OB.Inputs, ExpectSingleElement,
+                                          /*CheckIntDisc=*/true))
+        return (CB->getFunction()->getName() + ": " + *Error).str();
+    }
+    return std::nullopt;
+  }
+
+  auto &CPA = cast<ConstantPtrAuth>(V);
+  return validateSinglePtrAuthSchema(CPA.getSchema(),
+                                     /*ExpectSingleElement=*/false,
+                                     /*CheckIntDisc=*/true);
 }
 
 MachineInstr *

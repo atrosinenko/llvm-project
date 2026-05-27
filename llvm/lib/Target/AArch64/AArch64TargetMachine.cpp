@@ -603,6 +603,12 @@ void AArch64TargetMachine::registerPassBuilderCallbacks(PassBuilder &PB) {
 #define GET_PASS_REGISTRY "AArch64PassRegistry.def"
 #include "llvm/Passes/TargetPassRegistry.inc"
 
+  PB.registerPipelineStartEPCallback(
+      [=](ModulePassManager &MPM, OptimizationLevel Level) {
+        FunctionPassManager FPM;
+        FPM.addPass(AArch64PointerAuthEarlyIRFixupPass());
+        MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+      });
   PB.registerLateLoopOptimizationsEPCallback(
       [=](LoopPassManager &LPM, OptimizationLevel Level) {
         if (Level != OptimizationLevel::O0)

@@ -13,10 +13,17 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64Subtarget.h"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/CodeGen/CFIInstBuilder.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Transforms/Utils/PromoteMemToReg.h"
 
 using namespace llvm;
 using namespace llvm::AArch64PAuth;
@@ -24,6 +31,10 @@ using namespace llvm::AArch64PAuth;
 #define AARCH64_POINTER_AUTH_NAME "AArch64 Pointer Authentication"
 
 namespace {
+
+cl::opt<bool> WarnOnRemainingBlendCalls(
+    "aarch64-warn-on-remaining-ptrauth-blend", cl::init(true),
+    "Report @llvm.ptrauth.blend calls not replaced by operand bundles");
 
 class AArch64PointerAuthImpl {
 public:
@@ -333,6 +344,135 @@ AArch64PointerAuthPass::run(MachineFunction &MF,
   if (!Changed)
     return PreservedAnalyses::all();
   PreservedAnalyses PA = getMachineFunctionPassPreservedAnalyses();
+  PA.preserveSet<CFGAnalyses>();
+  return PA;
+}
+
+bool AArch64PointerAuthEarlyIRFixupPass::eliminateBlendAllocas(
+    Function &F) const {
+  SmallVector<AllocaInst *> Discriminators;
+
+  for (auto &BB : F) {
+    for (auto &I : BB) {
+      auto *Blend = dyn_cast<IntrinsicInst>(&I);
+      if (!Blend || Blend->getIntrinsicID() != Intrinsic::ptrauth_blend)
+        continue;
+
+      for (auto *U : Blend->users()) {
+        auto *Store = dyn_cast<StoreInst>(U);
+        if (!Store)
+          continue;
+
+        auto *Alloca = dyn_cast<AllocaInst>(Store->getPointerOperand());
+        if (Alloca && isAllocaPromotable(Alloca))
+          Discriminators.push_back(Alloca);
+      }
+    }
+  }
+
+  if (Discriminators.empty())
+    return false;
+
+  DominatorTree DT(F);
+  PromoteMemToReg(Discriminators, DT);
+  return true;
+}
+
+bool AArch64PointerAuthEarlyIRFixupPass::updateOperandBundles(
+    Function &F) const {
+  auto IsPossiblyUpdatable = [](CallBase *CB) {
+    unsigned NumBundles = CB->getNumOperandBundles();
+    for (unsigned I = 0; I < NumBundles; ++I) {
+      OperandBundleUse OB = CB->getOperandBundleAt(I);
+      if (OB.getTagID() == LLVMContext::OB_ptrauth && OB.Inputs.size() == 3 &&
+          isa<IntrinsicInst>(OB.Inputs[2]))
+        return true;
+    }
+    return false;
+  };
+
+  auto UpdateBundle = [](OperandBundleDef &OB) {
+    if (OB.getTag() != "ptrauth" || OB.inputs().size() != 3)
+      return false;
+
+    if (!isa<ConstantInt>(OB.inputs()[1]) ||
+        !cast<ConstantInt>(OB.inputs()[1])->isZero())
+      return false;
+
+    IntrinsicInst *Blend = dyn_cast<IntrinsicInst>(OB.inputs()[2]);
+    if (!Blend || Blend->getIntrinsicID() != Intrinsic::ptrauth_blend)
+      return false;
+
+    auto *IntDisc = dyn_cast<ConstantInt>(Blend->getArgOperand(1));
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return false;
+
+    SmallVector<Value *, 3> Operands;
+    Operands.push_back(OB.inputs()[0]);          // Key
+    Operands.push_back(IntDisc);                 // Integer discriminator
+    Operands.push_back(Blend->getArgOperand(0)); // Address discriminator
+    OB = OperandBundleDef("ptrauth", Operands);
+    return true;
+  };
+
+  bool Changed = false;
+  for (auto &BB : F) {
+    for (auto &I : make_early_inc_range(BB)) {
+      bool ThisChanged = false;
+      auto *CB = dyn_cast<CallBase>(&I);
+      if (!CB || !IsPossiblyUpdatable(CB))
+        continue;
+
+      SmallVector<OperandBundleDef, 3> Bundles;
+      CB->getOperandBundlesAsDefs(Bundles);
+      for (auto &OB : Bundles)
+        ThisChanged |= UpdateBundle(OB);
+
+      if (ThisChanged) {
+        CallBase *NewCB = CallBase::Create(CB, Bundles, CB->getIterator());
+        CB->replaceAllUsesWith(NewCB);
+        CB->eraseFromParent();
+        Changed = true;
+      }
+    }
+  }
+
+  return Changed;
+}
+
+void AArch64PointerAuthEarlyIRFixupPass::warnOnRemainingBlendCalls(
+    Function &F, OptimizationRemarkEmitter &ORE) const {
+  for (auto &BB : F) {
+    for (auto &I : BB) {
+      auto *II = dyn_cast<IntrinsicInst>(&I);
+      if (!II || II->getIntrinsicID() != Intrinsic::ptrauth_blend ||
+          II->uses().empty())
+        continue;
+
+      ORE.emit(DiagnosticInfoOptimizationFailure(
+          F, II->getDebugLoc(),
+          "failed to eliminate call to @llvm.ptrauth.blend intrinsic"));
+    }
+  }
+}
+
+PreservedAnalyses
+AArch64PointerAuthEarlyIRFixupPass::run(Function &F,
+                                        FunctionAnalysisManager &AM) {
+  bool Changed = false;
+
+  Changed |= eliminateBlendAllocas(F);
+  Changed |= updateOperandBundles(F);
+
+  if (WarnOnRemainingBlendCalls) {
+    auto &ORE = AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
+    warnOnRemainingBlendCalls(F, ORE);
+  }
+
+  if (!Changed)
+    return PreservedAnalyses::all();
+
+  PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   return PA;
 }

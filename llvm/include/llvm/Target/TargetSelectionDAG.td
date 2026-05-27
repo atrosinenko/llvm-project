@@ -953,6 +953,34 @@ def sponentry : SDNode<
   "ISD::SPONENTRY", SDTypeProfile <1, 0, [SDTCisPtrTy<0>]>
 >;
 
+// Pointer Authentication operations.
+
+def SDTPtrAuthSchemaDef : SDTypeProfile<1, -1, [
+  SDTCisVT<0, untyped>
+]>;
+def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>
+]>;
+def SDTPtrAuthTwoSchemas : SDTypeProfile<1, 3, [    // resign
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>
+]>;
+def SDTPtrAuthResignLoadRelative : SDTypeProfile<1, 4, [    // resign_load_relative
+  SDTCisPtrTy<0>, SDTCisSameAs<0, 1>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>, SDTCisVT<4, i64>
+]>;
+
+// FIXME Should we add a chain to authenticating nodes (auth/resign) or
+//       is auth speculation safe as long as it occurs inside a single BB?
+def ptrauth_schema : SDNode<"ISD::PtrAuthSchema", SDTPtrAuthSchemaDef, []>;
+def ptrauth_auth   : SDNode<"ISD::PtrAuthAuth",   SDTPtrAuthOneSchema, []>;
+def ptrauth_sign   : SDNode<"ISD::PtrAuthSign",   SDTPtrAuthOneSchema, []>;
+def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip",  SDTPtrAuthOneSchema, []>;
+
+def ptrauth_resign : SDNode<"ISD::PtrAuthResign", SDTPtrAuthTwoSchemas, []>;
+
+def ptrauth_resign_load_relative : SDNode<"ISD::PtrAuthResignLoadRelative",
+                                          SDTPtrAuthResignLoadRelative,
+                                          [SDNPHasChain, SDNPMayLoad, SDNPMemOperand]>;
+
 //===----------------------------------------------------------------------===//
 // Selection DAG Condition Codes
 

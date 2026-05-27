@@ -41,6 +41,7 @@
 #include "llvm/CodeGenTypes/MachineValueType.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/CallingConv.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
@@ -4709,8 +4710,29 @@ public:
   /// Return true if the target supports kcfi operand bundles.
   virtual bool supportKCFIBundles() const { return false; }
 
-  /// Return true if the target supports ptrauth operand bundles.
-  virtual bool supportPtrAuthBundles() const { return false; }
+protected:
+  /// Perform target-specific validation of PtrAuth schema descriptions that
+  /// is not covered by Verifier but relied upon by the backend.
+  virtual std::optional<std::string>
+  validatePtrAuthSchema(const Value &V) const {
+    return "this target does not support pointer authentication";
+  }
+
+public:
+  /// Convenience function to report fatal error if user-provided IR violates
+  /// the assumptions relied upon by the backend.
+  ///
+  /// This function is intended to handle possible invalid user input and thus
+  /// always performs the check, whether the assertions are enabled or not.
+  void reportFatalErrorOnInvalidPtrAuthSchema(const Value &V) const {
+    assert(isa<CallBase>(V) || isa<ConstantPtrAuth>(V));
+    if (auto Error = validatePtrAuthSchema(V)) {
+      errs() << "Ptrauth schema violates target-specific constraints:\n";
+      V.print(errs());
+      errs() << "\n";
+      reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
+    }
+  }
 
   /// Perform necessary initialization to handle a subset of CSRs explicitly
   /// via copies. This function is called at the beginning of instruction
@@ -4820,8 +4842,7 @@ public:
   /// pointer-authenticating indirect calls.  It is equivalent to the "ptrauth"
   /// operand bundle found on the call instruction, if any.
   struct PtrAuthInfo {
-    uint64_t Key;
-    SDValue Discriminator;
+    SmallVector<SDValue> Operands;
   };
 
   /// This structure contains all information that is necessary for lowering

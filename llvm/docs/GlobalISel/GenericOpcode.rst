@@ -60,16 +60,72 @@ The address of a global value.
 
   %0(p0) = G_GLOBAL_VALUE @var_local
 
-G_PTRAUTH_GLOBAL_VALUE
-^^^^^^^^^^^^^^^^^^^^^^
+G_PTRAUTH_SCHEMA
+^^^^^^^^^^^^^^^^
 
-The signed address of a global value. Operands: address to be signed (pointer),
-key (32-bit imm), address for address discrimination (zero if not needed) and
-an extra discriminator (64-bit imm).
+The signing schema to use for one of Pointer Authentication operations, that is
+the description of how to compute the discriminator value and which key to use.
+The instruction accepts variable number of `i64` operands, whose number and
+semantic is target-dependent and corresponds to the elements of `"ptrauth"`
+operand bundle or the schema part of `ptrauth` constant expression.
+The instruction produces an opaque token value to be passed to other
+`G_PTRAUTH_*` instructions.
 
 .. code-block:: none
 
-  %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), s32, %2:_(p0), s64
+  %0:_(s0) = G_PTRAUTH_SCHEMA %1:_(s64), ...
+
+G_PTRAUTH_GLOBAL_VALUE
+^^^^^^^^^^^^^^^^^^^^^^
+
+The signed address of a global value. Operands: address to be signed (pointer)
+and an opaque token produced by `G_PTRAUTH_SCHEMA`.
+
+.. code-block:: none
+
+  %0:_(p0) = G_PTRAUTH_GLOBAL_VALUE %1:_(p0), %2:_(s0)
+
+G_PTRAUTH_AUTH
+^^^^^^^^^^^^^^
+
+Authenticate a pointer value according to the signing schema specified by
+the token operand.
+
+.. code-block:: none
+
+  %0:_(p0) = G_PTRAUTH_AUTH %1:_, %2:_(s0)
+
+G_PTRAUTH_SIGN
+^^^^^^^^^^^^^^
+
+Sign a pointer value according to the signing schema specified by
+the token operand.
+
+.. code-block:: none
+
+  %0:_(p0) = G_PTRAUTH_SIGN %1:_, %2:_(s0)
+
+G_PTRAUTH_RESIGN
+^^^^^^^^^^^^^^^^
+
+Authenticate a pointer value and re-sign it according to the signing schemas
+specified by the token operands.
+
+.. code-block:: none
+
+  %0:_(p0) = G_PTRAUTH_RESIGN %1:_, %2:_(s0), %3:_(s0)
+
+G_PTRAUTH_STRIP
+^^^^^^^^^^^^^^^
+
+Produces non-signed pointer value without authenticating.
+Accepts a pointer value and a token providing the information about the
+signing schema that produced this value (the particular semantic of this
+information is target-specific).
+
+.. code-block:: none
+
+  %0:_(p0) = G_PTRAUTH_STRIP %1:_, %2:_(s0)
 
 G_BLOCK_ADDR
 ^^^^^^^^^^^^

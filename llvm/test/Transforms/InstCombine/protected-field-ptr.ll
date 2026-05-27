@@ -8,9 +8,7 @@ define ptr @load_hw(ptr addrspace(1) %ptrptr) {
 ; CHECK-LABEL: define ptr @load_hw(
 ; CHECK-SAME: ptr addrspace(1) [[PTRPTR:%.*]]) {
 ; CHECK-NEXT:    [[TMP1:%.*]] = load ptr, ptr addrspace(1) [[PTRPTR]], align 8
-; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[TMP1]] to i64
-; CHECK-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]], i32 2, i64 1)
-; CHECK-NEXT:    [[PTR:%.*]] = inttoptr i64 [[TMP3]] to ptr
+; CHECK-NEXT:    [[PTR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "ptrauth"(i64 2, i64 1, i64 0) ]
 ; CHECK-NEXT:    ret ptr [[PTR]]
 ;
   %protptrptr = call ptr addrspace(1) @llvm.protected.field.ptr.p1(ptr addrspace(1) %ptrptr, i64 1, i1 true)
@@ -21,9 +19,7 @@ define ptr @load_hw(ptr addrspace(1) %ptrptr) {
 define void @store_hw(ptr addrspace(1) %ptrptr, ptr %ptr) {
 ; CHECK-LABEL: define void @store_hw(
 ; CHECK-SAME: ptr addrspace(1) [[PTRPTR:%.*]], ptr [[PTR:%.*]]) {
-; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[PTR]] to i64
-; CHECK-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP1]], i32 2, i64 2)
-; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+; CHECK-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[PTR]]) [ "ptrauth"(i64 2, i64 2, i64 0) ]
 ; CHECK-NEXT:    store ptr [[TMP3]], ptr addrspace(1) [[PTRPTR]], align 8
 ; CHECK-NEXT:    ret void
 ;
@@ -36,9 +32,7 @@ define ptr @load_hw_ds(ptr addrspace(1) %ptrptr) {
 ; CHECK-LABEL: define ptr @load_hw_ds(
 ; CHECK-SAME: ptr addrspace(1) [[PTRPTR:%.*]]) {
 ; CHECK-NEXT:    [[TMP1:%.*]] = load ptr, ptr addrspace(1) [[PTRPTR]], align 8
-; CHECK-NEXT:    [[TMP2:%.*]] = ptrtoint ptr [[TMP1]] to i64
-; CHECK-NEXT:    [[TMP3:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP2]], i32 2, i64 1) [ "deactivation-symbol"(ptr @ds1) ]
-; CHECK-NEXT:    [[PTR:%.*]] = inttoptr i64 [[TMP3]] to ptr
+; CHECK-NEXT:    [[PTR:%.*]] = call ptr @llvm.ptrauth.auth.p0(ptr [[TMP1]]) [ "deactivation-symbol"(ptr @ds1), "ptrauth"(i64 2, i64 1, i64 0) ]
 ; CHECK-NEXT:    ret ptr [[PTR]]
 ;
   %protptrptr = call ptr addrspace(1) @llvm.protected.field.ptr.p1(ptr addrspace(1) %ptrptr, i64 1, i1 true) [ "deactivation-symbol"(ptr @ds1) ]
@@ -49,9 +43,7 @@ define ptr @load_hw_ds(ptr addrspace(1) %ptrptr) {
 define void @store_hw_ds(ptr addrspace(1) %ptrptr, ptr %ptr) {
 ; CHECK-LABEL: define void @store_hw_ds(
 ; CHECK-SAME: ptr addrspace(1) [[PTRPTR:%.*]], ptr [[PTR:%.*]]) {
-; CHECK-NEXT:    [[TMP1:%.*]] = ptrtoint ptr [[PTR]] to i64
-; CHECK-NEXT:    [[TMP2:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP1]], i32 2, i64 2) [ "deactivation-symbol"(ptr @ds2) ]
-; CHECK-NEXT:    [[TMP3:%.*]] = inttoptr i64 [[TMP2]] to ptr
+; CHECK-NEXT:    [[TMP3:%.*]] = call ptr @llvm.ptrauth.sign.p0(ptr [[PTR]]) [ "deactivation-symbol"(ptr @ds2), "ptrauth"(i64 2, i64 2, i64 0) ]
 ; CHECK-NEXT:    store ptr [[TMP3]], ptr addrspace(1) [[PTRPTR]], align 8
 ; CHECK-NEXT:    ret void
 ;

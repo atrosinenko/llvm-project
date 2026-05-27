@@ -1,5 +1,7 @@
-; RUN: llc < %s -O0 -mtriple=aarch64-none-linux-gnu -mattr=+pauth | FileCheck --check-prefixes=CHECK,O0 %s
-; RUN: llc < %s -O2 -mtriple=aarch64-none-linux-gnu -mattr=+pauth | FileCheck --check-prefixes=CHECK,O2 %s
+; RUN: llc < %s -O0 -mtriple=aarch64-none-linux-gnu -mattr=+pauth -global-isel=0 | FileCheck %s
+; RUN: llc < %s -O2 -mtriple=aarch64-none-linux-gnu -mattr=+pauth -global-isel=0 | FileCheck %s
+; RUN: llc < %s -O0 -mtriple=aarch64-none-linux-gnu -mattr=+pauth -global-isel=1 -global-isel-abort=1 | FileCheck %s
+; RUN: llc < %s -O2 -mtriple=aarch64-none-linux-gnu -mattr=+pauth -global-isel=1 -global-isel-abort=1 | FileCheck %s
 
 @ds = external global i8
 
@@ -15,59 +17,75 @@ define void @call(ptr %p) {
 }
 
 ; CHECK: pauth_sign_zero:
-define i64 @pauth_sign_zero(i64 %p) {
-  ; O0: mov x8, xzr
+define ptr @pauth_sign_zero(ptr %p) {
   ; CHECK: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
-  ; O0-NEXT: pacia x0, x8
-  ; O2-NEXT: paciza x0
-  %signed = call i64 @llvm.ptrauth.sign(i64 %p, i32 0, i64 0) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %signed
+  ; CHECK-NEXT: paciza x0
+  %signed = call ptr @llvm.ptrauth.sign(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %signed
 }
 
 ; CHECK: pauth_sign_const:
-define i64 @pauth_sign_const(i64 %p) {
+define ptr @pauth_sign_const(ptr %p) {
   ; CHECK: mov x16, #12345
   ; CHECK-NEXT: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: pacia x0, x16
-  %signed = call i64 @llvm.ptrauth.sign(i64 %p, i32 0, i64 12345) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %signed
+  %signed = call ptr @llvm.ptrauth.sign(ptr %p) [ "ptrauth"(i64 0, i64 12345, i64 0), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %signed
 }
 
 ; CHECK: pauth_sign:
-define i64 @pauth_sign(i64 %p, i64 %d) {
+define ptr @pauth_sign(ptr %p, i64 %d) {
   ; CHECK: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: pacia x0, x1
-  %signed = call i64 @llvm.ptrauth.sign(i64 %p, i32 0, i64 %d) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %signed
+  %signed = call ptr @llvm.ptrauth.sign(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 %d), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %signed
+}
+
+; CHECK: pauth_sign_swap:
+define ptr @pauth_sign_swap(ptr %p, i64 %d) {
+  ; CHECK: [[LABEL:.L.*]]:
+  ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
+  ; CHECK-NEXT: pacia x0, x1
+  %signed = call ptr @llvm.ptrauth.sign(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 0, i64 0, i64 %d) ]
+  ret ptr %signed
 }
 
 ; CHECK: pauth_auth_zero:
-define i64 @pauth_auth_zero(i64 %p) {
+define ptr @pauth_auth_zero(ptr %p) {
   ; CHECK: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: autiza x0
-  %authed = call i64 @llvm.ptrauth.auth(i64 %p, i32 0, i64 0) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %authed
+  %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
 }
 
 ; CHECK: pauth_auth_const:
-define i64 @pauth_auth_const(i64 %p) {
+define ptr @pauth_auth_const(ptr %p) {
   ; CHECK: mov x8, #12345
   ; CHECK-NEXT: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: autia x0, x8
-  %authed = call i64 @llvm.ptrauth.auth(i64 %p, i32 0, i64 12345) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %authed
+  %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "ptrauth"(i64 0, i64 12345, i64 0), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
 }
 
 ; CHECK: pauth_auth:
-define i64 @pauth_auth(i64 %p, i64 %d) {
+define ptr @pauth_auth(ptr %p, i64 %d) {
   ; CHECK: [[LABEL:.L.*]]:
   ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
   ; CHECK-NEXT: autia x0, x1
-  %authed = call i64 @llvm.ptrauth.auth(i64 %p, i32 0, i64 %d) [ "deactivation-symbol"(ptr @ds) ]
-  ret i64 %authed
+  %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 %d), "deactivation-symbol"(ptr @ds) ]
+  ret ptr %authed
+}
+
+; CHECK: pauth_auth_swap:
+define ptr @pauth_auth_swap(ptr %p, i64 %d) {
+  ; CHECK: [[LABEL:.L.*]]:
+  ; CHECK-NEXT: .reloc [[LABEL]], R_AARCH64_PATCHINST, ds
+  ; CHECK-NEXT: autia x0, x1
+  %authed = call ptr @llvm.ptrauth.auth(ptr %p) [ "deactivation-symbol"(ptr @ds), "ptrauth"(i64 0, i64 0, i64 %d) ]
+  ret ptr %authed
 }

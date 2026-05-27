@@ -2231,6 +2231,45 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
   return true;
 }
 
+bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
+                                             unsigned Opcode,
+                                             MachineIRBuilder &MIRBuilder) {
+  TLI->reportFatalErrorOnInvalidPtrAuthSchema(CI);
+
+  auto TranslatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = CI.getNthOperandBundleOfType("ptrauth", Index);
+
+    SmallVector<SrcOp> SchemaOps;
+    // FIXME Should we make use of "immediate constant" `SrcOp`s for constants?
+    //       Probably not, as dealing with a copy of XZR in a vreg is probably
+    //       easier than getting immediate operand in place of a register one.
+    for (const Use &Operand : Bundle->Inputs)
+      SchemaOps.push_back(getOrCreateVReg(*Operand));
+
+    Register Res = MRI->createGenericVirtualRegister(LLT::token());
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {Res}, SchemaOps);
+
+    return Res;
+  };
+
+  SmallVector<SrcOp> SrcOps;
+  SrcOps.push_back(getOrCreateVReg(*CI.getArgOperand(0)));
+  SrcOps.push_back(TranslatePtrAuthBundle(0));
+  if (Opcode == TargetOpcode::G_PTRAUTH_RESIGN ||
+      Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
+    SrcOps.push_back(TranslatePtrAuthBundle(1));
+  // FIXME Is addMemOperand() call required here?
+  if (Opcode == TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE)
+    SrcOps.push_back(cast<ConstantInt>(CI.getArgOperand(1))->getZExtValue());
+
+  Register Dst = getOrCreateVReg(CI);
+  auto MIB = MIRBuilder.buildInstr(Opcode, {Dst}, SrcOps);
+  if (auto Bundle = CI.getOperandBundle(LLVMContext::OB_deactivation_symbol))
+    MIB->setDeactivationSymbol(*MF, Bundle->Inputs[0].get());
+
+  return true;
+}
+
 bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                            MachineIRBuilder &MIRBuilder) {
   if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
@@ -2250,6 +2289,21 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   switch (ID) {
   default:
     break;
+  case Intrinsic::ptrauth_auth:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_AUTH,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_sign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_SIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_resign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_RESIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_resign_load_relative:
+    return translatePtrAuthIntrinsic(
+        CI, TargetOpcode::G_PTRAUTH_RESIGN_LOAD_RELATIVE, MIRBuilder);
+  case Intrinsic::ptrauth_strip:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_STRIP,
+                                     MIRBuilder);
   case Intrinsic::lifetime_start:
   case Intrinsic::lifetime_end: {
     // No stack colouring in O0, discard region information.
@@ -2782,19 +2836,21 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     // Functions should never be ptrauth-called directly.
     assert(!CB.getCalledFunction() && "invalid direct ptrauth call");
 
-    const Value *Key = Bundle->Inputs[0];
-    const Value *Discriminator = Bundle->Inputs[1];
+    assert(!isa<IntrinsicInst>(CB) &&
+           "Should be handled by translateKnownIntrinsic");
+
+    TLI->reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(Key, Discriminator, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(Bundle->Inputs, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
-      Register DiscReg = getOrCreateVReg(*Discriminator);
-      PAI = CallLowering::PtrAuthInfo{cast<ConstantInt>(Key)->getZExtValue(),
-                                      DiscReg};
+      PAI = CallLowering::PtrAuthInfo();
+      for (const Use &U : Bundle->Inputs)
+        PAI->Operands.push_back(getOrCreateVReg(*U.get()));
     }
   }
 
@@ -3858,9 +3914,18 @@ bool IRTranslator::translate(const Constant &C, Register Reg) {
   else if (auto GV = dyn_cast<GlobalValue>(&C))
     EntryBuilder->buildGlobalValue(Reg, GV);
   else if (auto CPA = dyn_cast<ConstantPtrAuth>(&C)) {
+    TLI->reportFatalErrorOnInvalidPtrAuthSchema(*CPA);
+
     Register Addr = getOrCreateVReg(*CPA->getPointer());
-    Register AddrDisc = getOrCreateVReg(*CPA->getAddrDiscriminator());
-    EntryBuilder->buildConstantPtrAuth(Reg, CPA, Addr, AddrDisc);
+    SmallVector<SrcOp> SchemaOps;
+    for (const Use &Operand : CPA->getSchema())
+      SchemaOps.push_back(getOrCreateVReg(*Operand));
+
+    Register SchemaReg = MRI->createGenericVirtualRegister(LLT::token());
+    EntryBuilder->buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {SchemaReg},
+                             SchemaOps);
+
+    EntryBuilder->buildConstantPtrAuth(Reg, Addr, SchemaReg);
   } else if (auto CAZ = dyn_cast<ConstantAggregateZero>(&C)) {
     Constant &Elt = *CAZ->getElementValue(0u);
     if (isa<ScalableVectorType>(CAZ->getType())) {

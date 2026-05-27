@@ -982,9 +982,8 @@ public:
   /// Build and insert G_PTRAUTH_GLOBAL_VALUE
   ///
   /// \return a MachineInstrBuilder for the newly created instruction.
-  MachineInstrBuilder buildConstantPtrAuth(const DstOp &Res,
-                                           const ConstantPtrAuth *CPA,
-                                           Register Addr, Register AddrDisc);
+  MachineInstrBuilder buildConstantPtrAuth(const DstOp &Res, Register Ptr,
+                                           Register Schema);
 
   /// Build and insert \p Res = COPY Op
   ///

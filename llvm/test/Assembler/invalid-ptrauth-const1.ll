@@ -2,5 +2,5 @@
 
 @var = global i32 0
 
-; CHECK: error: constant ptrauth base pointer must be a pointer
-@auth_var = global ptr ptrauth (i32 42, i32 0)
+; CHECK: error: base pointer of ptrauth constant must be a pointer
+@auth_var = global ptr ptrauth (i32 42, [i64 0, i64 0, i64 0])

@@ -9,27 +9,27 @@
 // CHECK: %struct.Derived2 = type { %struct.Base2, %struct.Base1 }
 // CHECK: %struct.Derived3 = type { %struct.Base1, %struct.Base2 }
 
-// CHECK: @_ZTV5Base1 = linkonce_odr unnamed_addr constant { [3 x ptr] } { [3 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC:38871]], ptr getelementptr inbounds ({ [3 x ptr] }, ptr @_ZTV5Base1, i32 0, i32 0, i32 2))] },{{.*}} align 8
-// CHECK: @g_b1 = global %struct.Base1 { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [3 x ptr] }, ptr @_ZTV5Base1, i32 0, i32 0, i32 2), i32 2, i64 [[BASE1_VTABLE_DISC:6511]], ptr @g_b1) },{{.*}} align 8
-// CHECK: @_ZTV5Base2 = linkonce_odr unnamed_addr constant { [3 x ptr] } { [3 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC:27651]], ptr getelementptr inbounds ({ [3 x ptr] }, ptr @_ZTV5Base2, i32 0, i32 0, i32 2))] },{{.*}} align 8
-// CHECK: @g_b2 = global %struct.Base2 { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [3 x ptr] }, ptr @_ZTV5Base2, i32 0, i32 0, i32 2), i32 2, i64 [[BASE2_VTABLE_DISC:63631]], ptr @g_b2) },{{.*}} align 8
-// CHECK: @_ZTV8Derived1 = linkonce_odr unnamed_addr constant { [5 x ptr], [3 x ptr] } { [5 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 2)), ptr ptrauth (ptr @_ZN8Derived11cEv, i32 0, i64 [[DERIVED1_C_DISC:54092]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 3)), ptr ptrauth (ptr @_ZN8Derived11dEv, i32 0, i64 [[DERIVED1_D_DISC:37391]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 4))], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 1, i32 2))] },{{.*}} align 8
-// CHECK: @g_d1 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 24) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 2), i32 2, i64 [[BASE1_VTABLE_DISC]], ptr @g_d1), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 1, i32 2), i32 2, i64 [[BASE2_VTABLE_DISC]], ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d1, i32 0, i32 1)) },{{.*}} align 8
-// CHECK: @_ZTV8Derived2 = linkonce_odr unnamed_addr constant { [5 x ptr], [3 x ptr] } { [5 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 2)), ptr ptrauth (ptr @_ZN8Derived21cEv, i32 0, i64 [[DERIVED2_C_DISC:15537]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 3)), ptr ptrauth (ptr @_ZN8Derived21eEv, i32 0, i64 209, ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 4))], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 1, i32 2))] },{{.*}} align 8
-// CHECK: @g_d2 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 24) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 2), i32 2, i64 [[BASE2_VTABLE_DISC]], ptr @g_d2), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 1, i32 2), i32 2, i64 [[BASE1_VTABLE_DISC]], ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d2, i32 0, i32 1)) },{{.*}} align 8
-// CHECK: @_ZTV8Derived3 = linkonce_odr unnamed_addr constant { [4 x ptr], [3 x ptr] } { [4 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 2)), ptr ptrauth (ptr @_ZN8Derived31iEv, i32 0, i64 [[DERIVED3_I_DISC:19084]], ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 3))], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 1, i32 2))] },{{.*}} align 8
-// CHECK: @g_d3 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 16) ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 2), i32 2, i64 [[BASE1_VTABLE_DISC]], ptr @g_d3), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 1, i32 2), i32 2, i64 [[BASE2_VTABLE_DISC]], ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d3, i32 0, i32 1)) },{{.*}} align 8
+// CHECK: @_ZTV5Base1 = linkonce_odr unnamed_addr constant { [3 x ptr] } { [3 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC:38871]], i64 ptrtoint (ptr getelementptr inbounds ({ [3 x ptr] }, ptr @_ZTV5Base1, i32 0, i32 0, i32 2) to i64)])] },{{.*}} align 8
+// CHECK: @g_b1 = global %struct.Base1 { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [3 x ptr] }, ptr @_ZTV5Base1, i32 0, i32 0, i32 2), [i64 2, i64 [[BASE1_VTABLE_DISC:6511]], i64 ptrtoint (ptr @g_b1 to i64)]) },{{.*}} align 8
+// CHECK: @_ZTV5Base2 = linkonce_odr unnamed_addr constant { [3 x ptr] } { [3 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC:27651]], i64 ptrtoint (ptr getelementptr inbounds ({ [3 x ptr] }, ptr @_ZTV5Base2, i32 0, i32 0, i32 2) to i64)])] },{{.*}} align 8
+// CHECK: @g_b2 = global %struct.Base2 { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [3 x ptr] }, ptr @_ZTV5Base2, i32 0, i32 0, i32 2), [i64 2, i64 [[BASE2_VTABLE_DISC:63631]], i64 ptrtoint (ptr @g_b2 to i64)]) },{{.*}} align 8
+// CHECK: @_ZTV8Derived1 = linkonce_odr unnamed_addr constant { [5 x ptr], [3 x ptr] } { [5 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 2) to i64)]), ptr ptrauth (ptr @_ZN8Derived11cEv, [i64 0, i64 [[DERIVED1_C_DISC:54092]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 3) to i64)]), ptr ptrauth (ptr @_ZN8Derived11dEv, [i64 0, i64 [[DERIVED1_D_DISC:37391]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 4) to i64)])], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 1, i32 2) to i64)])] },{{.*}} align 8
+// CHECK: @g_d1 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 24) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 0, i32 2), [i64 2, i64 [[BASE1_VTABLE_DISC]], i64 ptrtoint (ptr @g_d1 to i64)]), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived1, i32 0, i32 1, i32 2), [i64 2, i64 [[BASE2_VTABLE_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d1, i32 0, i32 1) to i64)]) },{{.*}} align 8
+// CHECK: @_ZTV8Derived2 = linkonce_odr unnamed_addr constant { [5 x ptr], [3 x ptr] } { [5 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 2) to i64)]), ptr ptrauth (ptr @_ZN8Derived21cEv, [i64 0, i64 [[DERIVED2_C_DISC:15537]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 3) to i64)]), ptr ptrauth (ptr @_ZN8Derived21eEv, [i64 0, i64 209, i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 4) to i64)])], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 1, i32 2) to i64)])] },{{.*}} align 8
+// CHECK: @g_d2 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 24) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 0, i32 2), [i64 2, i64 [[BASE2_VTABLE_DISC]], i64 ptrtoint (ptr @g_d2 to i64)]), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [5 x ptr], [3 x ptr] }, ptr @_ZTV8Derived2, i32 0, i32 1, i32 2), [i64 2, i64 [[BASE1_VTABLE_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d2, i32 0, i32 1) to i64)]) },{{.*}} align 8
+// CHECK: @_ZTV8Derived3 = linkonce_odr unnamed_addr constant { [4 x ptr], [3 x ptr] } { [4 x ptr] [ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 2) to i64)]), ptr ptrauth (ptr @_ZN8Derived31iEv, [i64 0, i64 [[DERIVED3_I_DISC:19084]], i64 ptrtoint (ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 3) to i64)])], [3 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 1, i32 2) to i64)])] },{{.*}} align 8
+// CHECK: @g_d3 = global { ptr, ptr } { ptr ptrauth (ptr getelementptr inbounds inrange(-16, 16) ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 0, i32 2), [i64 2, i64 [[BASE1_VTABLE_DISC]], i64 ptrtoint (ptr @g_d3 to i64)]), ptr ptrauth (ptr getelementptr inbounds inrange(-16, 8) ({ [4 x ptr], [3 x ptr] }, ptr @_ZTV8Derived3, i32 0, i32 1, i32 2), [i64 2, i64 [[BASE2_VTABLE_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ ptr, ptr }, ptr @g_d3, i32 0, i32 1) to i64)]) },{{.*}} align 8
 // CHECK: @g_vb1 = global %struct.VirtualBase1 zeroinitializer,{{.*}} align 8
 // CHECK: @g_vb2 = global %struct.VirtualBase2 zeroinitializer,{{.*}} align 8
 // CHECK: @g_d4 = global %struct.Derived4 zeroinitializer,{{.*}} align 8
-// CHECK: @_ZTV12VirtualBase1 = linkonce_odr unnamed_addr constant { [6 x ptr] } { [6 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4)), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, i32 0, i64 [[VIRTUALBASE1_F_DISC:7987]], ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 5))] },{{.*}} align 8
-// CHECK: @_ZTT12VirtualBase1 = linkonce_odr unnamed_addr constant [2 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4), i32 2)],{{.*}} align 8
-// CHECK: @_ZTV12VirtualBase2 = linkonce_odr unnamed_addr constant { [5 x ptr], [4 x ptr] } { [5 x ptr] [ptr inttoptr (i64 8 to ptr), ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 3)), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, i32 0, i64 [[VIRTUALBASE2_G_DISC:51224]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 4))], [4 x ptr] [ptr null, ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 1, i32 3))] },{{.*}} align 8
-// CHECK: @_ZTT12VirtualBase2 = linkonce_odr unnamed_addr constant [2 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 3), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 8) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 1, i32 3), i32 2)],{{.*}} align 8
-// CHECK: @_ZTV8Derived4 = linkonce_odr unnamed_addr constant { [7 x ptr], [5 x ptr] } { [7 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4)), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, i32 0, i64 [[VIRTUALBASE1_F_DISC]], ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 5)), ptr ptrauth (ptr @_ZN8Derived41hEv, i32 0, i64 [[DERIVED4_H_DISC:31844]], ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 6))], [5 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 3)), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, i32 0, i64 [[VIRTUALBASE2_G_DISC]], ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 4))] },{{.*}} align 8
-// CHECK: @_ZTT8Derived4 = linkonce_odr unnamed_addr constant [7 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-32, 24) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 3), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 8) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 1, i32 3), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 24) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4), i32 2), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 3), i32 2)],{{.*}} align 8
-// CHECK: @_ZTC8Derived40_12VirtualBase1 = linkonce_odr unnamed_addr constant { [6 x ptr] } { [6 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4)), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, i32 0, i64 [[VIRTUALBASE1_F_DISC]], ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 5))] },{{.*}} align 8
-// CHECK: @_ZTC8Derived48_12VirtualBase2 = linkonce_odr unnamed_addr constant { [5 x ptr], [4 x ptr] } { [5 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, i32 0, i64 [[BASE2_B_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 3)), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, i32 0, i64 [[VIRTUALBASE2_G_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 4))], [4 x ptr] [ptr null, ptr inttoptr (i64 8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, i32 0, i64 [[BASE1_A_DISC]], ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 1, i32 3))] },{{.*}} align 8
+// CHECK: @_ZTV12VirtualBase1 = linkonce_odr unnamed_addr constant { [6 x ptr] } { [6 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, [i64 0, i64 [[VIRTUALBASE1_F_DISC:7987]], i64 ptrtoint (ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 5) to i64)])] },{{.*}} align 8
+// CHECK: @_ZTT12VirtualBase1 = linkonce_odr unnamed_addr constant [2 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTV12VirtualBase1, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0])],{{.*}} align 8
+// CHECK: @_ZTV12VirtualBase2 = linkonce_odr unnamed_addr constant { [5 x ptr], [4 x ptr] } { [5 x ptr] [ptr inttoptr (i64 8 to ptr), ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 3) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, [i64 0, i64 [[VIRTUALBASE2_G_DISC:51224]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 4) to i64)])], [4 x ptr] [ptr null, ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 1, i32 3) to i64)])] },{{.*}} align 8
+// CHECK: @_ZTT12VirtualBase2 = linkonce_odr unnamed_addr constant [2 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 0, i32 3), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 8) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTV12VirtualBase2, i32 0, i32 1, i32 3), [i64 2, i64 0, i64 0])],{{.*}} align 8
+// CHECK: @_ZTV8Derived4 = linkonce_odr unnamed_addr constant { [7 x ptr], [5 x ptr] } { [7 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, [i64 0, i64 [[VIRTUALBASE1_F_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 5) to i64)]), ptr ptrauth (ptr @_ZN8Derived41hEv, [i64 0, i64 [[DERIVED4_H_DISC:31844]], i64 ptrtoint (ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 6) to i64)])], [5 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr inttoptr (i64 -8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 3) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, [i64 0, i64 [[VIRTUALBASE2_G_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 4) to i64)])] },{{.*}} align 8
+// CHECK: @_ZTT8Derived4 = linkonce_odr unnamed_addr constant [7 x ptr] [ptr ptrauth (ptr getelementptr inbounds inrange(-32, 24) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 16) ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 3), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 8) ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 1, i32 3), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-32, 24) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 0, i32 4), [i64 2, i64 0, i64 0]), ptr ptrauth (ptr getelementptr inbounds inrange(-24, 16) ({ [7 x ptr], [5 x ptr] }, ptr @_ZTV8Derived4, i32 0, i32 1, i32 3), [i64 2, i64 0, i64 0])],{{.*}} align 8
+// CHECK: @_ZTC8Derived40_12VirtualBase1 = linkonce_odr unnamed_addr constant { [6 x ptr] } { [6 x ptr] [ptr null, ptr null, ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 4) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase11fEv, [i64 0, i64 [[VIRTUALBASE1_F_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [6 x ptr] }, ptr @_ZTC8Derived40_12VirtualBase1, i32 0, i32 0, i32 5) to i64)])] },{{.*}} align 8
+// CHECK: @_ZTC8Derived48_12VirtualBase2 = linkonce_odr unnamed_addr constant { [5 x ptr], [4 x ptr] } { [5 x ptr] [ptr inttoptr (i64 -8 to ptr), ptr null, ptr null, ptr ptrauth (ptr @_ZN5Base21bEv, [i64 0, i64 [[BASE2_B_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 3) to i64)]), ptr ptrauth (ptr @_ZN12VirtualBase21gEv, [i64 0, i64 [[VIRTUALBASE2_G_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 0, i32 4) to i64)])], [4 x ptr] [ptr null, ptr inttoptr (i64 8 to ptr), ptr null, ptr ptrauth (ptr @_ZN5Base11aEv, [i64 0, i64 [[BASE1_A_DISC]], i64 ptrtoint (ptr getelementptr inbounds ({ [5 x ptr], [4 x ptr] }, ptr @_ZTC8Derived48_12VirtualBase2, i32 0, i32 1, i32 3) to i64)])] },{{.*}} align 8
 
 struct Base1 { virtual void a() {} };
 struct Base2 { virtual void b() {} };
@@ -78,25 +78,25 @@ struct Derived5 : VirtualBase2, VirtualBase1 {
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN12VirtualBase1C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN12VirtualBase1C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN12VirtualBase2C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN12VirtualBase2C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived4C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived4C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived5C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived5C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
 
 
 VirtualBase1 g_vb1;
@@ -164,82 +164,82 @@ extern "C" void cross_check_vtables(Base1 *b1,
 
 // CHECK-LABEL: define{{.*}} void @cross_check_vtables(
 // CHECK: "; b1->a()",
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; b2->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE2_B_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d1->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d1->c()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED1_C_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[DERIVED1_C_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d2->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d2->c()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED2_C_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[DERIVED2_C_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d3->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d3->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE2_B_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d3->i()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED3_I_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[DERIVED3_I_DISC]], i64 {{%.*}}) ]
 // CHECK: "; vb1->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; vb1->f()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[VIRTUALBASE1_F_DISC]], i64 {{%.*}}) ]
 // CHECK: "; vb2->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; vb2->g()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[VIRTUALBASE2_G_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d4->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE1_A_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d4->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[BASE2_B_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d4->f()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[VIRTUALBASE1_F_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d4->g()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[VIRTUALBASE2_G_DISC]], i64 {{%.*}}) ]
 // CHECK: "; d4->h()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED4_H_DISC]])
+// CHECK: call ptr @llvm.ptrauth.auth.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 [[DERIVED4_H_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN5Base1C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN5Base1C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN5Base2C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN5Base2C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived1C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived1C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived2C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived2C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived3C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived3C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE1_VTABLE_DISC]], i64 {{%.*}}) ]
+// CHECK: call ptr @llvm.ptrauth.sign.p0{{.*}} [ "ptrauth"(i64 2, i64 [[BASE2_VTABLE_DISC]], i64 {{%.*}}) ]

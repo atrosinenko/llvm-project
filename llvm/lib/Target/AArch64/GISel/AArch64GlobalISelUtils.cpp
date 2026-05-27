@@ -97,33 +97,33 @@ bool AArch64GISelUtils::tryEmitBZero(MachineInstr &MI,
   return true;
 }
 
-std::tuple<uint16_t, Register>
-AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register Disc,
+std::tuple<uint64_t, uint64_t, Register>
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(
+    SmallVector<Register> Operands, MachineRegisterInfo &MRI) {
+  assert(Operands.size() == 3);
+
+  uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
+  uint64_t ConstDiscVal = getIConstantVRegVal(Operands[1], MRI)->getZExtValue();
+  assert(isUInt<16>(ConstDiscVal));
+
+  Register AddrDisc = Operands[2];
+  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
+  if (AddrDiscVal && AddrDiscVal->isZero())
+    AddrDisc = AArch64::NoRegister;
+
+  return {KeyVal, ConstDiscVal, AddrDisc};
+}
+
+std::tuple<uint64_t, uint64_t, Register>
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register SchemaToken,
                                                      MachineRegisterInfo &MRI) {
-  Register AddrDisc = Disc;
-  uint16_t ConstDisc = 0;
-
-  if (auto ConstDiscVal = getIConstantVRegVal(Disc, MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = AArch64::NoRegister;
-    }
-    return std::make_tuple(ConstDisc, AddrDisc);
-  }
-
-  const MachineInstr *DiscMI = MRI.getVRegDef(Disc);
-  if (!DiscMI || DiscMI->getOpcode() != TargetOpcode::G_INTRINSIC ||
-      DiscMI->getOperand(1).getIntrinsicID() != Intrinsic::ptrauth_blend)
-    return std::make_tuple(ConstDisc, AddrDisc);
-
-  if (auto ConstDiscVal =
-          getIConstantVRegVal(DiscMI->getOperand(3).getReg(), MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = DiscMI->getOperand(2).getReg();
-    }
-  }
-  return std::make_tuple(ConstDisc, AddrDisc);
+  assert(MRI.getType(SchemaToken).isToken());
+  const MachineInstr *Schema = MRI.getVRegDef(SchemaToken);
+  assert(Schema->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
+  SmallVector<Register> Ops;
+  for (auto &Op : Schema->uses())
+    Ops.push_back(Op.getReg());
+  return extractPtrauthBlendDiscriminators(Ops, MRI);
 }
 
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(

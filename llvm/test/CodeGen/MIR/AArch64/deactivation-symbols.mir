@@ -2,11 +2,19 @@
 # RUN:   llc -x mir -run-pass legalizer | FileCheck %s
 
 --- |
-  @ds = external global i8
+  @ds1 = external global i8
 
-  define i64 @pauth_sign_zero(i64 %p) {
-    ; CHECK: G_INTRINSIC intrinsic(@llvm.ptrauth.sign), %0(i64), 0, %2(i64), deactivation-symbol @ds
-    %signed = call i64 @llvm.ptrauth.sign(i64 %p, i32 0, i64 0) [ "deactivation-symbol"(ptr @ds) ]
-    ret i64 %signed
+  define ptr @pauth_sign_zero(ptr %p) {
+    ; CHECK: G_PTRAUTH_SIGN %0, %2(s0), deactivation-symbol @ds1
+    %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "ptrauth"(i64 0, i64 0, i64 0), "deactivation-symbol"(ptr @ds1) ]
+    ret ptr %signed
+  }
+
+  @ds2 = external global i8
+
+  define ptr @pauth_sign_zero_swapped_bundles(ptr %p) {
+    ; CHECK: G_PTRAUTH_SIGN %0, %2(s0), deactivation-symbol @ds2
+    %signed = call ptr @llvm.ptrauth.sign.p0(ptr %p) [ "deactivation-symbol"(ptr @ds2), "ptrauth"(i64 0, i64 0, i64 0) ]
+    ret ptr %signed
   }
 ...

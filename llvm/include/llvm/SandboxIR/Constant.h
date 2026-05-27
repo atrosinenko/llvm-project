@@ -1363,46 +1363,27 @@ class ConstantPtrAuth final : public Constant {
 
 public:
   /// Return a pointer signed with the specified parameters.
-  LLVM_ABI static ConstantPtrAuth *get(Constant *Ptr, ConstantInt *Key,
-                                       ConstantInt *Disc, Constant *AddrDisc,
-                                       Constant *DeactivationSymbol);
+  LLVM_ABI static ConstantPtrAuth *
+  get(Constant *Ptr, ArrayRef<Constant *> Schema, Constant *DeactivationSymbol);
+
   /// The pointer that is signed in this ptrauth signed pointer.
   LLVM_ABI Constant *getPointer() const;
 
-  /// The Key ID, an i32 constant.
-  LLVM_ABI ConstantInt *getKey() const;
-
-  /// The integer discriminator, an i64 constant, or 0.
-  LLVM_ABI ConstantInt *getDiscriminator() const;
-
-  /// The address discriminator if any, or the null constant.
-  /// If present, this must be a value equivalent to the storage location of
-  /// the only global-initializer user of the ptrauth signed pointer.
-  LLVM_ABI Constant *getAddrDiscriminator() const;
+  /// The signing schema (the particular semantic is target-specific).
+  const_op_range getSchema() const;
 
   LLVM_ABI Constant *getDeactivationSymbol() const;
-
-  /// Whether there is any non-null address discriminator.
-  bool hasAddressDiscriminator() const {
-    return cast<llvm::ConstantPtrAuth>(Val)->hasAddressDiscriminator();
-  }
-
-  /// Whether the address uses a special address discriminator.
-  /// These discriminators can't be used in real pointer-auth values; they
-  /// can only be used in "prototype" values that indicate how some real
-  /// schema is supposed to be produced.
-  bool hasSpecialAddressDiscriminator(uint64_t Value) const {
-    return cast<llvm::ConstantPtrAuth>(Val)->hasSpecialAddressDiscriminator(
-        Value);
-  }
 
   /// Check whether an authentication operation with key \p Key and (possibly
   /// blended) discriminator \p Discriminator is known to be compatible with
   /// this ptrauth signed pointer.
-  bool isKnownCompatibleWith(const Value *Key, const Value *Discriminator,
+  bool isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
                              const DataLayout &DL) const {
-    return cast<llvm::ConstantPtrAuth>(Val)->isKnownCompatibleWith(
-        Key->Val, Discriminator->Val, DL);
+    SmallVector<llvm::Value *> Operands;
+    for (auto *V : BundleOperands)
+      Operands.push_back(V->Val);
+    return cast<llvm::ConstantPtrAuth>(Val)->isKnownCompatibleWith(Operands,
+                                                                   DL);
   }
 
   /// Produce a new ptrauth expression signing the given value using

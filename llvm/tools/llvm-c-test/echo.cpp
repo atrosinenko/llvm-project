@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm-c-test.h"
+#include "llvm-c/Core.h"
 #include "llvm-c/DebugInfo.h"
 #include "llvm-c/ErrorHandling.h"
 #include "llvm-c/Target.h"
@@ -400,12 +401,19 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
 
   if (LLVMIsAConstantPtrAuth(Cst)) {
     LLVMValueRef Ptr = clone_constant(LLVMGetConstantPtrAuthPointer(Cst), M);
-    LLVMValueRef Key = clone_constant(LLVMGetConstantPtrAuthKey(Cst), M);
-    LLVMValueRef Disc =
-        clone_constant(LLVMGetConstantPtrAuthDiscriminator(Cst), M);
-    LLVMValueRef AddrDisc =
-        clone_constant(LLVMGetConstantPtrAuthAddrDiscriminator(Cst), M);
-    return LLVMConstantPtrAuth(Ptr, Key, Disc, AddrDisc);
+
+    unsigned SchemaSize = LLVMGetConstantPtrAuthSchemaSize(Cst);
+    SmallVector<LLVMValueRef> Schema;
+    for (unsigned I = 0; I < SchemaSize; ++I) {
+      LLVMValueRef Op = LLVMGetConstantPtrAuthSchemaOperand(Cst, I);
+      Schema.push_back(clone_constant(Op, M));
+    }
+
+    LLVMValueRef DeactivationSymbol =
+        clone_constant(LLVMGetConstantPtrAuthDeactivationSymbol(Cst), M);
+
+    return LLVMConstantPtrAuth(Ptr, Schema.data(), Schema.size(),
+                               DeactivationSymbol);
   }
 
   // At this point, if it's not a constant expression, it's a kind of constant
@@ -421,6 +429,9 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
     case LLVMBitCast:
       return LLVMConstBitCast(clone_constant(LLVMGetOperand(Cst, 0), M),
                               TypeCloner(M).Clone(Cst));
+    case LLVMPtrToInt:
+      return LLVMConstPtrToInt(clone_constant(LLVMGetOperand(Cst, 0), M),
+                               TypeCloner(M).Clone(Cst));
     case LLVMGetElementPtr: {
       LLVMTypeRef ElemTy =
           TypeCloner(M).Clone(LLVMGetGEPSourceElementType(Cst));

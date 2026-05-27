@@ -2,30 +2,34 @@
 
 ;--- err1.ll
 
-; RUN: not --crash llc < err1.ll -mtriple aarch64-elf -mattr=+pauth \
+; RUN: not llc < err1.ll -mtriple aarch64-elf -mattr=+pauth \
 ; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR1 %s
-; RUN: not --crash llc < err1.ll -mtriple arm64-apple-ios -mattr=+pauth \
+; RUN: not llc < err1.ll -mtriple arm64-apple-ios -mattr=+pauth \
 ; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR1 %s
 
 @g = external global i32
 
 define ptr @foo() {
-; ERR1: LLVM ERROR: key in ptrauth global out of range [0, 3]
-  ret ptr ptrauth (ptr @g, i32 4)
+; ERR1: Ptrauth schema violates target-specific constraints:
+; ERR1: ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
+; ERR1: LLVM ERROR: Invalid ptrauth schema: key must be constant in range [0, 3]
+  ret ptr ptrauth (ptr @g, [i64 4, i64 0, i64 0])
 }
 
 ;--- err2.ll
 
-; RUN: not --crash llc < err2.ll -mtriple aarch64-elf -mattr=+pauth \
+; RUN: not llc < err2.ll -mtriple aarch64-elf -mattr=+pauth \
 ; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR2 %s
-; RUN: not --crash llc < err2.ll -mtriple arm64-apple-ios -mattr=+pauth \
+; RUN: not llc < err2.ll -mtriple arm64-apple-ios -mattr=+pauth \
 ; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR2 %s
 
 @g = external global i32
 
 define ptr @foo() {
-; ERR2: LLVM ERROR: constant discriminator in ptrauth global out of range [0, 0xffff]
-  ret ptr ptrauth (ptr @g, i32 2, i64 65536)
+; ERR2: Ptrauth schema violates target-specific constraints:
+; ERR2: ptr ptrauth (ptr @g, [i64 2, i64 65536, i64 0])
+; ERR2: LLVM ERROR: Invalid ptrauth schema: constant modifier must be 16-bit unsigned constant
+  ret ptr ptrauth (ptr @g, [i64 2, i64 65536, i64 0])
 }
 
 ;--- err3.ll
@@ -39,7 +43,7 @@ define ptr @foo() {
 
 define ptr @foo() {
 ; ERR3: LLVM ERROR: unsupported non-zero offset in weak ptrauth global reference
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g_weak, i64 16), i32 2, i64 42)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g_weak, i64 16), [i64 2, i64 42, i64 0])
 }
 
 ;--- err4.ll
@@ -50,11 +54,11 @@ define ptr @foo() {
 ; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR4 %s
 
 @g_weak = extern_weak global i32
-@g_weak.ref.da.42.addr = dso_local constant ptr ptrauth (ptr @g_weak, i32 2, i64 42, ptr @g_weak.ref.da.42.addr)
+@g_weak.ref.da.42.addr = dso_local constant ptr ptrauth (ptr @g_weak, [i64 2, i64 42, i64 ptrtoint (ptr @g_weak.ref.da.42.addr to i64)])
 
 define ptr @foo() {
 ; ERR4: LLVM ERROR: unsupported weak addr-div ptrauth global
-  ret ptr ptrauth (ptr @g_weak, i32 0, i64 42, ptr @g_weak.ref.da.42.addr)
+  ret ptr ptrauth (ptr @g_weak, [i64 0, i64 42, i64 ptrtoint (ptr @g_weak.ref.da.42.addr to i64)])
 }
 
 ;--- err5.ll
@@ -66,7 +70,7 @@ define ptr @foo() {
 
 define ptr @foo() {
 ; ERR5: LLVM ERROR: ptrauth global lowering only supported on MachO/ELF
-  ret ptr ptrauth (ptr @g, i32 0)
+  ret ptr ptrauth (ptr @g, [i64 0, i64 0, i64 0])
 }
 
 ;--- ok.ll
@@ -102,7 +106,7 @@ define ptr @test_global_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g, i32 0)
+  ret ptr ptrauth (ptr @g, [i64 0, i64 0, i64 0])
 }
 
 define ptr @test_global_offset_zero_disc() {
@@ -124,7 +128,7 @@ define ptr @test_global_offset_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), [i64 2, i64 0, i64 0])
 }
 
 define ptr @test_global_neg_offset_zero_disc() {
@@ -148,7 +152,7 @@ define ptr @test_global_neg_offset_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456), i32 2)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456), [i64 2, i64 0, i64 0])
 }
 
 define ptr @test_global_big_offset_zero_disc() {
@@ -174,7 +178,7 @@ define ptr @test_global_big_offset_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), i32 2)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), [i64 2, i64 0, i64 0])
 }
 
 define ptr @test_global_big_neg_offset_zero_disc() {
@@ -200,7 +204,7 @@ define ptr @test_global_big_neg_offset_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456789), i32 2)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456789), [i64 2, i64 0, i64 0])
 }
 
 define ptr @test_global_huge_neg_offset_zero_disc() {
@@ -230,7 +234,7 @@ define ptr @test_global_huge_neg_offset_zero_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -9223372036854775808), i32 2)
+  ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -9223372036854775808), [i64 2, i64 0, i64 0])
 }
 
 define ptr @test_global_disc() {
@@ -252,10 +256,10 @@ define ptr @test_global_disc() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g, i32 0, i64 42)
+  ret ptr ptrauth (ptr @g, [i64 0, i64 42, i64 0])
 }
 
-@g.ref.da.42.addr = dso_local constant ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.da.42.addr)
+@g.ref.da.42.addr = dso_local constant ptr ptrauth (ptr @g, [i64 2, i64 42, i64 ptrtoint (ptr @g.ref.da.42.addr to i64)])
 
 define ptr @test_global_addr_disc() {
 ; ELF-LABEL: test_global_addr_disc:
@@ -284,7 +288,7 @@ define ptr @test_global_addr_disc() {
 ; MACHO-NEXT:    mov x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.da.42.addr)
+  ret ptr ptrauth (ptr @g, [i64 2, i64 42, i64 ptrtoint (ptr @g.ref.da.42.addr to i64)])
 }
 
 define ptr @test_global_process_specific() {
@@ -304,7 +308,7 @@ define ptr @test_global_process_specific() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g, i32 1)
+  ret ptr ptrauth (ptr @g, [i64 1, i64 0, i64 0])
 }
 
 ; Non-external symbols don't need to be accessed through the GOT.
@@ -326,7 +330,7 @@ define ptr @test_global_strong_def() {
 ; MACHO-NEXT:    mov     x0, x16
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g_strong_def, i32 2)
+  ret ptr ptrauth (ptr @g_strong_def, [i64 2, i64 0, i64 0])
 }
 
 ; weak symbols can't be assumed to be non-nil. Use $auth_ptr$ stub slot always.
@@ -346,7 +350,7 @@ define ptr @test_global_weak() {
 ; MACHO-NEXT:    ldr     x0, [x0, l_g_weak$auth_ptr$ia$42@PAGEOFF]
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g_weak, i32 0, i64 42)
+  ret ptr ptrauth (ptr @g_weak, [i64 0, i64 42, i64 0])
 }
 
 ; Test another weak symbol to check that stubs are emitted in a stable order.
@@ -366,7 +370,7 @@ define ptr @test_global_weak_2() {
 ; MACHO-NEXT:    ldr     x0, [x0, l_g_weak_2$auth_ptr$ia$42@PAGEOFF]
 ; MACHO-NEXT:    ret
 
-  ret ptr ptrauth (ptr @g_weak_2, i32 0, i64 42)
+  ret ptr ptrauth (ptr @g_weak_2, [i64 0, i64 42, i64 0])
 }
 
 ; ELF-LABEL: g_weak$auth_ptr$ia$42:

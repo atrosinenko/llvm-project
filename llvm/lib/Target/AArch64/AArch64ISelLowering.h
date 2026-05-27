@@ -193,13 +193,6 @@ public:
   MachineBasicBlock *EmitEntryPStateSM(MachineInstr &MI,
                                        MachineBasicBlock *BB) const;
 
-  /// Replace (0, vreg) discriminator components with the operands of blend
-  /// or with (immediate, NoRegister) when possible.
-  void fixupPtrauthDiscriminator(MachineInstr &MI, MachineBasicBlock *BB,
-                                 MachineOperand &IntDiscOp,
-                                 MachineOperand &AddrDiscOp,
-                                 const TargetRegisterClass *AddrDiscRC) const;
-
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
                               MachineBasicBlock *MBB) const override;
@@ -486,7 +479,14 @@ public:
     return true;
   }
 
-  bool supportPtrAuthBundles() const override { return true; }
+  // FIXME This static function is defined not to duplicate code between
+  //       AArch64AsmParser (to validate global ptrauth constants) and
+  //       AArch64TargetLowering (to validate everything else).
+  static std::optional<std::string>
+  validateConstantPtrAuthSchema(ArrayRef<Use> Schema, bool CheckIntDisc);
+
+  std::optional<std::string>
+  validatePtrAuthSchema(const Value &V) const override;
 
   bool supportKCFIBundles() const override { return true; }
 

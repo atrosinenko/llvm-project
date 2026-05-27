@@ -31,7 +31,7 @@
 
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
 
-define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
+define ptr @test_auth_ia(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_auth_ia:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -64,11 +64,11 @@ define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_0:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ia_zero(i64 %arg) {
+define ptr @test_auth_ia_zero(ptr %arg) {
 ; UNCHECKED-LABEL: test_auth_ia_zero:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -101,11 +101,11 @@ define i64 @test_auth_ia_zero(i64 %arg) {
 ; TRAP-NEXT:  Lauth_success_1:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
+define ptr @test_auth_ib(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_auth_ib:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -138,11 +138,11 @@ define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_2:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 %arg1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ib_zero(i64 %arg) {
+define ptr @test_auth_ib_zero(ptr %arg) {
 ; UNCHECKED-LABEL: test_auth_ib_zero:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -175,11 +175,11 @@ define i64 @test_auth_ib_zero(i64 %arg) {
 ; TRAP-NEXT:  Lauth_success_3:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_da(i64 %arg, i64 %arg1) {
+define ptr @test_auth_da(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_auth_da:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -212,11 +212,11 @@ define i64 @test_auth_da(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_4:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %arg1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_da_zero(i64 %arg) {
+define ptr @test_auth_da_zero(ptr %arg) {
 ; UNCHECKED-LABEL: test_auth_da_zero:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -249,11 +249,11 @@ define i64 @test_auth_da_zero(i64 %arg) {
 ; TRAP-NEXT:  Lauth_success_5:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_db(i64 %arg, i64 %arg1) {
+define ptr @test_auth_db(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_auth_db:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -286,11 +286,11 @@ define i64 @test_auth_db(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_6:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 %arg1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_db_zero(i64 %arg) {
+define ptr @test_auth_db_zero(ptr %arg) {
 ; UNCHECKED-LABEL: test_auth_db_zero:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -323,13 +323,13 @@ define i64 @test_auth_db_zero(i64 %arg) {
 ; TRAP-NEXT:  Lauth_success_7:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
 ;; Note that this might seem like a no-op but is actually a valid way to enforce
 ;; the validity of a signature.
-define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_ia_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_ia_ia:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -367,11 +367,11 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 %arg1, i32 0, i64 %arg2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_ib_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_ib_ia:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -409,11 +409,11 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 1, i64 %arg1, i32 0, i64 %arg2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 1, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_da_ia(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_da_ia:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -451,11 +451,11 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacia x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 0, i64 %arg2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 0, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_db_da(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_db_da:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -493,11 +493,11 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacda x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 2, i64 %arg2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 3, i64 0, i64 %arg1), "ptrauth"(i64 2, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_iza_db(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_iza_db:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -535,11 +535,11 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 0, i32 3, i64 %arg2)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_da_dzb(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_da_dzb:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -577,11 +577,11 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdzb x16
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 3, i64 0)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
+define ptr @test_auth_trap_attribute(ptr %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; UNCHECKED-LABEL: test_auth_trap_attribute:
 ; UNCHECKED:     %bb.0:
 ; UNCHECKED-DARWIN-NEXT:  mov x16, x0
@@ -623,11 +623,11 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; TRAP-NEXT:  Lauth_success_14:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ia_constdisc(i64 %arg) {
+define ptr @test_auth_ia_constdisc(ptr %arg) {
 ; UNCHECKED-LABEL: test_auth_ia_constdisc:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -666,11 +666,11 @@ define i64 @test_auth_ia_constdisc(i64 %arg) {
 ; TRAP-NEXT:  Lauth_success_15:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 256)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 0, i64 256, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_resign_da_constdisc(i64 %arg, i64 %arg1) {
+define ptr @test_resign_da_constdisc(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_resign_da_constdisc:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -711,11 +711,11 @@ define i64 @test_resign_da_constdisc(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    pacda x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 2, i64 256)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 0, i64 %arg1), "ptrauth"(i64 2, i64 256, i64 0) ]
+  ret ptr %tmp
 }
 
-define i64 @test_auth_ia_swapped(i64 %arg, i64 %arg1) {
+define ptr @test_auth_ia_swapped(i64 %arg, ptr %arg1) {
 ; UNCHECKED-LABEL: test_auth_ia_swapped:
 ; UNCHECKED:           %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x1
@@ -751,14 +751,14 @@ define i64 @test_auth_ia_swapped(i64 %arg, i64 %arg1) {
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-ELF-NEXT:    mov x0, x1
 ; TRAP-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg1, i32 0, i64 %arg)
-  ret i64 %tmp
+  %tmp = call ptr @llvm.ptrauth.auth.p0(ptr %arg1) [ "ptrauth"(i64 0, i64 0, i64 %arg) ]
+  ret ptr %tmp
 }
 
 ; Authentications should not be speculated, as they crash on failure and it is
 ; perfectly correct to dynamically choose the signing schema or whether to
 ; perform authentication at all.
-define ptr @auth_speculation(i64 %signed, i1 %cond) {
+define ptr @auth_speculation(ptr %signed, i1 %cond) {
 ; UNCHECKED-LABEL:        auth_speculation:
 ; UNCHECKED:                  %bb.0:
 ; UNCHECKED-DARWIN-NEXT:        mov     x16, x0
@@ -778,6 +778,7 @@ define ptr @auth_speculation(i64 %signed, i1 %cond) {
 ; UNCHECKED-ELF-NEXT:           autdzb  x0
 ; UNCHECKED-ELF-NEXT:         [[BB_RETURN]]:
 ; UNCHECKED-ELF-NEXT:           ldr     x8, [x0]
+; UNCHECKED-NEXT:               ldr     x8, [x8]
 ; UNCHECKED-NEXT:               ldr     x8, [x8]
 ; UNCHECKED-NEXT:               ldr     x8, [x8]
 ; UNCHECKED-NEXT:               ldr     x0, [x8]
@@ -802,6 +803,7 @@ define ptr @auth_speculation(i64 %signed, i1 %cond) {
 ; CHECKED-ELF-NEXT:           autdzb  x0
 ; CHECKED-ELF-NEXT:         [[BB_RETURN]]:
 ; CHECKED-ELF-NEXT:           ldr     x8, [x0]
+; CHECKED-NEXT:               ldr     x8, [x8]
 ; CHECKED-NEXT:               ldr     x8, [x8]
 ; CHECKED-NEXT:               ldr     x8, [x8]
 ; CHECKED-NEXT:               ldr     x0, [x8]
@@ -852,31 +854,29 @@ define ptr @auth_speculation(i64 %signed, i1 %cond) {
 ; TRAP-ELF-NEXT:           ldr     x8, [x0]
 ; TRAP-NEXT:               ldr     x8, [x8]
 ; TRAP-NEXT:               ldr     x8, [x8]
+; TRAP-NEXT:               ldr     x8, [x8]
 ; TRAP-NEXT:               ldr     x0, [x8]
 ; TRAP-NEXT:               ret
 entry:
   br i1 %cond, label %if.then, label %if.else
 
 if.then:
-  %auted.then = tail call i64 @llvm.ptrauth.auth(i64 %signed, i32 2, i64 0)
+  %auted.then = tail call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "ptrauth"(i64 2, i64 0, i64 0) ]
   br label %return
 
 if.else:
-  %auted.else = tail call i64 @llvm.ptrauth.auth(i64 %signed, i32 3, i64 0)
+  %auted.else = tail call ptr @llvm.ptrauth.auth.p0(ptr %signed) [ "ptrauth"(i64 3, i64 0, i64 0) ]
   br label %return
 
 return:
-  %auted = phi i64 [ %auted.then, %if.then ], [ %auted.else, %if.else ]
+  %auted = phi ptr [ %auted.then, %if.then ], [ %auted.else, %if.else ]
 
   ; A sequence of instructions that is common to both "then" and "else"
   ; branches and is expensive to duplicate.
-  %ptr.0 = inttoptr i64 %auted to ptr
+  %ptr.0 = load ptr, ptr %auted
   %ptr.1 = load ptr, ptr %ptr.0
   %ptr.2 = load ptr, ptr %ptr.1
   %ptr.3 = load ptr, ptr %ptr.2
   %ptr.4 = load ptr, ptr %ptr.3
   ret ptr %ptr.4
 }
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)

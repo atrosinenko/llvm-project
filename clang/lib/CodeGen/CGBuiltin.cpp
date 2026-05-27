@@ -6302,67 +6302,103 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_ptrauth_sign_generic_data:
   case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
   case Builtin::BI__builtin_ptrauth_strip: {
-    // Emit the arguments.
-    SmallVector<llvm::Value *, 6> Args;
-    for (auto argExpr : E->arguments())
-      Args.push_back(EmitScalarExpr(argExpr));
+    SmallVector<llvm::Value *, 2> Args;
+    SmallVector<llvm::OperandBundleDef, 2> OBs;
 
-    // Cast the value to intptr_t, saving its original type.
+    auto ConvertToInt64 = [&](llvm::Value *V) {
+      if (V->getType()->isPointerTy())
+        return Builder.CreatePtrToInt(V, Int64Ty);
+      return Builder.CreateZExt(V, Int64Ty);
+    };
+
+    auto AddPtrAuthBundle = [&](const Expr *KeyExpr, const Expr *DiscrExpr) {
+      SmallVector<llvm::Value *, 3> Operands;
+
+      llvm::Value *Key = ConvertToInt64(EmitScalarExpr(KeyExpr));
+      llvm::Value *Discr = ConvertToInt64(EmitScalarExpr(DiscrExpr));
+      llvm::Value *Zero = Builder.getInt64(0);
+
+      // Check if discriminator is a small integer constant and fallback to
+      // passing an arbitrary raw value otherwise.
+      llvm::ConstantInt *DiscrConst = dyn_cast<llvm::ConstantInt>(Discr);
+      if (DiscrConst && isUInt<16>(DiscrConst->getZExtValue()))
+        Operands.assign({Key, Discr, Zero});
+      else
+        Operands.assign({Key, Zero, Discr});
+
+      OBs.emplace_back("ptrauth", Operands);
+    };
+
+    Args.push_back(EmitScalarExpr(E->getArg(0)));
     llvm::Type *OrigValueType = Args[0]->getType();
-    if (OrigValueType->isPointerTy())
-      Args[0] = Builder.CreatePtrToInt(Args[0], IntPtrTy);
+
+    if (BuiltinID == Builtin::BI__builtin_ptrauth_sign_generic_data ||
+        BuiltinID == Builtin::BI__builtin_ptrauth_blend_discriminator) {
+      Args[0] = ConvertToInt64(Args[0]);
+    } else {
+      assert(OrigValueType->isPointerTy());
+    }
 
     switch (BuiltinID) {
-    case Builtin::BI__builtin_ptrauth_auth_and_resign:
+    default:
+      llvm_unreachable("bad ptrauth intrinsic");
+
+    case Builtin::BI__builtin_ptrauth_blend_discriminator:
+      Args.push_back(ConvertToInt64(EmitScalarExpr(E->getArg(1))));
+      break;
+
     case Builtin::BI__builtin_ptrauth_auth_load_relative_and_sign:
-      if (Args[4]->getType()->isPointerTy())
-        Args[4] = Builder.CreatePtrToInt(Args[4], IntPtrTy);
+      Args.push_back(ConvertToInt64(EmitScalarExpr(E->getArg(5))));
       [[fallthrough]];
+    case Builtin::BI__builtin_ptrauth_auth_and_resign:
+      AddPtrAuthBundle(E->getArg(1), E->getArg(2));
+      AddPtrAuthBundle(E->getArg(3), E->getArg(4));
+      break;
 
     case Builtin::BI__builtin_ptrauth_auth:
     case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
-      if (Args[2]->getType()->isPointerTy())
-        Args[2] = Builder.CreatePtrToInt(Args[2], IntPtrTy);
+      AddPtrAuthBundle(E->getArg(1), E->getArg(2));
       break;
 
     case Builtin::BI__builtin_ptrauth_sign_generic_data:
-      if (Args[1]->getType()->isPointerTy())
-        Args[1] = Builder.CreatePtrToInt(Args[1], IntPtrTy);
+      Args.push_back(ConvertToInt64(EmitScalarExpr(E->getArg(1))));
       break;
 
-    case Builtin::BI__builtin_ptrauth_blend_discriminator:
-    case Builtin::BI__builtin_ptrauth_strip:
+    case Builtin::BI__builtin_ptrauth_strip: {
+      llvm::Value *Key = ConvertToInt64(EmitScalarExpr(E->getArg(1)));
+      OBs.emplace_back("ptrauth", Key);
       break;
+    }
     }
 
     // Call the intrinsic.
-    auto IntrinsicID = [&]() -> unsigned {
+    auto *Intrinsic = [&]() {
       switch (BuiltinID) {
-      case Builtin::BI__builtin_ptrauth_auth:
-        return Intrinsic::ptrauth_auth;
-      case Builtin::BI__builtin_ptrauth_auth_and_resign:
-        return Intrinsic::ptrauth_resign;
-      case Builtin::BI__builtin_ptrauth_auth_load_relative_and_sign:
-        return Intrinsic::ptrauth_resign_load_relative;
       case Builtin::BI__builtin_ptrauth_blend_discriminator:
-        return Intrinsic::ptrauth_blend;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_blend);
+      case Builtin::BI__builtin_ptrauth_auth:
+        return CGM.getIntrinsic(Intrinsic::ptrauth_auth, Args[0]->getType());
+      case Builtin::BI__builtin_ptrauth_auth_and_resign:
+        return CGM.getIntrinsic(Intrinsic::ptrauth_resign, Args[0]->getType());
+      case Builtin::BI__builtin_ptrauth_auth_load_relative_and_sign:
+        return CGM.getIntrinsic(Intrinsic::ptrauth_resign_load_relative,
+                                Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_sign_generic_data:
-        return Intrinsic::ptrauth_sign_generic;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_sign_generic);
       case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
-        return Intrinsic::ptrauth_sign;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_sign, Args[0]->getType());
       case Builtin::BI__builtin_ptrauth_strip:
-        return Intrinsic::ptrauth_strip;
+        return CGM.getIntrinsic(Intrinsic::ptrauth_strip, Args[0]->getType());
       }
       llvm_unreachable("bad ptrauth intrinsic");
     }();
-    auto Intrinsic = CGM.getIntrinsic(IntrinsicID);
-    llvm::Value *Result = EmitRuntimeCall(Intrinsic, Args);
-
+    llvm::Value *Result = EmitRuntimeCall(Intrinsic, Args, OBs);
     if (BuiltinID != Builtin::BI__builtin_ptrauth_sign_generic_data &&
         BuiltinID != Builtin::BI__builtin_ptrauth_blend_discriminator &&
         OrigValueType->isPointerTy()) {
       Result = Builder.CreateIntToPtr(Result, OrigValueType);
     }
+
     return RValue::get(Result);
   }
 

@@ -493,22 +493,39 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
   if (Triple(M.getTargetTriple()).isArm64e())
     return false;
 
+  Type *PtrArgTy = Intr.getReturnType();
   Type *Int64Ty = Type::getInt64Ty(M.getContext());
 
   assert(Intr.getIntrinsicID() == Intrinsic::ptrauth_sign ||
          Intr.getIntrinsicID() == Intrinsic::ptrauth_auth);
-  auto *EmuFnTy = FunctionType::get(Int64Ty, {Int64Ty, Int64Ty}, false);
+
+  if (PtrArgTy->getPointerAddressSpace() != 0)
+    return false;
+
+  auto *EmuFnTy = FunctionType::get(PtrArgTy, {PtrArgTy, Int64Ty}, false);
   FunctionCallee EmuIntr = M.getOrInsertFunction(
       Intr.getIntrinsicID() == Intrinsic::ptrauth_auth ? "__emupac_autda"
                                                        : "__emupac_pacda",
       EmuFnTy);
 
+  FunctionCallee BlendIntr =
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::ptrauth_blend);
+
   for (User *U : llvm::make_early_inc_range(Intr.users())) {
     auto *Call = cast<CallInst>(U);
     // We only support the DA key for now.
-    if (auto *Key = dyn_cast<ConstantInt>(Call->getArgOperand(1));
-        !Key || Key->getZExtValue() != /*AArch64PACKey::DA*/ 2)
+    auto Schema = Call->getOperandBundle("ptrauth");
+    if (!Schema || Schema->Inputs.size() != 3)
       continue;
+
+    auto *Key = dyn_cast<ConstantInt>(Schema->Inputs[0]);
+    if (!Key || Key->getZExtValue() != /*AArch64PACKey::DA*/ 2)
+      continue;
+
+    Value *Pointer = Call->getArgOperand(0);
+    Value *ConstDiscr = Schema->Inputs[1];
+    Value *AddrDiscr = Schema->Inputs[2];
+    Value *Zero = ConstantInt::get(Int64Ty, 0);
 
     Function *F = Call->getParent()->getParent();
     Attribute FSAttr = F->getFnAttribute("target-features");
@@ -520,8 +537,13 @@ static bool expandPtrauthForEmuPAC(Function &Intr) {
       DSBundle.push_back(OperandBundleDef("deactivation-symbol", DS));
 
     IRBuilder<> B(Call);
-    auto *EmuCall = B.CreateCall(
-        EmuIntr, {Call->getArgOperand(0), Call->getArgOperand(2)}, DSBundle);
+    Value *Discr;
+    if (ConstDiscr != Zero && AddrDiscr != Zero)
+      Discr = B.CreateCall(BlendIntr, {AddrDiscr, ConstDiscr});
+    else
+      Discr = ConstDiscr == Zero ? AddrDiscr : ConstDiscr;
+
+    auto *EmuCall = B.CreateCall(EmuIntr, {Pointer, Discr}, DSBundle);
     Call->replaceAllUsesWith(EmuCall);
     Call->eraseFromParent();
   }

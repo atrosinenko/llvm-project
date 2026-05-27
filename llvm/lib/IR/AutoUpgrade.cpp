@@ -1732,6 +1732,41 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
           {F->arg_begin()->getType(), F->getArg(1)->getType()});
       return true;
     }
+    if (Name.consume_front("ptrauth.")) {
+      // @llvm.ptrauth.sign.generic does not require upgrade.
+      // @llvm.ptrauth.blend is handled by UpgradePtrauthBlendUsers.
+      if (Name == "sign.generic" || Name == "blend")
+        break;
+
+      // The upgraded form of ptrauth.resign.load.relative uses two arguments.
+      if (Name.starts_with("resign.load.relative") &&
+          F->getFunctionType()->getNumParams() == 2)
+        break;
+
+      // All other @llvm.ptrauth.* are upgraded to single-argument intrinsics
+      // with signing schemas passed via separate call operand bundles.
+      if (F->getFunctionType()->getNumParams() == 1)
+        break;
+
+      // FIXME Has to match intrinsics by name prefix, otherwise intrinsics
+      //       auto-declaration is not handled correctly.
+      Intrinsic::ID ID;
+      ID = StringSwitch<Intrinsic::ID>(Name)
+               .StartsWith("auth", Intrinsic::ptrauth_auth)
+               .StartsWith("sign", Intrinsic::ptrauth_sign)
+               .StartsWith("resign.load.relative",
+                           Intrinsic::ptrauth_resign_load_relative)
+               .StartsWith("resign", Intrinsic::ptrauth_resign)
+               .StartsWith("strip", Intrinsic::ptrauth_strip)
+               .Default(Intrinsic::not_intrinsic);
+      if (ID == Intrinsic::not_intrinsic)
+        break;
+
+      rename(F);
+      PointerType *PtrTy = PointerType::get(F->getContext(), 0);
+      NewFn = Intrinsic::getOrInsertDeclaration(F->getParent(), ID, PtrTy);
+      return true;
+    }
     break;
 
   case 'r': {
@@ -4983,6 +5018,35 @@ static Value *upgradeConvertIntrinsicCall(StringRef Name, CallBase *CI,
   return nullptr;
 }
 
+// Create a trivially-upgraded "ptrauth" bundle.
+//
+// Upgrading to the new-style "ptrauth" bundles involves choosing the most
+// specialized description of the signing schema:
+// 1. (key, 0, raw_disc)
+// 2. (key, const_u16_disc, 0)
+// 3. (key, const_u16_disc, addr_disc)
+//
+// This function produces either variant 1 or 2, and after the module is fully
+// loaded, UpgradePtrauthBlendUsers tries to convert 1 to 3 where applicable.
+//
+// The Key argument may have either i32 or i64 type and is zero-extended to
+// i64 as needed.
+static OperandBundleDef createUpgradedPtrauthBundle(Value *Key, Value *Disc) {
+  IRBuilder<> Builder(Key->getContext());
+  Value *Zero = Builder.getInt64(0);
+  ConstantInt *ConstDisc = dyn_cast<ConstantInt>(Disc);
+
+  Key = Builder.CreateZExt(Key, Builder.getInt64Ty());
+
+  SmallVector<Value *, 3> Operands;
+  if (ConstDisc && isUInt<16>(ConstDisc->getZExtValue()))
+    Operands.assign({Key, Disc, Zero});
+  else
+    Operands.assign({Key, Zero, Disc});
+
+  return OperandBundleDef("ptrauth", Operands);
+}
+
 /// Upgrade a call to an old intrinsic. All argument and return casting must be
 /// provided to seamlessly integrate with existing context.
 void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
@@ -5737,7 +5801,7 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
   case Intrinsic::x86_avx10_vpdpwuud_512:
   case Intrinsic::x86_avx2_vpdpwuuds_128:
   case Intrinsic::x86_avx2_vpdpwuuds_256:
-  case Intrinsic::x86_avx10_vpdpwuuds_512:
+  case Intrinsic::x86_avx10_vpdpwuuds_512: {
     unsigned NumElts = CI->getType()->getPrimitiveSizeInBits() / 16;
     Value *Args[] = {CI->getArgOperand(0), CI->getArgOperand(1),
                      CI->getArgOperand(2)};
@@ -5747,6 +5811,50 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
 
     NewCall = Builder.CreateCall(NewFn, Args);
     break;
+  }
+  case Intrinsic::ptrauth_auth:
+  case Intrinsic::ptrauth_sign:
+  case Intrinsic::ptrauth_resign_load_relative:
+  case Intrinsic::ptrauth_resign:
+  case Intrinsic::ptrauth_strip: {
+    SmallVector<Value *, 2> Args;
+    SmallVector<OperandBundleDef> OBs;
+    Type *PtrArgTy = NewFn->getFunctionType()->getParamType(0);
+
+    Args.push_back(Builder.CreateIntToPtr(CI->getArgOperand(0), PtrArgTy));
+    switch (NewFn->getIntrinsicID()) {
+    case Intrinsic::ptrauth_strip:
+      // Special case: only the key ID without any discriminator.
+      OBs.emplace_back("ptrauth", Builder.CreateZExt(CI->getArgOperand(1),
+                                                     Builder.getInt64Ty()));
+      break;
+    case Intrinsic::ptrauth_auth:
+    case Intrinsic::ptrauth_sign:
+      OBs.push_back(createUpgradedPtrauthBundle(CI->getArgOperand(1),
+                                                CI->getArgOperand(2)));
+      break;
+    case Intrinsic::ptrauth_resign_load_relative:
+      Args.push_back(CI->getArgOperand(5));
+      [[fallthrough]];
+    case Intrinsic::ptrauth_resign:
+      OBs.push_back(createUpgradedPtrauthBundle(CI->getArgOperand(1),
+                                                CI->getArgOperand(2)));
+      OBs.push_back(createUpgradedPtrauthBundle(CI->getArgOperand(3),
+                                                CI->getArgOperand(4)));
+      break;
+    }
+
+    // Copy "deactivation-symbol", if any.
+    CI->getOperandBundlesAsDefs(OBs);
+
+    NewCall = Builder.CreateCall(NewFn, Args, OBs);
+    NewCall->takeName(CI);
+
+    auto *ConvertedResult = Builder.CreatePtrToInt(NewCall, CI->getType());
+    CI->replaceAllUsesWith(ConvertedResult);
+    CI->eraseFromParent();
+    return;
+  }
   }
   assert(NewCall && "Should have either set this variable or returned through "
                     "the default case");
@@ -6846,7 +6954,7 @@ void llvm::UpgradeAttributes(AttrBuilder &B) {
   }
 }
 
-void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
+void llvm::UpgradeOperandBundles(SmallVectorImpl<OperandBundleDef> &Bundles) {
   // clang.arc.attachedcall bundles are now required to have an operand.
   // If they don't, it's okay to drop them entirely: when there is an operand,
   // the "attachedcall" is meaningful and required, but without an operand,
@@ -6855,4 +6963,72 @@ void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
     return OBD.getTag() == "clang.arc.attachedcall" &&
            OBD.inputs().empty();
   });
+
+  for (auto It = Bundles.begin(), End = Bundles.end(); It != End; ++It) {
+    // Upgrade an old-style AArch64 "ptrauth"(i32 const_key, i64 disc) bundle.
+    //
+    // Note that this can be trivially distinguished from non-AArch64 bundles
+    // that could have two operands, as the new-style bundles should never have
+    // any i32 operands.
+    if (It->getTag() == "ptrauth" && It->inputs().size() == 2 &&
+        It->inputs()[0]->getType()->isIntegerTy(32)) {
+      *It = createUpgradedPtrauthBundle(It->inputs()[0], It->inputs()[1]);
+    }
+  }
+}
+
+void llvm::UpgradePtrauthBlendUsers(Module &M) {
+  Function *PtrauthBlendIntr = M.getFunction("llvm.ptrauth.blend");
+  if (!PtrauthBlendIntr)
+    return;
+
+  for (auto *BlendUser : make_early_inc_range(PtrauthBlendIntr->users())) {
+    auto *BlendedDisc = dyn_cast<IntrinsicInst>(BlendUser);
+    if (!BlendedDisc || BlendedDisc->arg_size() != 2)
+      continue;
+
+    Value *AddrDisc = BlendedDisc->getArgOperand(0);
+    ConstantInt *IntDisc = dyn_cast<ConstantInt>(BlendedDisc->getArgOperand(1));
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      continue;
+
+    // Do not crash on instructions with multiple uses of the same blend
+    // result, when some are eliminated and some others are kept:
+    //
+    // %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
+    // call void %fn(i64 %disc) [ "ptrauth"(i32 1, i64 %disc) ]
+
+    SmallSet<CallBase *, 4> Users;
+    for (auto *U : BlendedDisc->users())
+      if (auto *CB = dyn_cast<CallBase>(U))
+        Users.insert(CB);
+
+    for (auto *OtherCall : Users) {
+      SmallVector<OperandBundleDef, 3> Bundles;
+      OtherCall->getOperandBundlesAsDefs(Bundles);
+      for (auto It = Bundles.begin(), End = Bundles.end(); It != End; ++It) {
+        if (It->getTag() != "ptrauth" || It->inputs().size() != 3)
+          continue;
+
+        // Skip everything except "ptrauth"(key, 0, %this.blend.call)
+        auto *OldConst = dyn_cast<ConstantInt>(It->inputs()[1]);
+        if (!OldConst || !OldConst->isZero() || It->inputs()[2] != BlendedDisc)
+          continue;
+
+        Value *Operands[] = {It->inputs()[0], IntDisc, AddrDisc};
+        *It = OperandBundleDef("ptrauth", Operands);
+      }
+
+      CallBase *NewCall =
+          CallBase::Create(OtherCall, Bundles, OtherCall->getIterator());
+      OtherCall->replaceAllUsesWith(NewCall);
+      OtherCall->eraseFromParent();
+    }
+
+    if (BlendedDisc->user_empty())
+      BlendedDisc->eraseFromParent();
+  }
+
+  if (PtrauthBlendIntr->user_empty())
+    PtrauthBlendIntr->eraseFromParent();
 }

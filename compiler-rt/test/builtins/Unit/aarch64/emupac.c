@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-uint64_t __emupac_pacda(uint64_t ptr, uint64_t disc);
-uint64_t __emupac_autda(uint64_t ptr, uint64_t disc);
+void *__emupac_pacda(void *ptr, uint64_t disc);
+void *__emupac_autda(void *ptr, uint64_t disc);
 
 static bool pac_supported() {
   register uintptr_t x30 __asm__("x30") = 1ULL << 55;
@@ -71,7 +71,7 @@ static void crash_if_crash_tests_unsupported() {
 
 int main(int argc, char **argv) {
   char stack_object1;
-  uint64_t ptr1 = (uint64_t)&stack_object1;
+  void *ptr1 = &stack_object1;
 
   char stack_object2;
   uint64_t ptr2 = (uint64_t)&stack_object2;
@@ -80,10 +80,10 @@ int main(int argc, char **argv) {
   case 1: {
     // Normal case: test that a pointer authenticated with the same
     // discriminator is equal to the original pointer.
-    uint64_t signed_ptr = __emupac_pacda(ptr1, ptr2);
-    uint64_t authed_ptr = __emupac_autda(signed_ptr, ptr2);
+    void *signed_ptr = __emupac_pacda(ptr1, ptr2);
+    void *authed_ptr = __emupac_autda(signed_ptr, ptr2);
     if (authed_ptr != ptr1) {
-      printf("0x%lx != 0x%lx\n", authed_ptr, ptr1);
+      printf("0x%p != 0x%p\n", authed_ptr, ptr1);
       return 1;
     }
     break;
@@ -91,11 +91,11 @@ int main(int argc, char **argv) {
   case 2: {
     // Test that negative addresses (addresses controlled by TTBR1,
     // conventionally kernel addresses) can be signed and authenticated.
-    uint64_t unsigned_ptr = -1ULL;
-    uint64_t signed_ptr = __emupac_pacda(unsigned_ptr, ptr2);
-    uint64_t authed_ptr = __emupac_autda(signed_ptr, ptr2);
+    void *unsigned_ptr = (void *)-1ULL;
+    void *signed_ptr = __emupac_pacda(unsigned_ptr, ptr2);
+    void *authed_ptr = __emupac_autda(signed_ptr, ptr2);
     if (authed_ptr != unsigned_ptr) {
-      printf("0x%lx != 0x%lx\n", authed_ptr, unsigned_ptr);
+      printf("0x%p != 0x%p\n", authed_ptr, unsigned_ptr);
       return 1;
     }
     break;
@@ -103,15 +103,16 @@ int main(int argc, char **argv) {
   case 3: {
     crash_if_crash_tests_unsupported();
     // Test that a corrupted signature crashes the program.
-    uint64_t signed_ptr = __emupac_pacda(ptr1, ptr2);
-    __emupac_autda(signed_ptr + (1ULL << 48), ptr2);
+    void *signed_ptr = __emupac_pacda(ptr1, ptr2);
+    __emupac_autda((void *)((uintptr_t)signed_ptr + (1ULL << 48)), ptr2);
     break;
   }
   case 4: {
     crash_if_crash_tests_unsupported();
     // Test that signing a pointer with signature bits already set produces a pointer
     // that would fail auth.
-    uint64_t signed_ptr = __emupac_pacda(ptr1 + (1ULL << 48), ptr2);
+    void *signed_ptr =
+        __emupac_pacda((void *)((uintptr_t)ptr1 + (1ULL << 48)), ptr2);
     __emupac_autda(signed_ptr, ptr2);
     break;
   }

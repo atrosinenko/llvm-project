@@ -2846,27 +2846,24 @@ void Verifier::visitConstantExpr(const ConstantExpr *CE) {
 
 void Verifier::visitConstantPtrAuth(const ConstantPtrAuth *CPA) {
   Check(CPA->getPointer()->getType()->isPointerTy(),
-        "signed ptrauth constant base pointer must have pointer type");
+        "ptrauth constant base pointer must have pointer type", CPA);
 
   Check(CPA->getType() == CPA->getPointer()->getType(),
-        "signed ptrauth constant must have same type as its base pointer");
+        "ptrauth constant must have same type as its base pointer", CPA);
 
-  Check(CPA->getKey()->getBitWidth() == 32,
-        "signed ptrauth constant key must be i32 constant integer");
-
-  Check(CPA->getAddrDiscriminator()->getType()->isPointerTy(),
-        "signed ptrauth constant address discriminator must be a pointer");
-
-  Check(CPA->getDiscriminator()->getBitWidth() == 64,
-        "signed ptrauth constant discriminator must be i64 constant integer");
+  Check(!CPA->getSchema().empty(),
+        "ptrauth constant must not have empty schema");
+  for (Value *V : CPA->getSchema())
+    Check(V->getType()->isIntegerTy(64),
+          "ptrauth constant schema must have i64 constant operands", CPA);
 
   Check(CPA->getDeactivationSymbol()->getType()->isPointerTy(),
-        "signed ptrauth constant deactivation symbol must be a pointer");
+        "ptrauth constant deactivation symbol must be a pointer", CPA);
 
   Check(isa<GlobalValue>(CPA->getDeactivationSymbol()) ||
             isa<ConstantPointerNull>(CPA->getDeactivationSymbol()),
-        "signed ptrauth constant deactivation symbol must be a global value "
-        "or null");
+        "ptrauth constant deactivation symbol must be a global value or null",
+        CPA);
 }
 
 bool Verifier::verifyAttributeCount(AttributeList Attrs, unsigned Params) {
@@ -4119,8 +4116,8 @@ void Verifier::visitCallBase(CallBase &Call) {
   bool FoundDeoptBundle = false, FoundFuncletBundle = false,
        FoundGCTransitionBundle = false, FoundCFGuardTargetBundle = false,
        FoundPreallocatedBundle = false, FoundGCLiveBundle = false,
-       FoundPtrauthBundle = false, FoundKCFIBundle = false,
-       FoundAttachedCallBundle = false;
+       FoundKCFIBundle = false, FoundAttachedCallBundle = false;
+  unsigned NumPtrauthBundles = 0;
   for (unsigned i = 0, e = Call.getNumOperandBundles(); i < e; ++i) {
     OperandBundleUse BU = Call.getOperandBundleAt(i);
     uint32_t Tag = BU.getTagID();
@@ -4146,15 +4143,11 @@ void Verifier::visitCallBase(CallBase &Call) {
       Check(BU.Inputs.size() == 1,
             "Expected exactly one cfguardtarget bundle operand", Call);
     } else if (Tag == LLVMContext::OB_ptrauth) {
-      Check(!FoundPtrauthBundle, "Multiple ptrauth operand bundles", Call);
-      FoundPtrauthBundle = true;
-      Check(BU.Inputs.size() == 2,
-            "Expected exactly two ptrauth bundle operands", Call);
-      Check(isa<ConstantInt>(BU.Inputs[0]) &&
-                BU.Inputs[0]->getType()->isIntegerTy(32),
-            "Ptrauth bundle key operand must be an i32 constant", Call);
-      Check(BU.Inputs[1]->getType()->isIntegerTy(64),
-            "Ptrauth bundle discriminator operand must be an i64", Call);
+      ++NumPtrauthBundles;
+      Check(!BU.Inputs.empty(), "Expected non-empty ptrauth bundle", Call);
+      for (Value *V : BU.Inputs)
+        Check(V->getType()->isIntegerTy(64),
+              "Ptrauth bundle must only contain i64 operands", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;
@@ -4187,8 +4180,26 @@ void Verifier::visitCallBase(CallBase &Call) {
   }
 
   // Verify that callee and callsite agree on whether to use pointer auth.
-  Check(!(Call.getCalledFunction() && FoundPtrauthBundle),
-        "Direct call cannot have a ptrauth bundle", Call);
+  switch (Call.getIntrinsicID()) {
+  case Intrinsic::not_intrinsic:
+    Check(!(Call.getCalledFunction() && NumPtrauthBundles),
+          "Direct call cannot have a ptrauth bundle", Call);
+    Check(NumPtrauthBundles <= 1,
+          "Multiple ptrauth operand bundles on a function call", Call);
+    break;
+  case Intrinsic::ptrauth_auth:
+  case Intrinsic::ptrauth_sign:
+  case Intrinsic::ptrauth_strip:
+    Check(NumPtrauthBundles == 1, "Expected exactly one ptrauth bundle", Call);
+    break;
+  case Intrinsic::ptrauth_resign:
+  case Intrinsic::ptrauth_resign_load_relative:
+    Check(NumPtrauthBundles == 2, "Expected exactly two ptrauth bundles", Call);
+    break;
+  default:
+    Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle", Call);
+    break;
+  }
 
   // Verify that each inlinable callsite of a debug-info-bearing function in a
   // debug-info-bearing function has a debug location attached to it. Failure to

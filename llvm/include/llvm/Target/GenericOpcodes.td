@@ -134,9 +134,51 @@ def G_GLOBAL_VALUE : GenericInstruction {
   let hasSideEffects = false;
 }
 
+def G_PTRAUTH_SCHEMA : GenericInstruction {
+  let OutOperandList = (outs untyped_imm_0:$dst);
+  let InOperandList = (ins type0:$op1, variable_ops);
+  let hasSideEffects = 0;
+  let variadicOpsType = type0;
+}
+
 def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
-  let InOperandList = (ins unknown:$addr, i32imm:$key, type1:$addrdisc, i64imm:$disc);
+  let InOperandList = (ins type0:$addr, untyped_imm_0:$schema);
+  let hasSideEffects = 0;
+}
+
+def G_PTRAUTH_AUTH : GenericInstruction {
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, untyped_imm_0:$schema);
+  // Authentication should not be speculated: moving G_PTRAUTH_AUTH above the
+  // point where it is known to succeed under correct program operation may
+  // lead to program crashes.
+  let hasSideEffects = 1;
+}
+
+def G_PTRAUTH_SIGN : GenericInstruction {
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, untyped_imm_0:$schema);
+  let hasSideEffects = 0;
+}
+
+def G_PTRAUTH_RESIGN : GenericInstruction {
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, untyped_imm_0:$old_schema, untyped_imm_0:$new_schema);
+  // Resign includes authentication and thus should not be speculated.
+  let hasSideEffects = 1;
+}
+
+def G_PTRAUTH_RESIGN_LOAD_RELATIVE : GenericInstruction {
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, untyped_imm_0:$old_schema, untyped_imm_0:$new_schema, untyped_imm_0:$addend);
+  let hasSideEffects = 1;
+  let mayLoad = 1;
+}
+
+def G_PTRAUTH_STRIP : GenericInstruction {
+  let OutOperandList = (outs ptype0:$dst);
+  let InOperandList = (ins ptype0:$value, untyped_imm_0:$schema);
   let hasSideEffects = 0;
 }
 

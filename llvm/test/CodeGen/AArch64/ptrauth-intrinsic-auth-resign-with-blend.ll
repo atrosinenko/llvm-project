@@ -36,7 +36,7 @@
 
 target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
 
-define i64 @test_auth_blend(i64 %arg, i64 %arg1) {
+define ptr @test_auth_blend(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_auth_blend:
 ; UNCHECKED:          %bb.0:
 ; UNCHECKED-DARWIN-NEXT: mov x16, x0
@@ -78,12 +78,11 @@ define i64 @test_auth_blend(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_0:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 65535)
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %tmp0)
-  ret i64 %tmp1
+  %tmp1 = call ptr @llvm.ptrauth.auth.p0(ptr %arg) [ "ptrauth"(i64 2, i64 65535, i64 %arg1) ]
+  ret ptr %tmp1
 }
 
-define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_blend(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_blend:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -139,13 +138,11 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.blend(i64 %arg2, i64 56789)
-  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %tmp1)
-  ret i64 %tmp2
+  %tmp2 = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 56789, i64 %arg2) ]
+  ret ptr %tmp2
 }
 
-define i64 @test_resign_blend_and_const(i64 %arg, i64 %arg1) {
+define ptr @test_resign_blend_and_const(ptr %arg, i64 %arg1) {
 ; UNCHECKED-LABEL: test_resign_blend_and_const:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -198,12 +195,11 @@ define i64 @test_resign_blend_and_const(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    pacdb x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 56789)
-  ret i64 %tmp1
+  %tmp1 = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 56789, i64 0) ]
+  ret ptr %tmp1
 }
 
-define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
+define ptr @test_resign_blend_and_addr(ptr %arg, i64 %arg1, i64 %arg2) {
 ; UNCHECKED-LABEL: test_resign_blend_and_addr:
 ; UNCHECKED:       %bb.0:
 ; UNCHECKED-NEXT:    mov x16, x0
@@ -253,9 +249,8 @@ define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %arg2)
-  ret i64 %tmp1
+  %tmp1 = call ptr @llvm.ptrauth.resign.p0(ptr %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
+  ret ptr %tmp1
 }
 
 define i64 @test_auth_too_large_discriminator(i64 %arg, i64 %arg1) {
@@ -313,19 +308,15 @@ define i64 @test_auth_too_large_discriminator(i64 %arg, i64 %arg1) {
 ;
 ;     Assertion `ScratchReg != AddrDisc && "Forbidden to clobber AddrDisc, but have to"
 ;
-define i64 @autxmxn_scratch_is_earlyclobber(i64 %ptr, i64 %arg) {
+define ptr @autxmxn_scratch_is_earlyclobber(ptr %ptr, i64 %arg) {
 entry:
   %discr = call i64 @llvm.ptrauth.blend(i64 %arg, i64 1)
   br label %some.bb
 
 some.bb:
-  %authed = call i64 @llvm.ptrauth.auth(i64 %ptr, i32 0, i64 %discr)
+  %authed = call ptr @llvm.ptrauth.auth(ptr %ptr) [ "ptrauth"(i64 0, i64 0, i64 %discr) ]
   br label %some.other.bb
 
 some.other.bb:
-  ret i64 %authed
+  ret ptr %authed
 }
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)
-declare i64 @llvm.ptrauth.blend(i64, i64)

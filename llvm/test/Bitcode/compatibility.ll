@@ -220,10 +220,10 @@ declare void @g.f1()
 @ds = external global i32
 
 ; ptrauth constant
-@auth_var = global ptr ptrauth (ptr @g1, i32 0, i64 65535, ptr null)
-; CHECK: @auth_var = global ptr ptrauth (ptr @g1, i32 0, i64 65535)
-@auth_var.ds = global ptr ptrauth (ptr @g1, i32 0, i64 65535, ptr null, ptr @ds)
-; CHECK: @auth_var.ds = global ptr ptrauth (ptr @g1, i32 0, i64 65535, ptr null, ptr @ds)
+@auth_var = global ptr ptrauth (ptr @g1, [i64 0, i64 65535, i64 0])
+; CHECK: @auth_var = global ptr ptrauth (ptr @g1, [i64 0, i64 65535, i64 0])
+@auth_var.ds = global ptr ptrauth (ptr @g1, [i64 0, i64 65535, i64 0], ptr @ds)
+; CHECK: @auth_var.ds = global ptr ptrauth (ptr @g1, [i64 0, i64 65535, i64 0], ptr @ds)
 
 ;; Aliases
 ; Format: @<Name> = [Linkage] [Visibility] [DLLStorageClass] [ThreadLocal]

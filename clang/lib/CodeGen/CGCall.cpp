@@ -5231,10 +5231,20 @@ CodeGenFunction::getBundlesForFunclet(llvm::Value *Callee) {
 llvm::CallInst *CodeGenFunction::EmitRuntimeCall(llvm::FunctionCallee callee,
                                                  ArrayRef<llvm::Value *> args,
                                                  const llvm::Twine &name) {
-  llvm::CallInst *call = Builder.CreateCall(
-      callee, args, getBundlesForFunclet(callee.getCallee()), name);
+  return EmitRuntimeCall(callee, args, {}, name);
+}
+
+llvm::CallInst *CodeGenFunction::EmitRuntimeCall(
+    llvm::FunctionCallee callee, ArrayRef<llvm::Value *> args,
+    ArrayRef<llvm::OperandBundleDef> extraBundles, const Twine &name) {
+  SmallVector<llvm::OperandBundleDef, 3> allBundles;
+  llvm::append_range(allBundles, getBundlesForFunclet(callee.getCallee()));
+  llvm::append_range(allBundles, extraBundles);
+  llvm::CallInst *call = Builder.CreateCall(callee, args, allBundles, name);
   call->setCallingConv(getRuntimeCC());
 
+  // FIXME Attach "convergencectrl" bundle right away instead of re-creating
+  //       the call instruction.
   if (CGM.shouldEmitConvergenceTokens() && call->isConvergent())
     return cast<llvm::CallInst>(addConvergenceControlToken(call));
   return call;
