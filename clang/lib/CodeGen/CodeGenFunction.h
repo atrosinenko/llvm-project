@@ -4801,6 +4801,8 @@ public:
   void EmitPointerAuthCopy(PointerAuthQualifier Qualifier, QualType Type,
                            Address DestField, Address SrcField);
 
+  void fixupCallsToPtrauthBlend();
+
   std::pair<llvm::Value *, CGPointerAuthInfo>
   EmitOrigPointerRValue(const Expr *E);
 

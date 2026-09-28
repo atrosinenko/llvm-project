@@ -845,7 +845,7 @@ def AArch64call_arm64ec_to_x64 : SDNode<"AArch64ISD::CALL_ARM64EC_TO_X64",
 // AUTH_CALL chain, callee, auth key #, int disc, addr disc, operands.
 def AArch64authcall : SDNode<"AArch64ISD::AUTH_CALL",
                              SDTypeProfile<0, -1, [SDTCisPtrTy<0>,
-                                                   SDTCisVT<1, i32>,
+                                                   SDTCisVT<1, i64>,
                                                    SDTCisVT<2, i64>,
                                                    SDTCisVT<3, i64>]>,
                              [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
@@ -855,7 +855,7 @@ def AArch64authcall : SDNode<"AArch64ISD::AUTH_CALL",
 // operands.
 def AArch64authtcret: SDNode<"AArch64ISD::AUTH_TC_RETURN",
                              SDTypeProfile<0, 5, [SDTCisPtrTy<0>,
-                                                  SDTCisVT<2, i32>,
+                                                  SDTCisVT<2, i64>,
                                                   SDTCisVT<3, i64>,
                                                   SDTCisVT<4, i64>]>,
                              [SDNPHasChain,  SDNPOptInGlue, SDNPVariadic]>;
@@ -865,7 +865,7 @@ def AArch64authcall_rvmarker : SDNode<"AArch64ISD::AUTH_CALL_RVMARKER",
                                  SDTypeProfile<0, -1, [SDTCisPtrTy<0>,
                                                        SDTCisVT<1, i32>,
                                                        SDTCisPtrTy<2>,
-                                                       SDTCisVT<3, i32>,
+                                                       SDTCisVT<3, i64>,
                                                        SDTCisVT<4, i64>,
                                                        SDTCisVT<5, i64>]>,
                                  [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue,
@@ -2186,7 +2186,7 @@ let Predicates = [HasPAuth] in {
   // operations (such as raw address manipulation or discriminator
   // materialization here), in part because they're handled in a safer way by
   // the kernel, notably on Darwin.
-  def BLRA : Pseudo<(outs), (ins GPR64noip:$Rn, i32imm:$Key, i64imm:$Disc,
+  def BLRA : Pseudo<(outs), (ins GPR64noip:$Rn, i64imm:$Key, i64imm:$Disc,
                                  GPR64:$AddrDisc),
                     [(AArch64authcall GPR64noip:$Rn, timm:$Key, timm:$Disc,
                                       GPR64:$AddrDisc)]>, Sched<[]> {
@@ -2202,7 +2202,7 @@ let Predicates = [HasPAuth] in {
 
   def BLRA_RVMARKER : Pseudo<
         (outs), (ins i64imm:$rvfunc, i32imm:$withmarker, GPR64noip:$Rn,
-                     i32imm:$Key, i64imm:$Disc, GPR64:$AddrDisc),
+                     i64imm:$Key, i64imm:$Disc, GPR64:$AddrDisc),
         [(AArch64authcall_rvmarker tglobaladdr:$rvfunc, timm:$withmarker,
                                    GPR64noip:$Rn, timm:$Key, timm:$Disc,
                                    GPR64:$AddrDisc)]>, Sched<[]> {
@@ -2413,24 +2413,24 @@ let Predicates = [HasPAuth] in {
   let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 16,
       Defs = [X16,X17], Uses = [SP] in {
     def AUTH_TCRETURN
-      : Pseudo<(outs), (ins tcGPRnotx16x17:$dst, i32imm:$FPDiff, i32imm:$Key,
+      : Pseudo<(outs), (ins tcGPRnotx16x17:$dst, i32imm:$FPDiff, i64imm:$Key,
                             i64imm:$Disc, tcGPR64:$AddrDisc),
                []>, Sched<[WriteBrReg]>;
     def AUTH_TCRETURN_BTI
-      : Pseudo<(outs), (ins tcGPRx16x17:$dst, i32imm:$FPDiff, i32imm:$Key,
+      : Pseudo<(outs), (ins tcGPRx16x17:$dst, i32imm:$FPDiff, i64imm:$Key,
                             i64imm:$Disc, tcGPRnotx16x17:$AddrDisc),
                []>, Sched<[WriteBrReg]>;
   }
 
   let Predicates = [TailCallAny] in
-    def : Pat<(AArch64authtcret tcGPRnotx16x17:$dst, (i32 timm:$FPDiff), (i32 timm:$Key),
+    def : Pat<(AArch64authtcret tcGPRnotx16x17:$dst, (i32 timm:$FPDiff), (i64 timm:$Key),
                                 (i64 timm:$Disc), tcGPR64:$AddrDisc),
               (AUTH_TCRETURN tcGPRnotx16x17:$dst, imm:$FPDiff, imm:$Key, imm:$Disc,
                              tcGPR64:$AddrDisc)>;
 
   let Predicates = [TailCallX16X17] in
     def : Pat<(AArch64authtcret tcGPRx16x17:$dst, (i32 timm:$FPDiff),
-                                (i32 timm:$Key), (i64 timm:$Disc),
+                                (i64 timm:$Key), (i64 timm:$Disc),
                                 tcGPRnotx16x17:$AddrDisc),
               (AUTH_TCRETURN_BTI tcGPRx16x17:$dst, imm:$FPDiff, imm:$Key,
                                  imm:$Disc, tcGPRnotx16x17:$AddrDisc)>;

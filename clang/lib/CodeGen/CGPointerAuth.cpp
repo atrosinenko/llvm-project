@@ -18,7 +18,10 @@
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ConstantInitBuilder.h"
 #include "llvm/Analysis/ValueTracking.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Support/SipHash.h"
+#include "llvm/Transforms/Utils/PromoteMemToReg.h"
 
 using namespace clang;
 using namespace CodeGen;
@@ -680,6 +683,87 @@ std::optional<CGPointerAuthInfo> CodeGenModule::getVTablePointerAuthInfo(
                            PointerAuthenticationMode::SignAndAuth,
                            /* IsIsaPointer */ false,
                            /* AuthenticatesNullValues */ false, Discriminator);
+}
+
+// Replace two-operand "ptrauth" bundles with discriminators computed by a call
+// to @llvm.ptrauth.blend with their three-operand equivalents.
+void CodeGenFunction::fixupCallsToPtrauthBlend() {
+  // Even though Pointer Authentication support in LLVM is defined in target-
+  // neutral terms, this function makes use of the fact that Clang only emits
+  // "ptrauth" operand bundles with AArch64-specific semantics.
+
+  // Collect the calls to llvm.ptrauth.blend that are eligible for replacement.
+  SmallVector<llvm::IntrinsicInst *> BlendCalls;
+  for (auto &BB : *CurFn) {
+    for (auto &I : BB) {
+      auto *Blend = dyn_cast<llvm::IntrinsicInst>(&I);
+      if (!Blend || Blend->getIntrinsicID() != llvm::Intrinsic::ptrauth_blend)
+        continue;
+
+      auto *ConstDisc = dyn_cast<llvm::ConstantInt>(Blend->getArgOperand(1));
+      if (!ConstDisc || !llvm::isUInt<16>(ConstDisc->getZExtValue()))
+        continue;
+
+      BlendCalls.push_back(Blend);
+    }
+  }
+
+  if (BlendCalls.empty())
+    return;
+
+  // Saving the result of blend to a temporary for readability in C/C++ results
+  // in allocas at the LLVM IR level - eliminate them to simplify the analysis.
+
+  SmallVector<llvm::AllocaInst *> Discriminators;
+  for (auto *Blend : BlendCalls) {
+    for (auto *U : Blend->users()) {
+      auto *Store = dyn_cast<llvm::StoreInst>(U);
+      if (!Store)
+        continue;
+
+      auto *Alloca = dyn_cast<llvm::AllocaInst>(Store->getPointerOperand());
+      if (Alloca && isAllocaPromotable(Alloca))
+        Discriminators.push_back(Alloca);
+    }
+  }
+
+  if (!Discriminators.empty()) {
+    llvm::DominatorTree DT(*CurFn);
+    PromoteMemToReg(Discriminators, DT);
+  }
+
+  // Then, try absorbing blend's arguments into the bundles.
+
+  for (auto *Blend : BlendCalls) {
+    llvm::Value *AddrDisc = Blend->getArgOperand(0);
+    llvm::Value *ConstDisc = Blend->getArgOperand(1);
+
+    for (auto *U : llvm::make_early_inc_range(Blend->users())) {
+      auto *OldCB = dyn_cast<llvm::CallBase>(U);
+      if (!OldCB)
+        continue;
+
+      SmallVector<llvm::OperandBundleDef> NewBundles;
+      OldCB->getOperandBundlesAsDefs(NewBundles);
+      for (auto &Bundle : NewBundles) {
+        if (Bundle.getTag() != "ptrauth" || Bundle.inputs().size() != 2 ||
+            Bundle.inputs()[1] != Blend)
+          continue;
+
+        llvm::Value *Key = Bundle.inputs()[0];
+        SmallVector<llvm::Value *> Operands = {Key, ConstDisc, AddrDisc};
+        Bundle = llvm::OperandBundleDef("ptrauth", Operands);
+      }
+      llvm::CallBase *NewCB =
+          llvm::CallBase::Create(OldCB, NewBundles, OldCB->getIterator());
+      NewCB->takeName(OldCB);
+      OldCB->replaceAllUsesWith(NewCB);
+      OldCB->eraseFromParent();
+    }
+
+    if (Blend->use_empty())
+      Blend->eraseFromParent();
+  }
 }
 
 llvm::Value *CodeGenFunction::authPointerToPointerCast(llvm::Value *ResultPtr,

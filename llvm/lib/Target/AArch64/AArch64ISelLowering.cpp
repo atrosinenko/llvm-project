@@ -444,40 +444,6 @@ static bool isZeroingInactiveLanes(SDValue Op) {
   }
 }
 
-static std::tuple<SDValue, SDValue>
-extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
-  SDLoc DL(Disc);
-  SDValue AddrDisc;
-  SDValue ConstDisc;
-
-  // If this is a blend, remember the constant and address discriminators.
-  // Otherwise, it's either a constant discriminator, or a non-blended
-  // address discriminator.
-  if (Disc->getOpcode() == ISD::INTRINSIC_WO_CHAIN &&
-      Disc->getConstantOperandVal(0) == Intrinsic::ptrauth_blend) {
-    AddrDisc = Disc->getOperand(1);
-    ConstDisc = Disc->getOperand(2);
-  } else {
-    ConstDisc = Disc;
-  }
-
-  // If the constant discriminator (either the blend RHS, or the entire
-  // discriminator value) isn't a 16-bit constant, bail out, and let the
-  // discriminator be computed separately.
-  const auto *ConstDiscN = dyn_cast<ConstantSDNode>(ConstDisc);
-  if (!ConstDiscN || !isUInt<16>(ConstDiscN->getZExtValue()))
-    return std::make_tuple(DAG->getTargetConstant(0, DL, MVT::i64), Disc);
-
-  // If there's no address discriminator, use NoRegister, which we'll later
-  // replace with XZR, or directly use a Z variant of the inst. when available.
-  if (!AddrDisc)
-    AddrDisc = DAG->getRegister(Register(), MVT::i64);
-
-  return std::make_tuple(
-      DAG->getTargetConstant(ConstDiscN->getZExtValue(), DL, MVT::i64),
-      AddrDisc);
-}
-
 AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
                                              const AArch64Subtarget &STI)
     : TargetLowering(TM, STI), Subtarget(&STI) {
@@ -10550,6 +10516,7 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   MachineFunction::CallSiteInfo CSInfo;
   bool IsThisReturn = false;
 
+  const AArch64SelectionDAGInfo *SDI = Subtarget->getSelectionDAGInfo();
   AArch64FunctionInfo *FuncInfo = MF.getInfo<AArch64FunctionInfo>();
   bool TailCallOpt = MF.getTarget().Options.GuaranteedTailCallOpt;
   bool IsCFICall = CLI.CB && CLI.CB->isIndirectCall() && CLI.CFIType;
@@ -11089,7 +11056,7 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
     if (OpFlags & AArch64II::MO_GOT) {
       Callee = DAG.getTargetGlobalAddress(CalledGlobal, DL, PtrVT, 0, OpFlags);
       Callee = DAG.getNode(AArch64ISD::LOADgot, DL, PtrVT, Callee);
-    } else if (!CLI.PAI || !IsTailCall) {
+    } else if (!CLI.PtrAuthSchema || !IsTailCall) {
       const GlobalValue *GV = G->getGlobal();
       Callee = DAG.getTargetGlobalAddress(GV, DL, PtrVT, 0, OpFlags);
     }
@@ -11154,21 +11121,15 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
     Ops.push_back(DAG.getSignedTargetConstant(FPDiff, DL, MVT::i32));
   }
 
-  if (CLI.PAI) {
-    const uint64_t Key = CLI.PAI->Key;
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
-
-    // Split the discriminator into address/integer components.
-    SDValue AddrDisc, IntDisc;
-    std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(CLI.PAI->Discriminator, &DAG);
+  if (CLI.PtrAuthSchema) {
+    auto [Key, IntDisc, AddrDisc] =
+        SDI->analyzePtrauthSchema(DAG, CLI.PtrAuthSchema, DL);
 
     if (Opc == AArch64ISD::CALL_RVMARKER)
       Opc = AArch64ISD::AUTH_CALL_RVMARKER;
     else
       Opc = IsTailCall ? AArch64ISD::AUTH_TC_RETURN : AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(Key, DL, MVT::i32));
+    Ops.push_back(Key);
     Ops.push_back(IntDisc);
     Ops.push_back(AddrDisc);
   }
@@ -11664,7 +11625,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
   // With ptrauth-calls, the tlv access thunk pointer is authenticated (IA, 0).
   if (DAG.getMachineFunction().getFunction().hasFnAttribute("ptrauth-calls")) {
     Opcode = AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i32));
+    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i64));
     Ops.push_back(DAG.getTargetConstant(0, DL, MVT::i64)); // Integer Disc.
     Ops.push_back(DAG.getRegister(Register(), MVT::i64));  // Addr Disc.
   }
@@ -33894,6 +33855,35 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
   // Expand scalar and SVE operations using selects. Neon vectors prefer sub to
   // avoid vselect becoming bsl / unrolling.
   return !VT.isFixedLengthVector();
+}
+
+std::optional<std::string>
+AArch64TargetLowering::validatePtrAuthSchema(const CallBase &CB) const {
+  for (unsigned I = 0, N = CB.getNumOperandBundles(); I < N; ++I) {
+    OperandBundleUse OB = CB.getOperandBundleAt(I);
+    if (OB.getTagID() != LLVMContext::OB_ptrauth)
+      continue;
+
+    unsigned NumOperands = OB.Inputs.size();
+    if (NumOperands != 2 && NumOperands != 3)
+      return "two- or three-element ptrauth schema expected";
+
+    // The first operand is always the key ID.
+    auto *Key = dyn_cast<ConstantInt>(OB.Inputs[0]);
+    if (!Key || Key->getZExtValue() > (unsigned long)AArch64PACKey::LAST)
+      return "key must be constant in range [0, " +
+             utostr(AArch64PACKey::LAST) + "]";
+
+    if (NumOperands == 2)
+      continue;
+
+    // "ptrauth"(i64 <key>, i64 <u16_const_disc>, i64 %addr_disc)
+
+    auto *IntDisc = dyn_cast<ConstantInt>(OB.Inputs[1]);
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return "constant modifier must be 16-bit unsigned constant";
+  }
+  return std::nullopt;
 }
 
 MachineInstr *

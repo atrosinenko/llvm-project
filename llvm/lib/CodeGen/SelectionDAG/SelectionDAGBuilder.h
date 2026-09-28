@@ -425,7 +425,7 @@ public:
   void ExportFromCurrentBlock(const Value *V);
   void LowerCallTo(const CallBase &CB, SDValue Callee, bool IsTailCall,
                    bool IsMustTailCall, const BasicBlock *EHPadBB = nullptr,
-                   const TargetLowering::PtrAuthInfo *PAI = nullptr);
+                   SDValue PtrAuthSchema = SDValue());
 
   // Check some of the target-independent constraints for tail calls. This does
   // not iterate over the call arguments.
@@ -660,6 +660,7 @@ private:
   bool visitEntryValueDbgValue(ArrayRef<const Value *> Values,
                                DILocalVariable *Variable, DIExpression *Expr,
                                DebugLoc DbgLoc);
+  SDValue visitPtrauthBundle(OperandBundleUse Bundle);
   void visitIntrinsicCall(const CallInst &I, unsigned Intrinsic);
   void visitTargetIntrinsic(const CallInst &I, unsigned Intrinsic);
   void visitConstrainedFPIntrinsic(const ConstrainedFPIntrinsic &FPI);

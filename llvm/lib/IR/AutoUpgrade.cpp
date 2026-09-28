@@ -76,6 +76,21 @@ static void rename(GlobalValue *GV) { GV->setName(GV->getName() + ".old"); }
   reportFatalUsageError(reason);
 }
 
+GlobalVariable *AutoUpgraderMarkerFactory::getMarker(StringRef ShortName,
+                                                     bool Create) {
+  SmallString<64> Name = {MarkerNamePrefix, ShortName};
+  if (auto *GV = M.getGlobalVariable(Name))
+    return GV;
+
+  if (!Create)
+    return nullptr;
+
+  Type *Int8Ty = IntegerType::get(M.getContext(), 8);
+  return new GlobalVariable(M, Int8Ty, /*isConstant=*/false,
+                            GlobalVariable::ExternalLinkage,
+                            /*Initializer=*/nullptr, Name);
+}
+
 // Upgrade the declarations of the SSE4.1 ptest intrinsics whose arguments have
 // changed their type from v4f32 to v2i64.
 static bool upgradePTESTIntrinsic(Function *F, Intrinsic::ID IID,
@@ -7998,7 +8013,8 @@ void llvm::UpgradeAttributes(AttrBuilder &B) {
   }
 }
 
-void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
+void llvm::UpgradeOperandBundles(AutoUpgraderMarkerFactory AUMF,
+                                 SmallVectorImpl<OperandBundleDef> &Bundles) {
   // clang.arc.attachedcall bundles are now required to have an operand.
   // If they don't, it's okay to drop them entirely: when there is an operand,
   // the "attachedcall" is meaningful and required, but without an operand,
@@ -8007,4 +8023,78 @@ void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
     return OBD.getTag() == "clang.arc.attachedcall" &&
            OBD.inputs().empty();
   });
+
+  for (OperandBundleDef &Bundle : Bundles) {
+    // Mark an old-style AArch64 "ptrauth"(i32 const_key, i64 disc) bundle
+    // (note the first operand being i32) to be upgraded later, when calls
+    // to @llvm.ptrauth.blend intrinsic can be inspected.
+    if (Bundle.getTag() == "ptrauth" && Bundle.inputs().size() == 2 &&
+        Bundle.inputs()[0]->getType()->isIntegerTy(32) &&
+        isa<ConstantInt>(Bundle.inputs()[0])) {
+      SmallVector<Value *, 3> Operands(Bundle.inputs());
+      Operands.push_back(AUMF.getMarker("ptrauth.bundle"));
+      Bundle = OperandBundleDef("ptrauth", Operands);
+    }
+  }
+}
+
+void llvm::UpgradePtrauthBlendUsers(Module &M) {
+  AutoUpgraderMarkerFactory AUMF(M);
+  GlobalVariable *Marker = AUMF.getMarker("ptrauth.bundle", /*Create=*/false);
+  Function *PtrauthBlendIntr = M.getFunction("llvm.ptrauth.blend");
+  if (!Marker)
+    return;
+
+  for (auto It = Marker->user_begin(), E = Marker->user_end(); It != E;) {
+    // make_early_inc_range is not enough because "users" has one-to-one
+    // correspondence with "uses" and thus duplicates are possible.
+    auto Next = It;
+    while (Next != E && *Next == *It)
+      ++Next;
+
+    auto *OldCB = cast<CallBase>(*It);
+
+    SmallVector<OperandBundleDef, 3> Bundles;
+    OldCB->getOperandBundlesAsDefs(Bundles);
+    for (auto &OB : Bundles) {
+      if (OB.inputs().size() != 3 || OB.inputs()[2] != Marker)
+        continue;
+
+      IRBuilder<> Builder(M.getContext());
+      uint64_t KeyVal = cast<ConstantInt>(OB.inputs()[0])->getZExtValue();
+      Value *Key = Builder.getInt64(KeyVal);
+
+      auto *OldBlend = dyn_cast<IntrinsicInst>(OB.inputs()[1]);
+      if (OldBlend && OldBlend->getIntrinsicID() == Intrinsic::ptrauth_blend) {
+        auto *AddrDisc = OldBlend->getArgOperand(0);
+        auto *ConstDisc = dyn_cast<ConstantInt>(OldBlend->getArgOperand(1));
+        if (ConstDisc && isUInt<16>(ConstDisc->getZExtValue())) {
+          Value *Operands[] = {Key, ConstDisc, AddrDisc};
+          OB = OperandBundleDef("ptrauth", Operands);
+          continue;
+        }
+      }
+
+      Value *Operands[] = {Key, OB.inputs()[1]};
+      OB = OperandBundleDef("ptrauth", Operands);
+    }
+
+    CallBase *NewCB = CallBase::Create(OldCB, Bundles, OldCB->getIterator());
+    OldCB->replaceAllUsesWith(NewCB);
+    OldCB->eraseFromParent();
+
+    It = Next;
+  }
+
+  // Cleanup.
+  if (PtrauthBlendIntr) {
+    for (auto *U : make_early_inc_range(PtrauthBlendIntr->users())) {
+      auto *BlendCall = cast<IntrinsicInst>(U);
+      if (BlendCall->use_empty())
+        BlendCall->eraseFromParent();
+    }
+    if (PtrauthBlendIntr->use_empty())
+      PtrauthBlendIntr->eraseFromParent();
+  }
+  Marker->eraseFromParent();
 }

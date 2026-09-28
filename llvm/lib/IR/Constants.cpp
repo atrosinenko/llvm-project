@@ -2310,7 +2310,8 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
     return false;
 
   // If the keys are different, there's no chance for this to be compatible.
-  if (getKey() != Key)
+  const ConstantInt *KeyConst = dyn_cast<ConstantInt>(Key);
+  if (!KeyConst || getKey()->getZExtValue() != KeyConst->getZExtValue())
     return false;
 
   // We can have 3 kinds of discriminators:
@@ -2364,6 +2365,51 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
       DL, Off2, /*AllowNonInbounds=*/true);
 
   return Base1 == Base2 && Off1 == Off2;
+}
+
+bool ConstantPtrAuth::isKnownCompatibleWith(OperandBundleUse Bundle,
+                                            const DataLayout &DL) const {
+  // This function may only be validly called to analyze a ptrauth operation
+  // with no deactivation symbol, so if we have one it isn't compatible.
+  if (!isa<ConstantPointerNull>(getDeactivationSymbol()))
+    return false;
+
+  auto CompatibleOperands = [&DL](Value *This, Value *Other) {
+    if (This == Other)
+      return true;
+
+    // If This and Other are not trivially equal, try analyzing pointers.
+    if (!isa<PtrToIntOperator>(Other))
+      return false;
+    Other = cast<PtrToIntOperator>(Other)->getPointerOperand();
+
+    // Reject incompatible pointer types (different address spaces).
+    if (This->getType() != Other->getType())
+      return false;
+    unsigned AddressBitWidth = DL.getIndexTypeSizeInBits(This->getType());
+
+    // Check if two pointers are equivalent base+offset expressions.
+    APInt Off1(AddressBitWidth, 0);
+    auto *Base1 = This->stripAndAccumulateConstantOffsets(
+        DL, Off1, /*AllowNonInbounds=*/true);
+
+    APInt Off2(AddressBitWidth, 0);
+    auto *Base2 = Other->stripAndAccumulateConstantOffsets(
+        DL, Off2, /*AllowNonInbounds=*/true);
+
+    return Base1 == Base2 && Off1 == Off2;
+  };
+
+  if (Bundle.Inputs.size() < 2 || Bundle.Inputs.size() > 3)
+    return false;
+
+  if (Bundle.Inputs.size() == 2)
+    return isKnownCompatibleWith(Bundle.Inputs[0], Bundle.Inputs[1], DL);
+
+  ConstantInt *KeyConst = dyn_cast<ConstantInt>(Bundle.Inputs[0]);
+  return KeyConst && getKey()->getZExtValue() == KeyConst->getZExtValue() &&
+         getDiscriminator() == Bundle.Inputs[1] &&
+         CompatibleOperands(getAddrDiscriminator(), Bundle.Inputs[2]);
 }
 
 //---- ConstantExpr::get() implementations.

@@ -4919,25 +4919,40 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
 
   if (!PtrAuthBundleOrNone)
     return nullptr;
+  ArrayRef<Use> BundleOps = PtrAuthBundleOrNone->Inputs;
+  if ((BundleOps.size() != 2 && BundleOps.size() != 3) ||
+      !isa<ConstantInt>(BundleOps[0]))
+    return nullptr;
+  uint64_t BundleKey = cast<ConstantInt>(BundleOps[0])->getZExtValue();
+  // FIXME Remove after migrating ptrauth intrinsics to operand bundles.
+  auto MatchesPtrauthBundle = [&](Value *Key, Value *Disc) {
+    auto *ConstKey = dyn_cast<ConstantInt>(Key);
+    if (!ConstKey || ConstKey->getZExtValue() != BundleKey)
+      return false;
+    if (BundleOps.size() == 2 && BundleOps[1] == Disc)
+      return true;
+    auto *BlendedDisc = dyn_cast<IntrinsicInst>(Disc);
+    if (BundleOps.size() != 3 || !BlendedDisc)
+      return false;
+    return BlendedDisc->getArgOperand(0) == BundleOps[2] &&
+           BlendedDisc->getArgOperand(1) == BundleOps[1];
+  };
 
   Value *NewCallee = nullptr;
   switch (IIID) {
   // call(ptrauth.resign(p)), ["ptrauth"()] ->  call p, ["ptrauth"()]
   // assuming the call bundle and the sign operands match.
   case Intrinsic::ptrauth_resign: {
-    // Resign result key should match bundle.
-    if (II->getOperand(3) != PtrAuthBundleOrNone->Inputs[0])
-      return nullptr;
-    // Resign result discriminator should match bundle.
-    if (II->getOperand(4) != PtrAuthBundleOrNone->Inputs[1])
+    if (!MatchesPtrauthBundle(II->getOperand(3), II->getOperand(4)))
       return nullptr;
 
     // Resign input (auth) key should also match: we can't change the key on
     // the new call we're generating, because we don't know what keys are valid.
-    if (II->getOperand(1) != PtrAuthBundleOrNone->Inputs[0])
+    uint64_t AuthKey = cast<ConstantInt>(II->getOperand(1))->getZExtValue();
+    if (AuthKey != BundleKey)
       return nullptr;
 
-    Value *NewBundleOps[] = {II->getOperand(1), II->getOperand(2)};
+    Value *NewBundleOps[] = {Builder.getInt64(AuthKey), II->getOperand(2)};
     NewBundles.emplace_back("ptrauth", NewBundleOps);
     NewCallee = II->getOperand(0);
     break;
@@ -4947,12 +4962,9 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // assuming the call bundle and the sign operands match.
   // Non-ptrauth indirect calls are undesirable, but so is ptrauth.sign.
   case Intrinsic::ptrauth_sign: {
-    // Sign key should match bundle.
-    if (II->getOperand(1) != PtrAuthBundleOrNone->Inputs[0])
+    if (!MatchesPtrauthBundle(II->getOperand(1), II->getOperand(2)))
       return nullptr;
-    // Sign discriminator should match bundle.
-    if (II->getOperand(2) != PtrAuthBundleOrNone->Inputs[1])
-      return nullptr;
+
     NewCallee = II->getOperand(0);
     break;
   }
@@ -4984,11 +4996,8 @@ Instruction *InstCombinerImpl::foldPtrAuthConstantCallee(CallBase &Call) {
   if (!PAB)
     return nullptr;
 
-  auto *Key = cast<ConstantInt>(PAB->Inputs[0]);
-  Value *Discriminator = PAB->Inputs[1];
-
   // If the bundle doesn't match, this is probably going to fail to auth.
-  if (!CPA->isKnownCompatibleWith(Key, Discriminator, DL))
+  if (!CPA->isKnownCompatibleWith(*PAB, DL))
     return nullptr;
 
   // If the bundle matches the constant, proceed in making this a direct call.

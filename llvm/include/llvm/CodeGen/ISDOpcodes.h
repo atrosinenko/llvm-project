@@ -93,6 +93,12 @@ enum NodeType {
   ExternalSymbol,
   BlockAddress,
 
+  /// A temporary node representing the operands of "ptrauth" bundle in the
+  /// original LLVM IR.
+  /// It has target-dependent number of i64 operands and produces a token value
+  /// passed to an authenticated call node.
+  PtrAuthSchema,
+
   /// A ptrauth constant.
   /// ptr, key, addr-disc, disc
   /// Note that the addr-disc can be a non-constant value, to allow representing

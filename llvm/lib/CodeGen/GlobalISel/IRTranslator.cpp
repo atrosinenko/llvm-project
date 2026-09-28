@@ -307,6 +307,9 @@ class IRTranslatorImpl {
   bool translateConstrainedFPIntrinsic(const ConstrainedFPIntrinsic &FPI,
                                        MachineIRBuilder &MIRBuilder);
 
+  Register translatePtrauthBundle(OperandBundleUse Bundle,
+                                  MachineIRBuilder &MIRBuilder);
+
   bool translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                MachineIRBuilder &MIRBuilder);
 
@@ -3018,6 +3021,19 @@ bool IRTranslatorImpl::translateConvergenceControlIntrinsic(
   return true;
 }
 
+Register
+IRTranslatorImpl::translatePtrauthBundle(OperandBundleUse Bundle,
+                                         MachineIRBuilder &MIRBuilder) {
+  SmallVector<SrcOp> SchemaOps;
+  for (const Use &Operand : Bundle.Inputs)
+    SchemaOps.push_back(getOrCreateVReg(*Operand));
+
+  Register Res = MRI->createGenericVirtualRegister(LLT::token());
+  MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SCHEMA, {Res}, SchemaOps);
+
+  return Res;
+}
+
 bool IRTranslatorImpl::translateKnownIntrinsic(const CallInst &CI,
                                                Intrinsic::ID ID,
                                                MachineIRBuilder &MIRBuilder) {
@@ -3583,24 +3599,20 @@ bool IRTranslatorImpl::translateCallBase(const CallBase &CB,
     }
   }
 
-  std::optional<CallLowering::PtrAuthInfo> PAI;
+  Register PtrAuthSchema;
   if (auto Bundle = CB.getOperandBundle(LLVMContext::OB_ptrauth)) {
     // Functions should never be ptrauth-called directly.
     assert(!CB.getCalledFunction() && "invalid direct ptrauth call");
-
-    const Value *Key = Bundle->Inputs[0];
-    const Value *Discriminator = Bundle->Inputs[1];
+    TLI->reportFatalErrorOnInvalidPtrAuthSchema(CB);
 
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(Key, Discriminator, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(*Bundle, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
-      Register DiscReg = getOrCreateVReg(*Discriminator);
-      PAI = CallLowering::PtrAuthInfo{cast<ConstantInt>(Key)->getZExtValue(),
-                                      DiscReg};
+      PtrAuthSchema = translatePtrauthBundle(*Bundle, MIRBuilder);
     }
   }
 
@@ -3613,9 +3625,10 @@ bool IRTranslatorImpl::translateCallBase(const CallBase &CB,
   // We don't set HasCalls on MFI here yet because call lowering may decide to
   // optimize into tail calls. Instead, we defer that to selection where a final
   // scan is done to check if any instructions are calls.
-  bool Success = CLI->lowerCall(
-      MIRBuilder, CB, Res, Args, SwiftErrorVReg, PAI, ConvergenceCtrlToken,
-      [&]() { return getOrCreateVReg(*CB.getCalledOperand()); });
+  bool Success =
+      CLI->lowerCall(MIRBuilder, CB, Res, Args, SwiftErrorVReg, PtrAuthSchema,
+                     ConvergenceCtrlToken,
+                     [&]() { return getOrCreateVReg(*CB.getCalledOperand()); });
 
   // Check if we just inserted a tail call.
   if (Success) {

@@ -98,11 +98,6 @@ public:
     ArgInfo() = default;
   };
 
-  struct PtrAuthInfo {
-    uint64_t Key;
-    Register Discriminator;
-  };
-
   struct CallLoweringInfo {
     /// Calling convention to be used for the call.
     CallingConv::ID CallConv = CallingConv::C;
@@ -130,7 +125,7 @@ public:
     MDNode *KnownCallees = nullptr;
 
     /// The auth-call information in the "ptrauth" bundle, if present.
-    std::optional<PtrAuthInfo> PAI;
+    Register PtrAuthSchema;
 
     /// True if the call must be tail call optimized.
     bool IsMustTailCall = false;
@@ -619,7 +614,7 @@ public:
   bool lowerCall(MachineIRBuilder &MIRBuilder, const CallBase &Call,
                  ArrayRef<Register> ResRegs,
                  ArrayRef<ArrayRef<Register>> ArgRegs, Register SwiftErrorVReg,
-                 std::optional<PtrAuthInfo> PAI, Register ConvergenceCtrlToken,
+                 Register PtrAuthSchema, Register ConvergenceCtrlToken,
                  std::function<Register()> GetCalleeReg) const;
 
   /// For targets which want to use big-endian can enable it with

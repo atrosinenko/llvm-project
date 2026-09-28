@@ -7797,6 +7797,19 @@ SDValue TargetLowering::getSqrtInputTest(SDValue Op, SelectionDAG &DAG,
                       /*Signaling=*/false, Flags);
 }
 
+void TargetLowering::reportFatalErrorOnInvalidPtrAuthSchema(
+    const CallBase &CB) const {
+  std::optional<std::string> Error = validatePtrAuthSchema(CB);
+  if (!Error)
+    return;
+
+  errs() << CB.getFunction()->getName()
+         << ": ptrauth schema violates target-specific constraints:\n";
+  CB.print(errs());
+  errs() << "\n";
+  reportFatalUsageError(("Invalid ptrauth schema: " + *Error).c_str());
+}
+
 SDValue TargetLowering::getNegatedExpression(SDValue Op, SelectionDAG &DAG,
                                              bool LegalOps, bool OptForSize,
                                              NegatibleCost &Cost,

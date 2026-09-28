@@ -9,7 +9,7 @@ define i32 @test_ptrauth_call_sign(ptr %p) {
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.sign(i64 %v0, i32 2, i64 5678)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "ptrauth"(i32 2, i64 5678) ]
+  %v3 = call i32 %v2() [ "ptrauth"(i64 2, i64 5678) ]
   ret i32 %v3
 }
 
@@ -21,26 +21,26 @@ define i32 @test_ptrauth_call_sign_otherbundle(ptr %p) {
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.sign(i64 %v0, i32 2, i64 5678)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "somebundle"(ptr null), "ptrauth"(i32 2, i64 5678), "otherbundle"(i64 0) ]
+  %v3 = call i32 %v2() [ "somebundle"(ptr null), "ptrauth"(i64 2, i64 5678), "otherbundle"(i64 0) ]
   ret i32 %v3
 }
 
 define i32 @test_ptrauth_call_resign(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_call_resign(
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[P:%.*]]() [ "ptrauth"(i32 1, i64 1234) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[P:%.*]]() [ "ptrauth"(i64 1, i64 1234) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.resign(i64 %v0, i32 1, i64 1234, i32 1, i64 5678)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "ptrauth"(i32 1, i64 5678) ]
+  %v3 = call i32 %v2() [ "ptrauth"(i64 1, i64 5678) ]
   ret i32 %v3
 }
 
 define i32 @test_ptrauth_call_resign_blend(ptr %pp) {
 ; CHECK-LABEL: @test_ptrauth_call_resign_blend(
 ; CHECK-NEXT:    [[V01:%.*]] = load ptr, ptr [[PP:%.*]], align 8
-; CHECK-NEXT:    [[V6:%.*]] = call i32 [[V01]]() [ "ptrauth"(i32 1, i64 1234) ]
+; CHECK-NEXT:    [[V6:%.*]] = call i32 [[V01]]() [ "ptrauth"(i64 1, i64 1234) ]
 ; CHECK-NEXT:    ret i32 [[V6]]
 ;
   %v0 = load ptr, ptr %pp, align 8
@@ -49,7 +49,7 @@ define i32 @test_ptrauth_call_resign_blend(ptr %pp) {
   %v3 = call i64 @llvm.ptrauth.blend(i64 %v1, i64 5678)
   %v4 = call i64 @llvm.ptrauth.resign(i64 %v2, i32 1, i64 1234, i32 1, i64 %v3)
   %v5 = inttoptr i64 %v4 to ptr
-  %v6 = call i32 %v5() [ "ptrauth"(i32 1, i64 %v3) ]
+  %v6 = call i32 %v5() [ "ptrauth"(i64 1, i64 5678, i64 %v1) ]
   ret i32 %v6
 }
 
@@ -58,7 +58,7 @@ define i32 @test_ptrauth_call_resign_blend_2(ptr %pp) {
 ; CHECK-NEXT:    [[V01:%.*]] = load ptr, ptr [[PP:%.*]], align 8
 ; CHECK-NEXT:    [[V1:%.*]] = ptrtoint ptr [[PP]] to i64
 ; CHECK-NEXT:    [[V3:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[V1]], i64 5678)
-; CHECK-NEXT:    [[V6:%.*]] = call i32 [[V01]]() [ "ptrauth"(i32 0, i64 [[V3]]) ]
+; CHECK-NEXT:    [[V6:%.*]] = call i32 [[V01]]() [ "ptrauth"(i64 0, i64 [[V3]]) ]
 ; CHECK-NEXT:    ret i32 [[V6]]
 ;
   %v0 = load ptr, ptr %pp, align 8
@@ -67,7 +67,7 @@ define i32 @test_ptrauth_call_resign_blend_2(ptr %pp) {
   %v3 = call i64 @llvm.ptrauth.blend(i64 %v1, i64 5678)
   %v4 = call i64 @llvm.ptrauth.resign(i64 %v2, i32 0, i64 %v3, i32 0, i64 1234)
   %v5 = inttoptr i64 %v4 to ptr
-  %v6 = call i32 %v5() [ "ptrauth"(i32 0, i64 1234) ]
+  %v6 = call i32 %v5() [ "ptrauth"(i64 0, i64 1234) ]
   ret i32 %v6
 }
 
@@ -76,13 +76,13 @@ define i32 @test_ptrauth_call_resign_mismatch_key(ptr %p) {
 ; CHECK-NEXT:    [[V0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
 ; CHECK-NEXT:    [[V1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[V0]], i32 1, i64 1234, i32 0, i64 5678)
 ; CHECK-NEXT:    [[V2:%.*]] = inttoptr i64 [[V1]] to ptr
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i32 1, i64 5678) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i64 1, i64 5678) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.resign(i64 %v0, i32 1, i64 1234, i32 0, i64 5678)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "ptrauth"(i32 1, i64 5678) ]
+  %v3 = call i32 %v2() [ "ptrauth"(i64 1, i64 5678) ]
   ret i32 %v3
 }
 
@@ -91,13 +91,13 @@ define i32 @test_ptrauth_call_resign_mismatch_disc(ptr %p) {
 ; CHECK-NEXT:    [[V0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
 ; CHECK-NEXT:    [[V1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[V0]], i32 1, i64 1234, i32 0, i64 9900)
 ; CHECK-NEXT:    [[V2:%.*]] = inttoptr i64 [[V1]] to ptr
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i32 1, i64 5678) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i64 1, i64 5678) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.resign(i64 %v0, i32 1, i64 1234, i32 0, i64 9900)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "ptrauth"(i32 1, i64 5678) ]
+  %v3 = call i32 %v2() [ "ptrauth"(i64 1, i64 5678) ]
   ret i32 %v3
 }
 
@@ -109,7 +109,7 @@ define i32 @test_ptrauth_call_resign_mismatch_blend(ptr %pp) {
 ; CHECK-NEXT:    [[V6:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[V1]], i64 5678)
 ; CHECK-NEXT:    [[V4:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[V2]], i32 1, i64 1234, i32 1, i64 [[V6]])
 ; CHECK-NEXT:    [[V5:%.*]] = inttoptr i64 [[V4]] to ptr
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V5]]() [ "ptrauth"(i32 1, i64 [[V1]]) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V5]]() [ "ptrauth"(i64 1, i64 [[V1]]) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = load ptr, ptr %pp, align 8
@@ -118,7 +118,7 @@ define i32 @test_ptrauth_call_resign_mismatch_blend(ptr %pp) {
   %v3 = call i64 @llvm.ptrauth.blend(i64 %v1, i64 5678)
   %v4 = call i64 @llvm.ptrauth.resign(i64 %v2, i32 1, i64 1234, i32 1, i64 %v3)
   %v5 = inttoptr i64 %v4 to ptr
-  %v6 = call i32 %v5() [ "ptrauth"(i32 1, i64 %v1) ]
+  %v6 = call i32 %v5() [ "ptrauth"(i64 1, i64 %v1) ]
   ret i32 %v6
 }
 
@@ -127,13 +127,13 @@ define i32 @test_ptrauth_call_resign_changing_call_key(ptr %p) {
 ; CHECK-NEXT:    [[V0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
 ; CHECK-NEXT:    [[V1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[V0]], i32 2, i64 1234, i32 1, i64 5678)
 ; CHECK-NEXT:    [[V2:%.*]] = inttoptr i64 [[V1]] to ptr
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i32 1, i64 5678) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i64 1, i64 5678) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = ptrtoint ptr %p to i64
   %v1 = call i64 @llvm.ptrauth.resign(i64 %v0, i32 2, i64 1234, i32 1, i64 5678)
   %v2 = inttoptr i64 %v1 to ptr
-  %v3 = call i32 %v2() [ "ptrauth"(i32 1, i64 5678) ]
+  %v3 = call i32 %v2() [ "ptrauth"(i64 1, i64 5678) ]
   ret i32 %v3
 }
 

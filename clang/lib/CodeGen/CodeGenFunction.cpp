@@ -553,6 +553,8 @@ void CodeGenFunction::FinishFunction(SourceLocation EndLoc) {
       ReturnValue = Address::invalid();
     }
   }
+
+  fixupCallsToPtrauthBlend();
 }
 
 /// ShouldInstrumentFunction - Return true if the current function should be
@@ -3407,7 +3409,7 @@ void CodeGenFunction::EmitPointerAuthOperandBundle(
   if (!PointerAuth.isSigned())
     return;
 
-  auto *Key = Builder.getInt32(PointerAuth.getKey());
+  auto *Key = Builder.getInt64(PointerAuth.getKey());
 
   llvm::Value *Discriminator = PointerAuth.getDiscriminator();
   if (!Discriminator)

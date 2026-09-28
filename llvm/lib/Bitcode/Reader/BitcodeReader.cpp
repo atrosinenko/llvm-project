@@ -5104,7 +5104,7 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
     return nullptr;
   };
 
-  std::vector<OperandBundleDef> OperandBundles;
+  SmallVector<OperandBundleDef> OperandBundles;
 
   // Read all the records.
   SmallVector<uint64_t, 64> Record;
@@ -6096,7 +6096,8 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
 
       // Upgrade the bundles if needed.
       if (!OperandBundles.empty())
-        UpgradeOperandBundles(OperandBundles);
+        UpgradeOperandBundles(AutoUpgraderMarkerFactory(*TheModule),
+                              OperandBundles);
 
       I = InvokeInst::Create(FTy, Callee, NormalBB, UnwindBB, Ops,
                              OperandBundles);
@@ -6196,7 +6197,8 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
 
       // Upgrade the bundles if needed.
       if (!OperandBundles.empty())
-        UpgradeOperandBundles(OperandBundles);
+        UpgradeOperandBundles(AutoUpgraderMarkerFactory(*TheModule),
+                              OperandBundles);
 
       if (auto *IA = dyn_cast<InlineAsm>(Callee)) {
         InlineAsm::ConstraintInfoVector ConstraintInfo = IA->ParseConstraints();
@@ -7020,7 +7022,8 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
 
       // Upgrade the bundles if needed.
       if (!OperandBundles.empty())
-        UpgradeOperandBundles(OperandBundles);
+        UpgradeOperandBundles(AutoUpgraderMarkerFactory(*TheModule),
+                              OperandBundles);
 
       I = CallInst::Create(FTy, Callee, Args, OperandBundles);
       ResTypeID = getContainedTypeID(FTyID);
@@ -7375,6 +7378,8 @@ Error BitcodeReader::materializeModule() {
   UpgradeARCRuntime(*TheModule);
 
   copyModuleAttrToFunctions(*TheModule);
+
+  UpgradePtrauthBlendUsers(*TheModule);
 
   return Error::success();
 }

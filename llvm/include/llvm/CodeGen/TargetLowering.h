@@ -4875,8 +4875,21 @@ public:
   /// Return true if the target supports kcfi operand bundles.
   virtual bool supportKCFIBundles() const { return false; }
 
-  /// Return true if the target supports ptrauth operand bundles.
-  virtual bool supportPtrAuthBundles() const { return false; }
+  /// Perform target-specific validation of PtrAuth schema descriptions that
+  /// are not covered by Verifier but relied upon by the back-end.
+  ///
+  /// Return std::nullopt on success or error description on failure.
+  virtual std::optional<std::string>
+  validatePtrAuthSchema(const CallBase &CB) const {
+    return "this target does not support pointer authentication";
+  }
+
+  /// Convenience function to report fatal error if user-provided IR violates
+  /// the assumptions relied upon by the back-end.
+  ///
+  /// This function is intended to handle possible invalid user input and thus
+  /// always performs the check, whether the assertions are enabled or not.
+  void reportFatalErrorOnInvalidPtrAuthSchema(const CallBase &CB) const;
 
   /// Perform necessary initialization to handle a subset of CSRs explicitly
   /// via copies. This function is called at the beginning of instruction
@@ -4982,14 +4995,6 @@ public:
   virtual void markLibCallAttributes(MachineFunction *MF, unsigned CC,
                                      ArgListTy &Args) const {}
 
-  /// This structure contains the information necessary for lowering
-  /// pointer-authenticating indirect calls.  It is equivalent to the "ptrauth"
-  /// operand bundle found on the call instruction, if any.
-  struct PtrAuthInfo {
-    uint64_t Key;
-    SDValue Discriminator;
-  };
-
   /// This structure contains all information that is necessary for lowering
   /// calls. It is passed to TLI::LowerCallTo when the SelectionDAG builder
   /// needs to lower a call, and targets will see this struct in their LowerCall
@@ -5033,7 +5038,7 @@ public:
     SDValue ConvergenceControlToken;
     GlobalValue *DeactivationSymbol = nullptr;
 
-    std::optional<PtrAuthInfo> PAI;
+    SDValue PtrAuthSchema;
 
     CallLoweringInfo(SelectionDAG &DAG)
         : RetSExt(false), RetZExt(false), IsVarArg(false), IsInReg(false),
@@ -5165,8 +5170,8 @@ public:
       return *this;
     }
 
-    CallLoweringInfo &setPtrAuth(PtrAuthInfo Value) {
-      PAI = Value;
+    CallLoweringInfo &setPtrAuth(SDValue Value) {
+      PtrAuthSchema = Value;
       return *this;
     }
 

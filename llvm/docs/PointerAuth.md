@@ -269,7 +269,7 @@ Concretely:
 
 ```llvm
 define void @f(void ()* %fp) {
-  call void %fp() [ "ptrauth"(i32 <key>, i64 <data>) ]
+  call void %fp() [ "ptrauth"(i64 <key>, i64 <data>) ]
   ret void
 }
 ```
@@ -334,6 +334,22 @@ constructs:
 used implicitly, to implement the
 [`llvm.ptrauth.sign_generic`](#llvm-ptrauth-sign-generic) intrinsic.
 
+#### Operand bundles
+
+A signing schema on AArch64 is represented with a key identifier and a 64-bit
+integer discriminator value. The key must be an immediate integer constant
+(same as an `immarg` argument of an intrinsic), one of 0 (IA), 1 (IB), 2 (DA),
+or 3 (DB). Depending on the way the discriminator is to be computed,
+a `"ptrauth"` operand bundle can have one of the following forms:
+* `(i64 <key>, i64 <uint16_immarg>)` (the discriminator is constant and fits in
+  a 16-bit unsigned integer): the discriminator is used as-is and is guaranteed
+  to be emitted in a non-attackable manner.
+* `(i64 <key>, i64 <uint16_immarg>, i64 %addr)`: the discriminator is computed
+  as `llvm.ptrauth.blend(i64 %addr, i64 <uint16_immarg>)`. The constant modifier
+  and the intermediate discriminator computation are guaranteed to be emitted
+  in a non-attackable manner.
+* `(i64 <key>, i64 %data)`: the discriminator is used as-is, the catch-all case.
+
 #### Instructions
 
 The IR [Intrinsics](#intrinsics) described above map onto these
@@ -349,6 +365,21 @@ instructions as such:
 * [`llvm.ptrauth.resign`](#llvm-ptrauth-resign): `AUT*+PAC*`.  These are
   represented as a single pseudo-instruction in the backend to guarantee that
   the intermediate raw pointer value is not spilled and attackable.
+
+#### Back-end implementation details
+
+At the LLVM IR level, there is a clear distinction between raw discriminator
+value (either immediate 16-bit constant or arbitrary 64-bit value computed at
+run-time) and blended `(u16_const, address)` pair represented via two-element
+and three-element `"ptrauth"` bundles, correspondingly. At the `MachineInstr`
+level, on the other hand, the discriminator is usually represented via a pair
+of immediate and register operands, resulting in corner cases for combinations
+with one of the components being zero:
+* blending with constant 0 is likely to be ignored (not clearing the top-most
+  16 bits or the `address`)
+* blending a constant with a `NULL` pointer might yield different results
+  depending on whether that `NULL` pointer is a compile-time constant
+  (the "small integer" part is either shifted left by 48 bits or used as-is)
 
 #### Assembly Representation
 

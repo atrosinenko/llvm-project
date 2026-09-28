@@ -134,6 +134,13 @@ def G_GLOBAL_VALUE : GenericInstruction {
   let hasSideEffects = false;
 }
 
+def G_PTRAUTH_SCHEMA : GenericInstruction {
+  let OutOperandList = (outs unknown:$dst);
+  let InOperandList = (ins type0:$op1, variable_ops);
+  let hasSideEffects = 0;
+  let variadicOpsType = type0;
+}
+
 def G_PTRAUTH_GLOBAL_VALUE : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
   let InOperandList = (ins unknown:$addr, i32imm:$key, type1:$addrdisc, i64imm:$disc);

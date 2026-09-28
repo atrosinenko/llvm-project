@@ -989,6 +989,14 @@ def sponentry : SDNode<
   "ISD::SPONENTRY", SDTypeProfile <1, 0, [SDTCisPtrTy<0>]>
 >;
 
+// Pointer Authentication operations.
+
+def SDTPtrAuthSchema : SDTypeProfile<1, -1, [
+  SDTCisVT<0, untyped>
+]>;
+
+def ptrauth_schema : SDNode<"ISD::PtrAuthSchema", SDTPtrAuthSchema, []>;
+
 //===----------------------------------------------------------------------===//
 // Selection DAG Condition Codes
 

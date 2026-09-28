@@ -15,7 +15,6 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
-#include <vector>
 
 namespace llvm {
   class AttrBuilder;
@@ -32,6 +31,18 @@ namespace llvm {
 
   template <typename T> class OperandBundleDefT;
   using OperandBundleDef = OperandBundleDefT<Value *>;
+
+  // Helper class to create temporary marker variables without exposing full
+  // llvm::Module interface. These variables must be removed after auto-upgrade
+  // is done.
+  class AutoUpgraderMarkerFactory {
+    constexpr static const char *MarkerNamePrefix = "llvm.autoupgrade.marker.";
+    Module &M;
+
+  public:
+    explicit AutoUpgraderMarkerFactory(Module &M) : M(M) {}
+    GlobalVariable *getMarker(StringRef ShortName, bool Create = true);
+  };
 
   /// This is a more granular function that simply checks an intrinsic function
   /// for upgrading, and returns true if it requires upgrading. It may return
@@ -159,7 +170,16 @@ namespace llvm {
 
   /// Upgrade operand bundles (without knowing about their user instruction).
   LLVM_ABI void
-  UpgradeOperandBundles(std::vector<OperandBundleDef> &OperandBundles);
+  UpgradeOperandBundles(AutoUpgraderMarkerFactory AUMF,
+                        SmallVectorImpl<OperandBundleDef> &OperandBundles);
+
+  /// Upgrade the users of llvm.ptrauth.blend intrinsic calls.
+  //
+  // This cannot be done solely in UpgradeIntrinsicCall, as it is only
+  // permitted for UpgradeIntrinsicCall to remove the call instruction
+  // passed as its argument, and upgrading the users of llvm.ptrauth.blend
+  // involves replacing arbitrary instructions.
+  LLVM_ABI void UpgradePtrauthBlendUsers(Module &M);
 
 } // End llvm namespace
 

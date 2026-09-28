@@ -132,6 +132,40 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register Disc,
   return std::make_tuple(ConstDisc, AddrDisc);
 }
 
+std::tuple<uint64_t, uint64_t, Register>
+AArch64GISelUtils::analyzePtrauthSchema(Register SchemaToken,
+                                        MachineRegisterInfo &MRI) {
+  assert(MRI.getType(SchemaToken).isToken());
+  const MachineInstr *Schema = MRI.getVRegDef(SchemaToken);
+  assert(Schema->getOpcode() == TargetOpcode::G_PTRAUTH_SCHEMA);
+
+  SmallVector<Register> Operands;
+  for (auto &Op : Schema->uses())
+    Operands.push_back(Op.getReg());
+
+  uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
+  uint64_t ConstDiscVal = 0;
+  Register AddrDisc;
+
+  if (Operands.size() == 3) {
+    ConstDiscVal = getIConstantVRegVal(Operands[1], MRI)->getZExtValue();
+    AddrDisc = Operands[2];
+  } else {
+    assert(Operands.size() == 2);
+    std::optional<APInt> ConstDisc = getIConstantVRegVal(Operands[1], MRI);
+    if (ConstDisc && isUInt<16>(ConstDisc->getZExtValue()))
+      ConstDiscVal = ConstDisc->getZExtValue();
+    else
+      AddrDisc = Operands[1];
+  }
+
+  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
+  if (AddrDiscVal && AddrDiscVal->isZero())
+    AddrDisc = AArch64::NoRegister;
+
+  return {KeyVal, ConstDiscVal, AddrDisc};
+}
+
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(
     const CmpInst::Predicate P, AArch64CC::CondCode &CondCode,
     AArch64CC::CondCode &CondCode2) {

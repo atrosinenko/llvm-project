@@ -1294,6 +1294,9 @@ public:
                                       const Value *Discriminator,
                                       const DataLayout &DL) const;
 
+  LLVM_ABI bool isKnownCompatibleWith(OperandBundleUse Bundle,
+                                      const DataLayout &DL) const;
+
   /// Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Value *V) {
     return V->getValueID() == ConstantPtrAuthVal;

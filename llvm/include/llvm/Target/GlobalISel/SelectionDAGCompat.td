@@ -235,6 +235,8 @@ def : GINodeEquiv<G_STRICT_FMA, strict_fma>;
 def : GINodeEquiv<G_STRICT_FSQRT, strict_fsqrt>;
 def : GINodeEquiv<G_STRICT_FLDEXP, strict_fldexp>;
 
+def : GINodeEquiv<G_PTRAUTH_SCHEMA, ptrauth_schema>;
+
 // Broadly speaking G_LOAD is equivalent to ISD::LOAD but there are some
 // complications that tablegen must take care of. For example, Predicates such
 // as isSignExtLoad require that this is not a perfect 1:1 mapping since a

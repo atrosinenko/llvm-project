@@ -57,6 +57,17 @@ void applyEmitBZero(MachineInstr &MI, MachineIRBuilder &MIRBuilder);
 std::tuple<uint16_t, Register>
 extractPtrauthBlendDiscriminators(Register Disc, MachineRegisterInfo &MRI);
 
+/// Analyze AArch64-specific PtrAuthSchema nodes and return
+/// (key, u16_const_disc, addr_disc) tuple.
+///
+/// This function converts the LLVM IR-style discriminator into a pair of
+/// immediate and register operands, as used at the MachineInstr level.
+/// The two-element operand bundle is converted either to (key, u16_disc,
+/// NoRegister) or (key, 0, data), depending on the second operand.
+/// \returns (Key, IntDisc, AddrDisc), with NoRegister if no address disc.
+std::tuple<uint64_t, uint64_t, Register>
+analyzePtrauthSchema(Register SchemaToken, MachineRegisterInfo &MRI);
+
 /// Find the AArch64 condition codes necessary to represent \p P for a scalar
 /// floating point comparison.
 ///

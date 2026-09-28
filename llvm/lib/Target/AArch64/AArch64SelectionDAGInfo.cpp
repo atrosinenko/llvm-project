@@ -12,6 +12,7 @@
 
 #include "AArch64SelectionDAGInfo.h"
 #include "AArch64MachineFunctionInfo.h"
+#include "llvm/CodeGen/SDPatternMatch.h"
 
 #define GET_SDNODE_DESC
 #include "AArch64GenSDNodeInfo.inc"
@@ -362,4 +363,34 @@ SDValue AArch64SelectionDAGInfo::EmitTargetCodeForSetTag(
 
   DAG.setNodeMemRefs(cast<MachineSDNode>(St), {BaseMemOperand});
   return SDValue(St, 2);
+}
+
+std::tuple<SDValue, SDValue, SDValue>
+AArch64SelectionDAGInfo::analyzePtrauthSchema(SelectionDAG &DAG, SDValue Schema,
+                                              const SDLoc &DL) const {
+  using namespace SDPatternMatch;
+  assert(Schema->getOpcode() == ISD::PtrAuthSchema);
+
+  uint64_t KeyVal = cast<ConstantSDNode>(Schema->getOperand(0))->getZExtValue();
+  uint64_t ConstDiscVal = 0;
+  SDValue AddrDisc;
+
+  if (Schema->getNumOperands() == 3) {
+    ConstDiscVal = cast<ConstantSDNode>(Schema->getOperand(1))->getZExtValue();
+    AddrDisc = Schema->getOperand(2);
+  } else {
+    assert(Schema->getNumOperands() == 2);
+    auto *ConstDisc = dyn_cast<ConstantSDNode>(Schema->getOperand(1));
+    if (ConstDisc && isUInt<16>(ConstDisc->getZExtValue()))
+      ConstDiscVal = ConstDisc->getZExtValue();
+    else
+      AddrDisc = Schema->getOperand(1);
+  }
+
+  if (!AddrDisc || sd_match(AddrDisc, m_SpecificInt(0)))
+    AddrDisc = DAG.getRegister(AArch64::NoRegister, MVT::i64);
+
+  SDValue Key = DAG.getTargetConstant(KeyVal, DL, MVT::i64);
+  SDValue ConstDisc = DAG.getTargetConstant(ConstDiscVal, DL, MVT::i64);
+  return {Key, ConstDisc, AddrDisc};
 }

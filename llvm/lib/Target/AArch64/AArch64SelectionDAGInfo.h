@@ -67,6 +67,17 @@ public:
                                             SDValue Chain, SDValue Op0,
                                             SDValue Op1, SDValue Size,
                                             RTLIB::Libcall LC) const;
+
+  /// Analyze AArch64-specific PtrAuthSchema nodes and return
+  /// (key, u16_const_disc, addr_disc) tuple.
+  ///
+  /// This function converts the LLVM IR-style discriminator into a pair of
+  /// immediate and register operands, as used at the MachineInstr level.
+  /// The two-element operand bundle is converted either to (key, u16_disc,
+  /// noreg) or (key, 0, data), depending on the second operand.
+  std::tuple<SDValue, SDValue, SDValue>
+  analyzePtrauthSchema(SelectionDAG &DAG, SDValue Schema,
+                       const SDLoc &DL) const;
 };
 } // namespace llvm
 

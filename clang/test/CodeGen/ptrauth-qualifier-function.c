@@ -88,8 +88,8 @@ void test_assign_from_qualified() {
 void test_const_ptr_function_call(void) {
   f_const_ptr(1);
 
-  // TYPE: call void ptrauth (ptr @f, i32 0, i64 2712)(i32 noundef 1) [ "ptrauth"(i32 0, i64 2712) ]
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 1) [ "ptrauth"(i32 0, i64 0) ]
+  // TYPE: call void ptrauth (ptr @f, i32 0, i64 2712)(i32 noundef 1) [ "ptrauth"(i64 0, i64 2712) ]
+  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 1) [ "ptrauth"(i64 0, i64 0) ]
 }
 
 #ifdef __cplusplus
@@ -138,8 +138,7 @@ void test_const_ptr_ref_function_call(void) {
   // CHECK-CXX: %[[V0:.*]] = load ptr, ptr @f_ref, align 8
   // CHECK-CXX: %[[V1:.*]] = load ptr, ptr %[[V0]], align 8
   // CHECK-CXX: %[[V2:.*]] = ptrtoint ptr %[[V0]] to i64
-  // CHECK-CXX: %[[V3:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V2]], i64 43)
-  // CHECK-CXX: call void %[[V1]](i32 noundef 1) [ "ptrauth"(i32 0, i64 %[[V3]]) ]
+  // CHECK-CXX: call void %[[V1]](i32 noundef 1) [ "ptrauth"(i64 0, i64 43, i64 %[[V2]]) ]
 }
 }
 #endif

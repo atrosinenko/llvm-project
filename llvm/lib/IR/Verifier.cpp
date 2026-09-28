@@ -4259,13 +4259,10 @@ void Verifier::visitCallBase(CallBase &Call) {
     } else if (Tag == LLVMContext::OB_ptrauth) {
       Check(!FoundPtrauthBundle, "Multiple ptrauth operand bundles", Call);
       FoundPtrauthBundle = true;
-      Check(BU.Inputs.size() == 2,
-            "Expected exactly two ptrauth bundle operands", Call);
-      Check(isa<ConstantInt>(BU.Inputs[0]) &&
-                BU.Inputs[0]->getType()->isIntegerTy(32),
-            "Ptrauth bundle key operand must be an i32 constant", Call);
-      Check(BU.Inputs[1]->getType()->isIntegerTy(64),
-            "Ptrauth bundle discriminator operand must be an i64", Call);
+      Check(!BU.Inputs.empty(), "Expected non-empty ptrauth bundle", Call);
+      for (Value *V : BU.Inputs)
+        Check(V->getType()->isIntegerTy(64),
+              "Ptrauth bundle must only contain i64 operands", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;

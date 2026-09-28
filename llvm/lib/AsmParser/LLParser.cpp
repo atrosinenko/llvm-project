@@ -551,6 +551,7 @@ bool LLParser::validateEndOfModule(bool UpgradeDebugInfo) {
   UpgradeNVVMAnnotations(*M);
   UpgradeSectionAttributes(*M);
   copyModuleAttrToFunctions(*M);
+  UpgradePtrauthBlendUsers(*M);
 
   if (!Slots)
     return false;
@@ -8207,6 +8208,8 @@ bool LLParser::parseInvoke(Instruction *&Inst, PerFunctionState &PFS) {
       parseTypeAndBasicBlock(UnwindBB, PFS))
     return true;
 
+  UpgradeOperandBundles(AutoUpgraderMarkerFactory(*M), BundleList);
+
   // If RetType is a non-function pointer type, then this is the short syntax
   // for the call, which means that RetType is just the return type.  Infer the
   // rest of the function argument types from the arguments that are present.
@@ -8501,6 +8504,8 @@ bool LLParser::parseCallBr(Instruction *&Inst, PerFunctionState &PFS) {
       parseTypeAndBasicBlock(DefaultDest, PFS) ||
       parseToken(lltok::lsquare, "expected '[' in callbr"))
     return true;
+
+  UpgradeOperandBundles(AutoUpgraderMarkerFactory(*M), BundleList);
 
   // parse the destination list.
   SmallVector<BasicBlock *, 16> IndirectDests;
@@ -8951,6 +8956,8 @@ bool LLParser::parseCall(Instruction *&Inst, PerFunctionState &PFS,
       parseFnAttributeValuePairs(FnAttrs, FwdRefAttrGrps, false, BuiltinLoc) ||
       parseOptionalOperandBundles(BundleList, PFS))
     return true;
+
+  UpgradeOperandBundles(AutoUpgraderMarkerFactory(*M), BundleList);
 
   // If RetType is a non-function pointer type, then this is the short syntax
   // for the call, which means that RetType is just the return type.  Infer the

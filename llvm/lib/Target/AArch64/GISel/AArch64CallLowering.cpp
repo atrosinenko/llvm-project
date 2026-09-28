@@ -1138,18 +1138,15 @@ bool AArch64CallLowering::isEligibleForTailCallOptimization(
 }
 
 static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
-                              bool IsTailCall,
-                              std::optional<CallLowering::PtrAuthInfo> &PAI,
+                              bool IsTailCall, bool IsPtrAuth,
                               MachineRegisterInfo &MRI) {
   const AArch64FunctionInfo *FuncInfo = CallerF.getInfo<AArch64FunctionInfo>();
 
   if (!IsTailCall) {
-    if (!PAI)
+    if (!IsPtrAuth)
       return IsIndirect ? getBLRCallOpcode(CallerF) : (unsigned)AArch64::BL;
 
     assert(IsIndirect && "Direct call should not be authenticated");
-    assert((PAI->Key == AArch64PACKey::IA || PAI->Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
     return AArch64::BLRA;
   }
 
@@ -1160,20 +1157,20 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
   // x17 to hold the function pointer.
   if (FuncInfo->branchTargetEnforcement()) {
     if (FuncInfo->branchProtectionPAuthLR()) {
-      assert(!PAI && "ptrauth tail-calls not yet supported with PAuthLR");
+      assert(!IsPtrAuth && "ptrauth tail-calls not yet supported with PAuthLR");
       return AArch64::TCRETURNrix17;
     }
-    if (PAI)
+    if (IsPtrAuth)
       return AArch64::AUTH_TCRETURN_BTI;
     return AArch64::TCRETURNrix16x17;
   }
 
   if (FuncInfo->branchProtectionPAuthLR()) {
-    assert(!PAI && "ptrauth tail-calls not yet supported with PAuthLR");
+    assert(!IsPtrAuth && "ptrauth tail-calls not yet supported with PAuthLR");
     return AArch64::TCRETURNrinotx16;
   }
 
-  if (PAI)
+  if (IsPtrAuth)
     return AArch64::AUTH_TCRETURN;
   return AArch64::TCRETURNri;
 }
@@ -1220,7 +1217,8 @@ bool AArch64CallLowering::lowerTailCall(
   if (!IsSibCall)
     CallSeqStart = MIRBuilder.buildInstr(AArch64::ADJCALLSTACKDOWN);
 
-  unsigned Opc = getCallOpcode(MF, Info.Callee.isReg(), true, Info.PAI, MRI);
+  unsigned Opc =
+      getCallOpcode(MF, Info.Callee.isReg(), true, Info.PtrAuthSchema, MRI);
   auto MIB = MIRBuilder.buildInstrNoInsert(Opc);
   MIB.add(Info.Callee);
 
@@ -1234,16 +1232,12 @@ bool AArch64CallLowering::lowerTailCall(
 
   // Authenticated tail calls always take key/discriminator arguments.
   if (Opc == AArch64::AUTH_TCRETURN || Opc == AArch64::AUTH_TCRETURN_BTI) {
-    assert((Info.PAI->Key == AArch64PACKey::IA ||
-            Info.PAI->Key == AArch64PACKey::IB) &&
+    auto [Key, IntDisc, AddrDisc] =
+        analyzePtrauthSchema(Info.PtrAuthSchema, MRI);
+    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
            "Invalid auth call key");
-    MIB.addImm(Info.PAI->Key);
 
-    Register AddrDisc = 0;
-    uint16_t IntDisc = 0;
-    std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(Info.PAI->Discriminator, MRI);
-
+    MIB.addImm(Key);
     MIB.addImm(IntDisc);
     MIB.addUse(AddrDisc);
     if (AddrDisc.isValid()) {
@@ -1454,7 +1448,7 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   // be expanded to the call, directly followed by a special marker sequence and
   // a call to an ObjC library function.
   if (Info.CB && objcarc::hasAttachedCallOpBundle(Info.CB))
-    Opc = Info.PAI ? AArch64::BLRA_RVMARKER : AArch64::BLR_RVMARKER;
+    Opc = Info.PtrAuthSchema ? AArch64::BLRA_RVMARKER : AArch64::BLR_RVMARKER;
   // A call to a returns twice function like setjmp must be followed by a bti
   // instruction.
   else if (Info.CB && Info.CB->hasFnAttr(Attribute::ReturnsTwice) &&
@@ -1470,7 +1464,8 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
       MIB.addExternalSymbol(Info.Callee.getSymbolName(), AArch64II::MO_GOT);
       Info.Callee = MachineOperand::CreateReg(MIB.getReg(0), false);
     }
-    Opc = getCallOpcode(MF, Info.Callee.isReg(), false, Info.PAI, MRI);
+    Opc =
+        getCallOpcode(MF, Info.Callee.isReg(), false, Info.PtrAuthSchema, MRI);
   }
 
   auto MIB = MIRBuilder.buildInstrNoInsert(Opc);
@@ -1512,16 +1507,11 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   Mask = getMaskForArgs(OutArgs, Info, *TRI, MF);
 
   if (Opc == AArch64::BLRA || Opc == AArch64::BLRA_RVMARKER) {
-    assert((Info.PAI->Key == AArch64PACKey::IA ||
-            Info.PAI->Key == AArch64PACKey::IB) &&
+    auto [Key, IntDisc, AddrDisc] =
+        analyzePtrauthSchema(Info.PtrAuthSchema, MRI);
+    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
            "Invalid auth call key");
-    MIB.addImm(Info.PAI->Key);
-
-    Register AddrDisc = 0;
-    uint16_t IntDisc = 0;
-    std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(Info.PAI->Discriminator, MRI);
-
+    MIB.addImm(Key);
     MIB.addImm(IntDisc);
     MIB.addUse(AddrDisc);
     if (AddrDisc.isValid()) {

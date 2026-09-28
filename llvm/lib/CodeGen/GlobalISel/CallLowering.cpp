@@ -127,8 +127,7 @@ void CallLowering::addArgFlagsFromAttributes(ISD::ArgFlagsTy &Flags,
 bool CallLowering::lowerCall(MachineIRBuilder &MIRBuilder, const CallBase &CB,
                              ArrayRef<Register> ResRegs,
                              ArrayRef<ArrayRef<Register>> ArgRegs,
-                             Register SwiftErrorVReg,
-                             std::optional<PtrAuthInfo> PAI,
+                             Register SwiftErrorVReg, Register PtrAuthSchema,
                              Register ConvergenceCtrlToken,
                              std::function<Register()> GetCalleeReg) const {
   CallLoweringInfo Info;
@@ -186,7 +185,7 @@ bool CallLowering::lowerCall(MachineIRBuilder &MIRBuilder, const CallBase &CB,
 
   // If IRTranslator chose to drop the ptrauth info, we can turn this into
   // a direct call.
-  if (!PAI && CB.countOperandBundlesOfType(LLVMContext::OB_ptrauth)) {
+  if (!PtrAuthSchema && CB.countOperandBundlesOfType(LLVMContext::OB_ptrauth)) {
     CalleeV = cast<ConstantPtrAuth>(CalleeV)->getPointer();
     assert(isa<Function>(CalleeV));
   }
@@ -238,7 +237,7 @@ bool CallLowering::lowerCall(MachineIRBuilder &MIRBuilder, const CallBase &CB,
   Info.KnownCallees = CB.getMetadata(LLVMContext::MD_callees);
   Info.CallConv = CallConv;
   Info.SwiftErrorVReg = SwiftErrorVReg;
-  Info.PAI = PAI;
+  Info.PtrAuthSchema = PtrAuthSchema;
   Info.ConvergenceCtrlToken = ConvergenceCtrlToken;
   Info.IsMustTailCall = CB.isMustTailCall();
   Info.IsTailCall = CanBeTailCalled;

@@ -505,7 +505,8 @@ public:
     return true;
   }
 
-  bool supportPtrAuthBundles() const override { return true; }
+  std::optional<std::string>
+  validatePtrAuthSchema(const CallBase &CB) const override;
 
   bool supportKCFIBundles() const override { return true; }
 
